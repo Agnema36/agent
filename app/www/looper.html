@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#11181d">
+<title>Лупер — проверка</title>
+<style>
+/* Layout: dark, one column; huge main button on top, layer strips, then calibration and diagnostics */
+:root{
+  --bg:#11181d; --surface:#18232a; --line:#2a3a44; --fg:#e3edf2; --muted:#8ea4b0;
+  --accent:#7cc3d8; --rec:#e0705f; --ok:#7fc59a; --warn:#e6b86a;
+  --font:"Segoe UI","Roboto",system-ui,sans-serif; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:16px;line-height:1.45;min-height:100%}
+.wrap{max-width:720px;margin:0 auto;padding-block:calc(20px + env(safe-area-inset-top,0px)) calc(60px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:22px}
+h1{font-weight:400;font-size:1.4rem;margin:0}
+h2{font-weight:400;font-size:1.1rem;margin:0}
+.muted{color:var(--muted);font-size:.88rem}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+a{color:var(--accent)}
+button{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 16px;cursor:pointer;min-height:44px}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.main{display:flex;flex-direction:column;align-items:center;gap:14px}
+#big{width:min(240px,64vw);aspect-ratio:1;max-width:100%;border-radius:50%;font-size:1.25rem;border:3px solid var(--accent);background:radial-gradient(circle at 50% 40%,#22323b,var(--surface));position:relative}
+#big.rec{border-color:var(--rec);background:radial-gradient(circle at 50% 40%,#4a2a26,#2a1a18)}
+#big.wait{border-color:var(--warn)}
+#ring{position:absolute;inset:-10px;pointer-events:none}
+.status{min-height:1.5em;text-align:center;color:var(--muted)}
+.meter{width:100%;max-width:420px;height:10px;border-radius:5px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .05s}
+.meter.clip i{background:var(--rec)}
+.meters{display:flex;flex-direction:column;gap:6px;align-items:center;width:100%}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.layer{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.layer:first-child{border-top:0}
+.layer .n{font-variant-numeric:tabular-nums;color:var(--muted);min-width:4.5em}
+.layer input[type=range]{width:100%;min-width:0}
+.layer button{padding:6px 10px;min-height:40px}
+.layer.muted .n{text-decoration:line-through}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.82rem;color:var(--muted);flex:1 1 150px;min-width:0}
+select,input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px;width:100%;min-width:0}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:.78rem;overflow-x:auto;white-space:pre-wrap;word-break:break-word;max-height:360px;margin:0}
+.pill{font-size:.78rem;border-radius:999px;padding:2px 10px;border:1px solid var(--line)}
+.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.warn{color:var(--warn);border-color:var(--warn)}.pill.bad{color:var(--rec);border-color:var(--rec)}
+ol{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:.88rem;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+@media (max-width:480px){.layer{grid-template-columns:1fr auto auto auto}.layer .vol{grid-column:1/-1;order:5}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1>Лупер для чаш</h1><div class="muted">Этап 0: проверка записи, слоёв и задержки на этом устройстве</div></div>
+    <a href="index.html">← Дыхательный ритм</a>
+  </header>
+
+  <section class="main">
+    <button id="big">Включить микрофон</button>
+    <div class="status" id="status">Микрофон выключен</div>
+    <div class="meters">
+      <div class="muted">Вход</div><div class="meter" id="inMeter"><i></i></div>
+      <div class="muted">Выход</div><div class="meter" id="outMeter"><i></i></div>
+    </div>
+    <div class="row">
+      <button id="undo" disabled>Отменить последний слой</button>
+      <button id="clear" disabled>Очистить всё</button>
+    </div>
+    <div class="muted">Пробел или Enter — та же большая кнопка (подходит для Bluetooth-педали)</div>
+  </section>
+
+  <section class="card">
+    <h2>Слои <span class="muted" id="loopInfo"></span></h2>
+    <div id="layers"><div class="muted">Пока пусто. Первый слой задаёт длину петли: нажмите «Запись», сыграйте, нажмите «Стоп» в момент, когда петля должна начаться заново.</div></div>
+  </section>
+
+  <section class="card">
+    <h2>Настройки</h2>
+    <div class="row">
+      <label class="f">Микрофон<select id="dev"><option value="">по умолчанию</option></select></label>
+      <label class="f">Затухание после «Стоп», с<input id="tail" type="number" min="0" max="10" step="0.5" value="3"></label>
+    </div>
+    <div class="row">
+      <label class="f">Приглушать слои во время наложения, дБ<input id="duck" type="number" min="0" max="30" step="1" value="0"></label>
+      <label class="f">Задержка (туда-обратно), мс<input id="lat" type="number" min="0" max="1000" step="1" value="0"></label>
+    </div>
+    <div class="muted">Затухание: звук чаши, записанный после конца петли, подмешивается в её начало, поэтому стык не слышен.</div>
+  </section>
+
+  <section class="card">
+    <h2>Замер задержки</h2>
+    <div class="muted">Положите телефон или микрофон рядом с колонкой, громкость примерно 70%, в наушниках не сработает. Прозвучат 6 щелчков.</div>
+    <div class="row"><button id="calib" disabled>Замерить задержку</button><span id="calibRes" class="muted"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>Что проверить</h2>
+    <ol class="muted">
+      <li>Нажмите «Включить микрофон» и разрешите доступ.</li>
+      <li>Замерьте задержку 2–3 раза. Разброс больше 5 мс — плохой знак.</li>
+      <li>Запишите первый слой (удар чаши 10–20 с) и послушайте стык петли: слышен ли щелчок или провал.</li>
+      <li>Наложите ещё 2–4 слоя. Следите, совпадают ли удары по времени и не растёт ли гул из колонки.</li>
+      <li>iPhone: нажмите «Тон 2 с» до и после включения микрофона и сравните громкость.</li>
+      <li>Нажмите «Скопировать отчёт» и пришлите текст в чат вместе с впечатлениями.</li>
+    </ol>
+    <div class="row"><button id="tone">Тон 2 с</button><button id="copy">Скопировать отчёт</button></div>
+    <pre id="report">Отчёт появится после включения микрофона.</pre>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+let toastT; const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600); };
+const store = { get(k,d){ try{ const v=localStorage.getItem('lp-'+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem('lp-'+k, JSON.stringify(v)); }catch(e){} } };
+$('#lat').value = store.get('lat',0); $('#tail').value = store.get('tail',3); $('#duck').value = store.get('duck',0);
+['lat','tail','duck'].forEach(k=>$('#'+k).addEventListener('change',()=>store.set(k, parseFloat($('#'+k).value)||0)));
+
+const WORKLET = `
+class Cap extends AudioWorkletProcessor{
+  constructor(){ super(); this.n=0; this.pk=0; }
+  process(inputs){
+    const ch=inputs[0];
+    if(ch && ch[0]){
+      const d=new Float32Array(ch[0]);
+      for(let i=0;i<d.length;i++){ const a=Math.abs(d[i]); if(a>this.pk) this.pk=a; }
+      this.port.postMessage({f:currentFrame, d, ch:ch.length}, [d.buffer]);
+      if(++this.n%8===0){ this.port.postMessage({pk:this.pk}); this.pk=0; }
+    }
+    return true;
+  }
+}
+registerProcessor('cap', Cap);`;
+
+const A = { ctx:null, sr:48000, stream:null, src:null, node:null, chunks:[], inCh:0,
+  master:null, limiter:null, outAn:null, layers:[], L:0, T0:0, rec:null, ready:false, info:{} };
+
+/* ---------- input capture ---------- */
+function onChunk(m){
+  if(m.pk!==undefined){ meter('#inMeter', m.pk); return; }
+  A.inCh=m.ch; A.chunks.push({f:m.f, d:m.d});
+  const keepFrom = (A.cal ? A.cal.from : A.rec ? A.rec.a : Math.round(A.ctx.currentTime*A.sr)) - A.sr*3;
+  while(A.chunks.length && A.chunks[0].f + A.chunks[0].d.length < keepFrom) A.chunks.shift();
+  if(A.rec) tickRec();
+  if(A.cal) A.cal.check();
+}
+function lastFrame(){ const c=A.chunks[A.chunks.length-1]; return c ? c.f+c.d.length : 0; }
+function grab(f0,n){
+  const out=new Float32Array(n);
+  for(const c of A.chunks){
+    const s=Math.max(f0,c.f), e=Math.min(f0+n,c.f+c.d.length);
+    if(e>s) out.set(c.d.subarray(s-c.f,e-c.f), s-f0);
+  }
+  return out;
+}
+function meter(sel,pk){ const m=$(sel); m.firstChild.style.width=Math.min(100,Math.sqrt(pk)*100)+'%'; m.classList.toggle('clip',pk>=0.98); }
+
+async function openMic(){
+  try{
+    if(!A.ctx){
+      try{ A.ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000, latencyHint:'interactive'}); }
+      catch(e){ A.ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'}); }
+      A.sr=A.ctx.sampleRate;
+      A.master=A.ctx.createGain();
+      A.limiter=A.ctx.createDynamicsCompressor();
+      A.limiter.threshold.value=-3; A.limiter.knee.value=0; A.limiter.ratio.value=20; A.limiter.attack.value=0.003; A.limiter.release.value=0.25;
+      A.outAn=A.ctx.createAnalyser(); A.outAn.fftSize=1024;
+      A.master.connect(A.limiter); A.limiter.connect(A.outAn); A.outAn.connect(A.ctx.destination);
+      try{ const url=URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'})); await A.ctx.audioWorklet.addModule(url); A.worklet=true; }
+      catch(e){ A.worklet=false; } // file:// pages and old engines: fall back to ScriptProcessor
+      A.info.capture=A.worklet?'AudioWorklet':'ScriptProcessor';
+      outMeterLoop();
+    }
+    await A.ctx.resume();
+    if(A.stream){ A.stream.getTracks().forEach(t=>t.stop()); A.src?.disconnect(); }
+    const dev=$('#dev').value;
+    const want={ echoCancellation:false, noiseSuppression:false, autoGainControl:false, channelCount:{ideal:1}, sampleRate:{ideal:48000} };
+    if(dev) want.deviceId={exact:dev};
+    A.stream=await navigator.mediaDevices.getUserMedia({audio:want});
+    A.src=A.ctx.createMediaStreamSource(A.stream);
+    if(!A.node){
+      if(A.worklet){ A.node=new AudioWorkletNode(A.ctx,'cap',{numberOfInputs:1,numberOfOutputs:1,channelCountMode:'explicit',channelCount:1}); A.node.port.onmessage=e=>onChunk(e.data); }
+      else {
+        const bs=1024; A.node=A.ctx.createScriptProcessor(bs,1,1); let n=0, pk=0;
+        A.node.onaudioprocess=e=>{ const d=new Float32Array(e.inputBuffer.getChannelData(0)); for(const v of d){ const a=Math.abs(v); if(a>pk) pk=a; }
+          onChunk({f:Math.round(e.playbackTime*A.sr)-bs, d, ch:e.inputBuffer.numberOfChannels}); if(++n%2===0){ onChunk({pk}); pk=0; } };
+      }
+      const mute=A.ctx.createGain(); mute.gain.value=0; A.node.connect(mute); mute.connect(A.ctx.destination); }
+    A.src.connect(A.node);
+    A.ready=true; $('#calib').disabled=false;
+    await listDevices(); report(); render();
+    toast('Микрофон включён');
+  }catch(e){ toast('Микрофон не открылся: '+(e.name||'')+' '+(e.message||'')); A.info.micError=(e.name||'')+': '+(e.message||''); report(); }
+}
+async function listDevices(){
+  try{
+    const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audioinput');
+    const sel=$('#dev'), cur=sel.value; sel.length=1;
+    ds.forEach(d=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||('Микрофон '+(sel.length)); sel.append(o); });
+    sel.value=cur;
+    A.info.inputs=ds.map(d=>d.label||'(без названия)');
+    const outs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='audiooutput').map(d=>d.label||'(без названия)');
+    A.info.outputs=outs;
+  }catch(e){}
+}
+$('#dev').onchange=()=>{ if(A.ready) openMic(); };
+
+/* ---------- loop engine ---------- */
+const now = () => A.ctx.currentTime;
+const latF = () => Math.round((parseFloat($('#lat').value)||0)/1000*A.sr);
+function posAt(t){ return (((t - A.T0)*A.sr) % A.L + A.L) % A.L; }
+function startSource(layer, buf){
+  const s=A.ctx.createBufferSource(); s.buffer=buf; s.loop=true; s.connect(layer.gain);
+  const t=now()+0.03; s.start(t, posAt(t)/A.sr);
+  if(layer.src){ try{ layer.src.stop(t); }catch(e){} }
+  layer.src=s; layer.buf=buf;
+}
+function buildLayer(raw, p0, tailN){
+  // raw[0..L) maps to loop positions p0..p0+L (wrapping); raw[L..L+tail) is folded onto p0.. with a fade-out
+  const L=A.L, out=new Float32Array(L), fin=Math.min(Math.round(.005*A.sr), L>>2);
+  for(let k=0;k<L;k++){ let v=raw[k]; if(k<fin) v*=k/fin; out[(p0+k)%L]+=v; }
+  for(let k=0;k<tailN;k++){ const g=Math.cos((k/tailN)*Math.PI/2); out[(p0+k)%L]+=raw[L+k]*g; }
+  const b=A.ctx.createBuffer(1,L,A.sr); b.copyToChannel(out,0); return b;
+}
+function newLayer(){
+  const g=A.ctx.createGain(); g.gain.value=dbToG(-6); g.connect(A.master);
+  return { gain:g, db:-6, muted:false, src:null, buf:null };
+}
+const dbToG = d => Math.pow(10,d/20);
+function duck(on){
+  const d=parseFloat($('#duck').value)||0; if(!d) return;
+  A.layers.forEach(l=>{ if(!l.muted){ l.gain.gain.setTargetAtTime(on?dbToG(l.db-d):dbToG(l.db), now(), .08); } });
+}
+
+function bigPress(){
+  if(!A.ready) return openMic();
+  if(A.rec){ if(A.rec.first && A.rec.stage==='rec') return stopFirst(); return; }
+  if(A.layers.length>=5) return toast('Максимум 5 слоёв в этой проверке');
+  A.ctx.resume();
+  const a=Math.round(now()*A.sr);
+  if(!A.L){ A.rec={first:true, stage:'rec', a, lat:latF()}; }
+  else {
+    const tail=Math.min(Math.round((parseFloat($('#tail').value)||0)*A.sr), A.L>>1);
+    const lat=latF();
+    A.rec={first:false, stage:'rec', a, lat, tailN:tail, n:A.L+tail, p0:Math.round(posAt((a-lat)/A.sr))};
+    duck(true);
+  }
+  render();
+}
+function stopFirst(){
+  const r=A.rec; const b=Math.round(now()*A.sr);
+  A.L=b-r.a; if(A.L<A.sr*1){ A.rec=null; A.L=0; render(); return toast('Петля слишком короткая — минимум 1 с'); }
+  A.T0=(r.a - r.lat)/A.sr; // loop position 0 = moment the first recorded sample was played live
+  r.tailN=Math.min(Math.round((parseFloat($('#tail').value)||0)*A.sr), A.L>>1);
+  r.n=A.L+r.tailN; r.p0=0; r.stage='tail';
+  // play the raw take straight away, swap in the tail-folded version when the tail is in
+  const layer=newLayer(); A.layers.push(layer); r.layer=layer;
+  startSource(layer, buildLayer(grab(r.a, r.n), 0, 0));
+  render();
+}
+function tickRec(){
+  const r=A.rec, have=lastFrame()-r.a;
+  if(r.first && r.stage==='rec'){ ring((have/A.sr)%8/8); return; }
+  ring(Math.min(1,have/r.n));
+  if(!r.first && r.stage==='rec' && have>=A.L){
+    r.stage='tail'; const layer=newLayer(); A.layers.push(layer); r.layer=layer;
+    startSource(layer, buildLayer(grab(r.a, r.n), r.p0, 0)); duck(false); render();
+  }
+  if(r.stage==='tail' && have>=r.n){
+    const raw=grab(r.a, r.n);
+    r.layer.raw=raw; startSource(r.layer, buildLayer(raw, r.p0, r.tailN));
+    A.rec=null; ring(0); render(); report();
+  }
+}
+function ring(p){
+  const c=$('#ring'); if(!c) return; c.innerHTML = p>0 ? `<svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="${p*301.6} 301.6" transform="rotate(-90 50 50)"/></svg>` : '';
+}
+$('#undo').onclick=()=>{ if(A.rec) return; const l=A.layers.pop(); if(l){ try{ l.src?.stop(); }catch(e){} l.gain.disconnect(); } if(!A.layers.length) A.L=0; render(); };
+$('#clear').onclick=()=>{ if(A.rec) return; A.layers.forEach(l=>{ try{ l.src?.stop(); }catch(e){} l.gain.disconnect(); }); A.layers=[]; A.L=0; render(); };
+
+/* ---------- UI ---------- */
+function render(){
+  const b=$('#big'); b.className=''; b.innerHTML='<span id="lbl"></span><span id="ring"></span>';
+  let lbl, st;
+  if(!A.ready){ lbl='Включить микрофон'; st='Микрофон выключен'; }
+  else if(A.rec && A.rec.first && A.rec.stage==='rec'){ lbl='Стоп'; b.className='rec'; st='Запись первого слоя… «Стоп» — конец петли'; }
+  else if(A.rec && A.rec.stage==='rec'){ lbl='Пишу слой'; b.className='rec'; st='Наложение: запишется ровно один круг петли'; }
+  else if(A.rec){ lbl='Затухание'; b.className='wait'; st='Дописываю затухание звука…'; }
+  else if(!A.L){ lbl='Запись'; st='Готово к записи первого слоя'; }
+  else if(A.layers.length>=5){ lbl='5 слоёв'; st='Достигнут максимум слоёв'; }
+  else { lbl='Наложить слой'; st='Петля играет. Нажмите и играйте — запишется один круг'; }
+  $('#lbl').textContent=lbl; $('#status').textContent=st;
+  b.disabled = !!(A.rec && !(A.rec.first && A.rec.stage==='rec')) || (A.ready && !A.rec && A.layers.length>=5);
+  $('#undo').disabled = !A.layers.length || !!A.rec; $('#clear').disabled = !A.layers.length || !!A.rec;
+  $('#loopInfo').textContent = A.L ? '· петля '+(A.L/A.sr).toFixed(2)+' с' : '';
+  const box=$('#layers'); if(!A.layers.length){ box.innerHTML='<div class="muted">Пока пусто. Первый слой задаёт длину петли: нажмите «Запись», сыграйте, нажмите «Стоп» в момент, когда петля должна начаться заново.</div>'; return; }
+  box.textContent='';
+  A.layers.forEach((l,i)=>{
+    const row=document.createElement('div'); row.className='layer'+(l.muted?' muted':'');
+    const n=document.createElement('span'); n.className='n'; n.textContent='Слой '+(i+1);
+    const vol=document.createElement('input'); vol.type='range'; vol.min=-30; vol.max=6; vol.step=1; vol.value=l.db; vol.className='vol'; vol.id='vol-'+i; vol.setAttribute('aria-label','Громкость слоя '+(i+1));
+    const dbl=document.createElement('span'); dbl.className='muted'; dbl.textContent=l.db+' дБ';
+    vol.oninput=()=>{ l.db=+vol.value; dbl.textContent=l.db+' дБ'; if(!l.muted) l.gain.gain.setTargetAtTime(dbToG(l.db),now(),.03); };
+    const m=document.createElement('button'); m.textContent=l.muted?'Вкл':'Выкл';
+    m.onclick=()=>{ l.muted=!l.muted; l.gain.gain.setTargetAtTime(l.muted?0:dbToG(l.db),now(),.03); render(); };
+    const sv=document.createElement('button'); sv.textContent='WAV'; sv.title='Сохранить слой'; sv.disabled=!l.raw;
+    sv.onclick=()=>saveWav(l.buf.getChannelData(0),'sloy-'+(i+1)+'.wav');
+    row.append(n,vol,dbl,m,sv); box.append(row);
+  });
+}
+$('#big').onclick=bigPress;
+document.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter') && !['INPUT','SELECT','TEXTAREA','BUTTON'].includes(document.activeElement.tagName)){ e.preventDefault(); bigPress(); } });
+function outMeterLoop(){
+  const d=new Float32Array(A.outAn.fftSize);
+  (function f(){ A.outAn.getFloatTimeDomainData(d); let p=0; for(const v of d){ const a=Math.abs(v); if(a>p) p=a; } meter('#outMeter',p); requestAnimationFrame(f); })();
+}
+
+/* ---------- WAV (24-bit) ---------- */
+function saveWav(data,name){
+  if(window.Capacitor?.isNativePlatform?.()) return toast('Сохранение WAV в приложении для Android появится на следующем этапе');
+  const n=data.length, buf=new ArrayBuffer(44+n*3), v=new DataView(buf);
+  const w=(o,s)=>{ for(let i=0;i<s.length;i++) v.setUint8(o+i,s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4,36+n*3,true); w(8,'WAVE'); w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,A.sr,true); v.setUint32(28,A.sr*3,true); v.setUint16(32,3,true); v.setUint16(34,24,true); w(36,'data'); v.setUint32(40,n*3,true);
+  for(let i=0,o=44;i<n;i++,o+=3){ let s=Math.max(-1,Math.min(1,data[i])); let x=Math.round(s*8388607); if(x<0) x+=16777216; v.setUint8(o,x&255); v.setUint8(o+1,(x>>8)&255); v.setUint8(o+2,(x>>16)&255); }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([buf],{type:'audio/wav'})); a.download=name; document.body.append(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+/* ---------- latency calibration ---------- */
+$('#calib').onclick=async()=>{
+  if(!A.ready||A.rec) return; await A.ctx.resume();
+  const N=6, gap=.7, t0=now()+.4; const clicks=[];
+  const cb=A.ctx.createBuffer(1,Math.round(.004*A.sr),A.sr), cd=cb.getChannelData(0);
+  for(let i=0;i<cd.length;i++) cd[i]=Math.sin(2*Math.PI*2000*i/A.sr)*.9*(1-i/cd.length);
+  for(let i=0;i<N;i++){ const s=A.ctx.createBufferSource(); s.buffer=cb; s.connect(A.ctx.destination); const t=t0+i*gap; s.start(t); clicks.push(Math.round(t*A.sr)); }
+  $('#calib').disabled=true; $('#calibRes').textContent='Слушаю…';
+  const endF=clicks[N-1]+Math.round(.6*A.sr);
+  A.chunks.length=0;
+  A.cal={ from:clicks[0], check(){
+    if(lastFrame()<endF) return;
+    A.cal=null; const res=[];
+    for(const c of clicks){
+      const pre=grab(c-Math.round(.2*A.sr),Math.round(.2*A.sr)); let rms=0; for(const v of pre) rms+=v*v; rms=Math.sqrt(rms/pre.length);
+      const win=grab(c,Math.round(.5*A.sr)); const th=Math.max(.04, rms*8);
+      let k=-1; for(let i=0;i<win.length;i++){ if(Math.abs(win[i])>th){ k=i; break; } }
+      if(k>=0) res.push(k/A.sr*1000);
+    }
+    $('#calib').disabled=false;
+    if(res.length<3){ $('#calibRes').textContent='Щелчки не услышаны — громче или ближе к колонке'; A.info.calib={ok:false, found:res.length}; report(); return; }
+    res.sort((a,b)=>a-b); const med=res[Math.floor(res.length/2)], spread=res[res.length-1]-res[0];
+    $('#lat').value=Math.round(med); store.set('lat',Math.round(med));
+    $('#calibRes').innerHTML=''; const p=document.createElement('span'); p.className='pill '+(spread<=5?'ok':spread<=15?'warn':'bad');
+    p.textContent=`${Math.round(med)} мс, разброс ${spread.toFixed(1)} мс`; $('#calibRes').append(p);
+    A.info.calib={ok:true, medianMs:+med.toFixed(1), spreadMs:+spread.toFixed(1), all:res.map(x=>+x.toFixed(1))}; report();
+  }};
+};
+
+/* ---------- tone + report ---------- */
+$('#tone').onclick=async()=>{
+  const ctx=A.ctx||new (window.AudioContext||window.webkitAudioContext)(); if(!A.ctx) A.toneCtx=ctx; await ctx.resume();
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=440; g.gain.value=.2; o.connect(g).connect(ctx.destination); o.start(); o.stop(ctx.currentTime+2);
+};
+function report(){
+  const tr=A.stream?.getAudioTracks()[0];
+  let settings={}, sup={};
+  try{ settings=tr?.getSettings()||{}; }catch(e){}
+  try{ sup=navigator.mediaDevices.getSupportedConstraints(); }catch(e){}
+  const r={
+    when:new Date().toISOString(), ua:navigator.userAgent,
+    native: !!window.Capacitor?.isNativePlatform?.(), electron:/Electron/.test(navigator.userAgent),
+    context: A.ctx ? { sampleRate:A.ctx.sampleRate, baseLatencyMs:+((A.ctx.baseLatency||0)*1000).toFixed(1), outputLatencyMs:+((A.ctx.outputLatency||0)*1000).toFixed(1), state:A.ctx.state } : null,
+    track: tr ? { label:tr.label, echoCancellation:settings.echoCancellation, noiseSuppression:settings.noiseSuppression, autoGainControl:settings.autoGainControl, channelCount:settings.channelCount, sampleRate:settings.sampleRate, latency:settings.latency } : null,
+    capture:A.info.capture, inputChannels:A.inCh, supported:{ echoCancellation:sup.echoCancellation, noiseSuppression:sup.noiseSuppression, autoGainControl:sup.autoGainControl, channelCount:sup.channelCount, sampleRate:sup.sampleRate },
+    bluetoothSuspect: [...(A.info.inputs||[]),...(A.info.outputs||[])].some(s=>/bluetooth|airpods|hands-?free|buds|bt /i.test(s)),
+    inputs:A.info.inputs, outputs:A.info.outputs, calib:A.info.calib, micError:A.info.micError,
+    loopSec: A.L ? +(A.L/A.sr).toFixed(3) : 0, layers:A.layers.length, latencySetMs:parseFloat($('#lat').value)||0, tailSec:parseFloat($('#tail').value)||0
+  };
+  $('#report').textContent=JSON.stringify(r,null,2);
+}
+$('#copy').onclick=async()=>{
+  report(); const t=$('#report').textContent;
+  try{ await navigator.clipboard.writeText(t); toast('Отчёт скопирован — вставьте его в чат'); }
+  catch(e){ const s=window.getSelection(), rg=document.createRange(); rg.selectNodeContents($('#report')); s.removeAllRanges(); s.addRange(rg); toast('Текст выделен — скопируйте его вручную'); }
+};
+render(); report();
+})();
+</script>
+</body>
+</html>

@@ -22,6 +22,8 @@ jobs:
         with: { distribution: temurin, java-version: 21 }
       - run: npm ci
       - run: npx cap add android
+      - name: Allow microphone
+        run: sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <application#' android/app/src/main/AndroidManifest.xml && grep -n "permission" android/app/src/main/AndroidManifest.xml
       # one fixed key so a new APK installs over the old one and keeps the data
       - run: mkdir -p ~/.android && cp android-debug.keystore ~/.android/debug.keystore
       - run: ./gradlew assembleDebug --no-daemon
@@ -54,7 +56,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Дыхательный ритм — сборка ${{ github.run_number }}
           body: |
-            breath-rhythm-android.apk — установить на Android.
+            breath-rhythm-android.apk — установить на Android. Внутри: «Дыхательный ритм» и «Лупер (проверка)».
             breath-rhythm-1.0.0-x64.exe — установщик для Windows.
             breath-rhythm-1.0.0-portable.exe — версия для Windows без установки.
           prerelease: true
