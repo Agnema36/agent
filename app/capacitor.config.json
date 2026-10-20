@@ -1,0 +1,6 @@
+{
+  "appId": "com.agnema.breath",
+  "appName": "Дыхательный ритм",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}

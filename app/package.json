@@ -1,0 +1,32 @@
+{
+  "name": "breath-rhythm",
+  "productName": "Дыхательный ритм",
+  "version": "1.0.0",
+  "description": "Таймер дыхания с аудио на каждую фазу, вариантами и историей",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "desktop": "electron .",
+    "dist:win": "electron-builder --win",
+    "android:prepare": "cap add android && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/filesystem": "8.1.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "electron": "43.7.7",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "com.agnema.breath",
+    "productName": "Дыхательный ритм",
+    "artifactName": "breath-rhythm-${version}-${arch}.${ext}",
+    "files": ["www/**", "electron/**", "package.json"],
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }] },
+    "portable": { "artifactName": "breath-rhythm-${version}-portable.exe" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}

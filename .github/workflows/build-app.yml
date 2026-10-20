@@ -1,0 +1,61 @@
+name: Build breathing app
+
+on:
+  push:
+    branches: [claude/funny-knuth-8q9fci, main]
+    paths: ['app/**', '.github/workflows/build-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: app } }
+    env: { ELECTRON_SKIP_BINARY_DOWNLOAD: '1' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - run: npm ci
+      - run: npx cap add android
+      # one fixed key so a new APK installs over the old one and keeps the data
+      - run: mkdir -p ~/.android && cp android-debug.keystore ~/.android/debug.keystore
+      - run: ./gradlew assembleDebug --no-daemon
+        working-directory: app/android
+      - run: cp android/app/build/outputs/apk/debug/app-debug.apk breath-rhythm-android.apk
+      - uses: actions/upload-artifact@v4
+        with: { name: android-apk, path: app/breath-rhythm-android.apk }
+
+  windows:
+    runs-on: windows-latest
+    defaults: { run: { working-directory: app } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: app/package-lock.json }
+      - run: npm ci
+      - run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with: { name: windows-exe, path: app/dist/*.exe }
+
+  release:
+    needs: [android, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: out, merge-multiple: true }
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: breath-app-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Дыхательный ритм — сборка ${{ github.run_number }}
+          body: |
+            breath-rhythm-android.apk — установить на Android.
+            breath-rhythm-1.0.0-x64.exe — установщик для Windows.
+            breath-rhythm-1.0.0-portable.exe — версия для Windows без установки.
+          prerelease: true
+          files: out/*
