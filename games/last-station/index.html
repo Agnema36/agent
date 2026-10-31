@@ -2054,7 +2054,7 @@ function buildEscalators(sx){
 
 }
 function makeGenerator(){
-  const T=THREE,root=new T.Group(),M=R3.mat;
+  const T=THREE,root=new T.Group(),M=R3.mat;R3.coreParts=[];
   // костёр: кольцо камней, накрест брёвна, языки пламени
   const bf=new T.Group();root.add(bf);R3.bf=bf;R3.flames=[];
   for(let i=0;i<11;i++){const a=i/11*Math.PI*2;const st=mesh(new T.DodecahedronGeometry(.11+((i*37)%5)*.012,0),KM.stone());st.position.set(Math.cos(a)*.5,.06,Math.sin(a)*.5);st.rotation.set(i,i*2,0);st.scale.y=.7;bf.add(st);}
@@ -2066,9 +2066,9 @@ function makeGenerator(){
   const s1=new T.Group(),s2=new T.Group(),s3=new T.Group();root.add(s1,s2,s3);R3.st=[s1,s2,s3];
   let g=s1;
   kcyl(g,.86,.92,.08,KM.stone(),0,0,0,32);kcyl(g,.74,.8,.08,KM.stone(),0,.08,0,32);
-  kcyl(g,.52,.56,1.25,KM.iron(),0,.16,0,32);
+  kcyl(g,.52,.56,1.25,kmat('iron',{metalness:.65,roughness:.32,color:0xfff2e6}),0,.16,0,32);
+  {const slit=new T.Mesh(new T.TorusGeometry(.565,.018,6,40),M.core.clone());slit.rotation.x=Math.PI/2;slit.position.y=.22;g.add(slit);R3.coreParts.push(slit);}
   for(const y of [.3,.62,.94,1.26]){const band=mesh(new T.TorusGeometry(.55-(y-.3)*.03,.03,6,32),KM.brass(),false);band.rotation.x=Math.PI/2;band.position.y=y;g.add(band);}
-  R3.coreParts=[];
   for(let i=0;i<4;i++){const a=i/4*Math.PI*2+Math.PI/4;const grp=new T.Group();grp.position.set(Math.sin(a)*.545,.48,Math.cos(a)*.545);grp.rotation.y=a;g.add(grp);
     const fire=new T.Mesh(new T.PlaneGeometry(.26,.24),M.core.clone());grp.add(fire);R3.coreParts.push(fire);
     for(let k=-2;k<=2;k++){const bar=mesh(new T.BoxGeometry(.015,.24,.015),KM.dark(),false);bar.position.set(k*.05,0,.01);grp.add(bar);}
