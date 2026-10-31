@@ -312,7 +312,7 @@ const B={
   well:{n:'Артезианская скважина',cat:'food',cost:{wood:30,steel:25},time:8,job:'w',jobs:5,prod:{water:3},h:1.3,col:'#3f5f78',tech:'t_well',d:'Чистая вода с глубины.'},
   sawmill:{n:'Разбор шпал',cat:'res',cost:{wood:10,steel:10},time:5,job:'w',jobs:5,prod:{wood:.8},h:.8,col:'#7b6248',tech:'t_saw',d:'Дерево из шпал и креплений.'},
   scrapyard:{n:'Разборка составов',cat:'res',cost:{wood:30},time:6,job:'w',jobs:10,prod:{steel:.4},h:.9,col:'#5d6a74',tech:'t_scrap',d:'Металл из брошенных вагонов.'},
-  coalmine:{n:'Угольный забой',cat:'res',cost:{wood:30,steel:15},time:8,job:'w',jobs:10,prod:{coal:1},h:1.2,col:'#4a4744',tech:'t_coal',d:'Пласт под путями. Много угля.'},
+  coalmine:{n:'Угольный забой',cat:'res',cost:{wood:30,steel:15},time:8,job:'w',jobs:10,prod:{coal:1.3},h:1.2,col:'#4a4744',tech:'t_coal',d:'Пласт под путями. Много угля.'},
   workshop:{n:'Мастерская',cat:'tech',cost:{wood:20},time:4,job:'e',jobs:5,rp:1,max2:1,h:.9,col:'#6f5a3a',d:'Инженеры ведут исследования днём. 1 мастерская — 100% скорости, 2 — 150%. Каждое улучшение (до 3-го ур.) +25%. Предел — 300%: 2 мастерские 3-го уровня.'},
   lab:{n:'Лаборатория',cat:'hidden',cost:{wood:30,steel:30},time:6,job:'e',jobs:5,rp:1.6,h:1,col:'#5a5f6a',tech:'t_research',d:'Инженеры исследуют в 1,6 раза быстрее, чем в мастерской.'},
   drafting:{n:'Чертёжное бюро',cat:'hidden',cost:{wood:25,steel:10},time:4,h:.8,col:'#6a5a48',d:'Ускоряет все мастерские и лаборатории на 15% (действуют до трёх бюро).'},
@@ -814,7 +814,7 @@ function newGame(diff,survivor){
     leavers:0,
   };
   for(const k in s.res)s.res[k]=Math.round(s.res[k]);
-  {const P=80*D.cons;s.res.food=Math.max(s.res.food,Math.ceil(1.5*P));s.res.water=Math.max(s.res.water,Math.ceil(1.2*P));s.res.wood=Math.max(s.res.wood,100);s.res.stone=Math.max(s.res.stone,70);s.res.steel=Math.max(s.res.steel,25);} // хотя бы сутки на раскачку на любой сложности
+  {const P=80*D.cons;s.res.food=Math.max(s.res.food,Math.ceil(2.5*P));s.res.water=Math.max(s.res.water,Math.ceil(2.2*P));s.res.wood=Math.max(s.res.wood,160);s.res.stone=Math.max(s.res.stone,70);s.res.steel=Math.max(s.res.steel,25);} // хотя бы сутки на раскачку на любой сложности
   // сетка: пути вдоль краёв, завалы
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
     const t={k:(y===0||y===GH-1)?'track':'floor',b:0,pile:null};
@@ -2845,7 +2845,7 @@ function allyHTML(s){
 
 /* ---------------------------- ОБОРОНА: волны мертвецов из тоннеля ---------------------------- */
 // Путь: из правого конца нижнего пути по рельсам, затем через платформу к ближайшему зданию.
-const ZW={easy:.6,normal:1,hard:1.2,extreme:1.3,extremeplus:1.35,hardcore:1.4};
+const ZW={easy:.6,normal:1,hard:1.1,extreme:1.3,extremeplus:1.35,hardcore:1.4};
 const TOWER={archer:{range:4,dps:30,hp:100,regen:10,single:1},catapult:{range:3,dps:4,hp:120,regen:20,splash:.6,tank:1},steamgun:{range:4.5,dps:90,hp:200,regen:15,splash:.9,coal:2}};
 const Z_DMG=5;
 // виды мутантов: здоровье, скорость, урон — множители; d — с какого дня появляются; w — вес в волне; k — размер модели
