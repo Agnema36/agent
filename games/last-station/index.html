@@ -1638,7 +1638,7 @@ function init3D(){
   if(!rd||!rd.getContext())return false;
   const T=THREE;R3.rd=rd;
   rd.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-  rd.shadowMap.enabled=innerWidth>760;rd.shadowMap.type=T.PCFSoftShadowMap;
+  rd.shadowMap.enabled=true;rd.shadowMap.type=T.PCFShadowMap;
   rd.outputEncoding=T.sRGBEncoding;rd.toneMapping=T.ACESFilmicToneMapping;rd.toneMappingExposure=1.0;
   const sc=new T.Scene();R3.sc=sc;
   sc.background=new T.Color(0x070b10);sc.fog=new T.FogExp2(0x141f2c,.02);
@@ -1646,8 +1646,8 @@ function init3D(){
   R3.hemi=new T.HemisphereLight(0x7fa6d6,0x1a2230,.55);sc.add(R3.hemi);
   const dl=new T.DirectionalLight(0x9cc4ff,.45);dl.position.set(-5,16,3);sc.add(dl);R3.dl=dl;
   const gl=new T.PointLight(0xff9440,3,24,2);gl.position.set(0,1.2,0);
-  if(rd.shadowMap.enabled){gl.castShadow=true;gl.shadow.mapSize.set(1024,1024);gl.shadow.bias=-.004;gl.shadow.radius=3;}
   sc.add(gl);R3.gl=gl;
+  {const sp=new T.SpotLight(0xff9440,0,30,1.25,.6,2);sp.castShadow=true;const ms=innerWidth>760?1024:512;sp.shadow.mapSize.set(ms,ms);sp.shadow.bias=-.002;sp.shadow.camera.near=.3;sp.shadow.camera.far=30;sp.target.position.set(0,0,0);sc.add(sp);sc.add(sp.target);R3.gsp=sp;}
   // текстуры
   R3.tx={
     stone:ctex(128,128,(c,w,h)=>{c.fillStyle='#8c8f92';c.fillRect(0,0,w,h);for(let i=0;i<900;i++){const v=110+Math.random()*60|0;c.fillStyle=`rgba(${v},${v},${v+4},.22)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
@@ -1759,8 +1759,8 @@ function init3D(){
   ];
   {// мутанты: шесть видов, свой дизайн. Бледная гниющая кожа, красные глаза, когти.
     const M_=(c,o={})=>new T.MeshStandardMaterial({color:c,roughness:.85,...o});
-    const skin=M_(0x3e3c36),rot=M_(0x4a3a30),fur=M_(0x2e2620,{roughness:1}),bone=M_(0xb8ac90,{roughness:.6}),rag=M_(0x2a2a22,{roughness:1}),
-      dark=M_(0x1a1412),bloat=M_(0x5a4a3e,{roughness:.5}),eye=new T.MeshBasicMaterial({color:0xff2a14,toneMapped:false});
+    const skin=M_(0x3a4038),rot=M_(0x5a2a24),fur=M_(0x2e2620,{roughness:1}),bone=M_(0xb8ac90,{roughness:.6}),rag=M_(0x2a2a22,{roughness:1}),
+      dark=M_(0x1a1412),bloat=M_(0x5a4a3e,{roughness:.5}),eye=new T.MeshBasicMaterial({color:new T.Color(4,.5,.2),toneMapped:false});
     const G={};const P=(geo,f)=>{f&&f(geo);return geo;};
     const cyl=(r1,r2,h,x,y,z,rx=0,rz=0,seg=6)=>P(new T.CylinderGeometry(r1,r2,h,seg),g=>{g.rotateX(rx);g.rotateZ(rz);g.translate(x,y,z);});
     const sph=(r,sx,sy,sz,x,y,z,seg=8)=>P(new T.SphereGeometry(r,seg,6),g=>{g.scale(sx,sy,sz);g.translate(x,y,z);});
@@ -1808,7 +1808,7 @@ function init3D(){
   const N=1100,pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*26;pos[i*3+1]=Math.random()*9;pos[i*3+2]=-7+Math.random()*15;}
   const sg=new T.BufferGeometry();sg.setAttribute('position',new T.BufferAttribute(pos,3));
-  R3.snow=new T.Points(sg,new T.PointsMaterial({map:R3.tx.flake,color:0xdbe9f6,size:.075,transparent:true,opacity:.5,depthWrite:false}));sc.add(R3.snow);
+  R3.snow=new T.Points(sg,new T.PointsMaterial({map:R3.tx.flake,color:0xcfe2ff,size:.09,transparent:true,opacity:.5,depthWrite:false}));sc.add(R3.snow);
   // пар
   for(let i=0;i<70;i++){const sp=new T.Sprite(new T.SpriteMaterial({map:R3.tx.smoke,color:0xb8bcc2,transparent:true,opacity:0,depthWrite:false}));sp.visible=false;sc.add(sp);R3.steam.push({sp,life:0});}
   R3.ok=true;initPost();resize3D();
@@ -2416,7 +2416,7 @@ function render3D(t){
   for(const L of R3.lamps)L.halo.material.opacity=night?.75:.45;
   // генератор
   const on=s.gen.on,lvl=s.gen.lvl,fl=.92+Math.sin(t/90)*.04+Math.sin(t/37)*.03;
-  R3.gl.intensity=on?(3+lvl*1.3+(s.gen.over?1.8:0))*fl:0;R3.gl.distance=(genRadius(s)+2)*1.9;{const sk=stoveLvl(s);R3.gl.position.y=sk>=3?3.9:sk?2.75:1.2;}
+  R3.gl.intensity=on?(2+lvl*.9+(s.gen.over?1.2:0))*fl:0;R3.gl.distance=(genRadius(s)+2)*1.9;{const sk=stoveLvl(s);R3.gl.position.y=sk>=3?3.9:sk?2.75:1.2;R3.gsp.position.set(0,R3.gl.position.y+.6,0);R3.gsp.intensity=R3.gl.intensity*.55;R3.gsp.distance=R3.gl.distance*1.2;R3.gsp.color.copy(R3.gl.color);}
   R3.gl.color.setHex(s.gen.over?0xff7a2a:0xff9a48);
   for(const w of R3.coreParts){if(on)w.material.color.setRGB(s.gen.over?3:2.6,s.gen.over?.8:1.2,.3);else w.material.color.setHex(0x221a14);}
   {const sk=stoveLvl(s);R3.bf.visible=!sk;R3.st.forEach((g,i)=>g.visible=sk>i);
@@ -2446,7 +2446,7 @@ function render3D(t){
         if(t1&&t2){c.fillText(t1,w*.3,h/2+1);c.fillStyle='#8fd0f5';c.fillText(t2,w*.72,h/2+1);}else{if(t2)c.fillStyle='#8fd0f5';c.fillText(t1||t2,w/2,h/2+1);}});
         const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.set(.5,.19,1);sp.position.y=1.25;g.add(sp);u.badge=sp;}}
     if(u.wheel&&lit)(u.wheel.geometry.type==='CylinderGeometry'?u.wheel.rotation.y+=.2:u.wheel.rotation.z+=.03);
-    if(u.chimTop&&u.chimTop.isVector3&&lit&&Math.random()<(b.type==='kitchen'?.12:.05)){const p=u.chimTop.clone().add(g.position);spawnSteam(p,.18,.6);}
+    if(u.chimTop&&u.chimTop.isVector3&&lit&&Math.random()<(b.type==='kitchen'?.12:.05)){const p=u.chimTop.clone().add(g.position);spawnSteam(p,.18,.6,true);}
   }
   for(const [id,g] of R3.bmap)if(!seen.has(id)){sc.remove(g);R3.bmap.delete(id);}
   // завалы
@@ -2476,12 +2476,14 @@ function render3D(t){
       m4.setPosition(wx(z.x),Math.abs(Math.sin(ph))*(quad?.03:.02),wz(z.y));for(const im of R3.zt[t])im.setMatrixAt(n,m4);});
     for(const k in R3.zt)for(const im of R3.zt[k]){im.count=cnt[k];im.instanceMatrix.needsUpdate=true;}}
   // иней в воздухе
+  if(!STEAM_COLD)STEAM_COLD=new THREE.Color(0x8a96a6);
   const pa=R3.snow.geometry.attributes.position,arr=pa.array,sp=s.paused?.2:1;
-  for(let i=0;i<arr.length;i+=3){arr[i+1]-=(.006+(i%7)*.0012)*sp;arr[i]+=Math.sin(t/900+i)*.002;if(arr[i+1]<0){arr[i+1]=8+Math.random()*1.5;arr[i]=(Math.random()-.5)*26;}}
+  {const wind=(.002+cold*.012)*sp,gr=genRadius(s)*(s.gen.on?1:0);for(let i=0;i<arr.length;i+=3){arr[i+1]-=(.006+(i%7)*.0012)*sp;arr[i]+=Math.sin(t/900+i)*.002+wind;if(arr[i]>13)arr[i]-=26;
+    if(arr[i+1]<0||(arr[i+1]<1.2&&arr[i]*arr[i]+arr[i+2]*arr[i+2]<gr*gr)){arr[i+1]=8+Math.random()*1.5;arr[i]=(Math.random()-.5)*26;}}}
   pa.needsUpdate=true;R3.snow.material.opacity=.12+cold*.6;
   // пар
   for(const q of R3.steam){if(!q.life)continue;q.life-=.008;q.sp.position.y+=q.vy;q.sp.position.x+=q.vx;const k=q.sp.scale.x+.006;q.sp.scale.set(k,k,1);
-    q.sp.material.opacity=Math.max(0,q.life*.45);if(q.life<=0){q.life=0;q.sp.visible=false;}}
+    q.sp.material.rotation+=.004;if(!q.dark)q.sp.material.color.setHex(0xffd2a8).lerp(STEAM_COLD,1-q.life);q.sp.material.opacity=Math.max(0,q.life*(q.dark?.5:.3));if(q.life<=0){q.life=0;q.sp.visible=false;}}
   towerFire3D(s,s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:Math.min(.05,(t-(R3.lastT||t))/1000)*Math.min(3,s.speed));R3.lastT=t;
   {const now=performance.now();postWatch(now-(POST.lt||now));POST.lt=now;}
   postRender(sc,R3.cam,clamp((-ambient(S)-5)/45,0,1));
@@ -2518,8 +2520,8 @@ function towerFire3D(s,dtR){
   for(const g of R3.bmap.values()){const u=g.userData;if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);u.brl.position.z=.32-u.recoil;}
     if(u.arm){u.armT=Math.max(0,(u.armT||0)-dtR);u.arm.rotation.x=u.armT>0?-.5+(1-u.armT/.35)*1.7:Math.max(-.5,u.arm.rotation.x-dtR*2);}}
 }
-function spawnSteam(p,size,vy){const q=R3.steam.find(x=>!x.life);if(!q)return;q.life=1;q.vy=.006*vy+Math.random()*.004;q.vx=(Math.random()-.5)*.004;q.sp.position.copy(p);q.sp.scale.set(size,size,1);q.sp.visible=true;}
-let ZERO4=null;
+function spawnSteam(p,size,vy,dark){const q=R3.steam.find(x=>!x.life);if(!q)return;q.life=1;q.dark=!!dark;q.sp.material.color.setHex(dark?0x3a3632:0xffd2a8);q.sp.material.rotation=Math.random()*6;q.vy=.006*vy+Math.random()*.004;q.vx=(Math.random()-.5)*.004;q.sp.position.copy(p);q.sp.scale.set(size,size,1);q.sp.visible=true;}
+let ZERO4=null;let STEAM_COLD=null;
 const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer',coreworks:'hammer',farm:'shovel',hydro:'shovel',cemetery:'shovel',condenser:'bucket',well:'bucket',kitchen:'bucket',still:'bucket'};
 const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
