@@ -2490,7 +2490,7 @@ function renderTop(){
   setHTML(nd,`<div class="needhead"><span class="title" style="font-size:13px;color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
   setHTML($('res'),RES_ORDER.map(k=>{const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
   const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;if(d>LAST_DAY&&!s.endless)return'';return`<span>д${d}: ${WEATHER[Math.min(d,LAST_DAY)-1]+D_(s).temp}°</span>`;}).join('');
-  setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div><div class="fc">${fc}</div></div>`);
+  setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div></div>`);
   const hh=String(s.hour).padStart(2,'0');
   const sp=s.survivor?[1,2]:[0,1,2,3];
   setHTML($('clock'),`<span class="day">День ${s.day}${s.endless?'':' / '+LAST_DAY}</span><span class="num">${hh}:00</span>
