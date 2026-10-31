@@ -292,7 +292,7 @@ const LAST_DAY=30;
 
 /* здания: job 'w' — рабочие (могут инженеры и, по закону, дети), 'e' — только инженеры */
 const B={
-  gen:{n:'Генератор',h:2.2,col:'#5d4a3a'},
+  gen:{n:'Костёр',h:2.2,col:'#5d4a3a'},
   tent:{n:'Палатки',cat:'house',cost:{wood:10},time:2,house:10,ins:0,h:.55,col:'#6e604e',d:'10 мест. Почти не держит тепло.'},
   barracks:{n:'Барак',cat:'house',cost:{wood:20,steel:5},time:4,house:10,ins:10,h:.8,col:'#5c6670',tech:'t_barracks',d:'10 мест. Утеплённые стены: +10°.'},
   house:{n:'Жилой блок',cat:'house',cost:{wood:25,steel:15},time:6,house:12,ins:20,h:1.1,col:'#6a6f78',tech:'t_house',d:'12 мест. Хорошая изоляция: +20°.'},
@@ -331,11 +331,11 @@ const CATS=[['heat','Отопление'],['house','Жильё'],['food','Еда
 
 const TECH=[
   {id:'t_heater',cat:'Тепло',n:'Тепловые узлы',rp:30,cost:{wood:10},d:'Здание: +10° вокруг себя.'},
-  {id:'t_radius1',cat:'Тепло',n:'Магистральные трубы',rp:40,cost:{steel:15},d:'Радиус генератора +2.'},
+  {id:'t_radius1',cat:'Тепло',n:'Магистральные трубы',rp:40,cost:{steel:15},d:'Радиус огня +2.'},
   {id:'t_insul',cat:'Тепло',n:'Утепление',rp:50,cost:{wood:30},d:'Все здания +10°.'},
-  {id:'t_power1',cat:'Тепло',n:'Форсированные котлы',rp:60,cost:{steel:20},d:'Генератор: уровень 3.'},
-  {id:'t_radius2',cat:'Тепло',n:'Тепловые коллекторы',rp:80,cost:{steel:30},req:['t_radius1'],d:'Радиус генератора ещё +2.'},
-  {id:'t_power2',cat:'Тепло',n:'Энергоблок в котле',rp:120,cost:{steel:40,cores:1},req:['t_power1'],d:'Генератор: уровень 4.'},
+  {id:'t_power1',cat:'Тепло',n:'Форсированные котлы',rp:60,cost:{steel:20},d:'Печь: открывает улучшение до ур. 2 (мощность 3).'},
+  {id:'t_radius2',cat:'Тепло',n:'Тепловые коллекторы',rp:80,cost:{steel:30},req:['t_radius1'],d:'Радиус огня ещё +2.'},
+  {id:'t_power2',cat:'Тепло',n:'Энергоблок в котле',rp:120,cost:{steel:40,cores:1},req:['t_power1'],d:'Печь: открывает улучшение до ур. 3 (мощность 4).'},
   {id:'t_farm2',cat:'Еда и вода',n:'Субстрат для грибов',rp:40,cost:{wood:20},d:'Грибные фермы +50%.'},
   {id:'t_filter',cat:'Еда и вода',n:'Фильтры тонкой очистки',rp:40,cost:{steel:15},d:'Конденсаторы +50%.'},
   {id:'t_hydro',cat:'Еда и вода',n:'Гидропоника',rp:70,cost:{wood:30,steel:20},d:'Здание: много еды в тепле.'},
@@ -489,6 +489,12 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Улучшение печи','Stove upgrade'],['Ставим печь','Building the stove'],['Улучшить печь до ур.','Upgrade stove to lvl'],['Поставить печь на костёр','Put a stove on the bonfire'],
+['Нужна технология','Requires technology'],['Печь улучшена до предела.','The stove is fully upgraded.'],['Печь на старом костре — сердце станции.','A stove over the old bonfire — the heart of the station.'],
+['Открытый огонь посреди платформы. Греет слабо: поставьте на него печь.','An open fire in the middle of the platform. Weak heat: put a stove on it.'],['Тепло в радиусе','Heat radius'],
+['Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% печь взорвётся.','Overdrive heats more and burns 1.5× coal. At 100% the stove explodes.'],
+['Каждый уровень печи даёт +1 к мощности огня (+10°).','Each stove level adds +1 fire power (+10°).'],['Печь поставлена на костёр','The stove is set on the bonfire'],['Печь улучшена:','Stove upgraded:'],
+['Логово мутантов','Mutant lair'],['Отсюда каждую ночь в 22:00 идут мутанты','Mutants come from here every night at 22:00'],['ИДУТ МУТАНТЫ','MUTANTS INCOMING'],['до волны','until the wave'],['ч','h'],
 // — интерфейс
 ['Нужды станции','Station needs'],['Скрыть','Hide'],['Нужды','Needs'],['Подписи','Labels'],['Союз','Alliance'],['Журнал','Log'],['Тепло','Heat'],
 ['Карта метро','Metro map'],['Мастерская','Workshop'],['Устав','Charter'],['Меню','Menu'],['День','Day'],['на станции','on the station'],
@@ -507,11 +513,11 @@ const EN=[
 ['Лютый мороз','Deep freeze'],['Очень холодно','Very cold'],['Холодно','Cold'],['Прохладно','Chilly'],['Комфортно','Comfortable'],
 ['Стройка:','Construction:'],['Жильцов','Residents'],['° вокруг','° around'],['Нет врачей','No doctors'],['Нет работников','No workers'],
 ['еды/день · кормит','food/day · feeds'],['чел.','people'],['воды/день · поит','water/day · serves'],['Готовит до','Cooks up to'],['пайков/день','rations/day'],
-['угля/день ·','coal/day ·'],['ч генератора','h of generator'],['очков науки/день','research pts/day'],['/день','/day'],
+['угля/день ·','coal/day ·'],['ч огня','h of fire'],['очков науки/день','research pts/day'],['/день','/day'],
 ['Еда','Food'],['в день','per day'],['Не хватает','Short by'],['пайков в день. Запаса на','rations per day. Stock lasts'],['дн. Нужно ещё ≈','days. Build ≈'],
 ['грибн. ферм','more mushroom farms'],['и кухня','and a kitchen'],['Хватает. Запас','Enough. Stock'],['пайков.','rations.'],['в день. Запаса на','per day. Stock lasts'],
-['конденсатор(а).','more condenser(s).'],['в час','per hour'],['генератор стоит','generator is off'],['Хватит на','Lasts'],['ч. Добыча','h. Mined'],['/день при расходе','/day vs use'],
-['Поставьте людей на угольные завалы или постройте забой.','Put people on coal piles or build a coal mine.'],['Запустите генератор, иначе люди замёрзнут.','Start the generator or people will freeze.'],
+['конденсатор(а).','more condenser(s).'],['в час','per hour'],['огонь погас','fire is out'],['Хватит на','Lasts'],['ч. Добыча','h. Mined'],['/день при расходе','/day vs use'],
+['Поставьте людей на угольные завалы или постройте забой.','Put people on coal piles or build a coal mine.'],['Разожгите огонь, иначе люди замёрзнут.','Light the fire or people will freeze.'],
 ['под крышей','under a roof'],['Без крыши','Homeless:'],['чел. Нужно ещё ≈','people. Build ≈'],['палаток (по 10 мест).','more tents (10 places each).'],['Свободных мест:','Free places:'],
 ['Здоровье','Health'],['больных ·','sick ·'],[', тяжёлых',', critical'],['(нужны медикаменты или лазарет)','(need medicine or an infirmary)'],['Тяжёлых','Critical:'],
 ['Люди','People'],[': рабочих',': workers'],[', инженеров',', engineers'],[', детей',', children'],['Без дела: рабочих','Idle: workers'],
@@ -532,7 +538,7 @@ const EN=[
 ['Нужен отряд на станции.','A team must be at the station.'],['Обмен','Trade'],['Берётся из груза отряда, затем со склада. Полученное едет в грузе.','Taken from the team’s cargo first, then from the stockpile. What you get travels in the cargo.'],
 // меню
 ['Последняя','Last'],['станция','Station'],['Сложность','Difficulty'],['Новая игра','New game'],['Продолжить','Continue'],['Вернуться в игру','Resume'],['Кооператив','Co-op'],
-['Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь','Moscow after the nuclear winter. Your task is to survive. You lead the community at Teatralnaya: generator heat, food, water, medicine, laws and hope. Scouts travel the metro lines for resources and survivors. Hold out for'],
+['Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло очага, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь','Moscow after the nuclear winter. Your task is to survive. You lead the community at Teatralnaya: hearth heat, food, water, medicine, laws and hope. Scouts travel the metro lines for resources and survivors. Hold out for'],
 ['дней.','days.'],['Режим «Выживший»: без паузы, скорость максимум ×2','Survivor mode: no pause, max speed ×2'],
 ['Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.','One player hosts the station; the other joins with a code and runs the same station. The second player needs edit access to this page.'],
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
@@ -580,7 +586,7 @@ const EN=[
 ['Сложный','Hard'],['Меньше запасов, злее холод, люди нетерпеливее.','Fewer supplies, harsher cold, less patient people.'],['Экстремальный','Extreme'],['Для тех, кто уже пережил «Сложный».','For those who already survived Hard.'],
 ['Экстремальный+','Extreme+'],['Запасов почти нет, холод на 16° злее.','Almost no supplies, cold 16° harsher.'],['Хардкор','Hardcore'],['Без паузы и без второго шанса. Смерть станции — конец сохранения.','No pause and no second chance. If the station dies, the save is gone.'],
 // здания
-['Генератор','Generator'],['Палатки','Tents'],['10 мест. Почти не держит тепло.','10 places. Barely holds heat.'],['Барак','Barracks'],['10 мест. Утеплённые стены: +10°.','10 places. Insulated walls: +10°.'],
+['Генератор','Generator'],['Костёр','Bonfire'],['Печь, ур.','Stove, lvl'],['Палатки','Tents'],['10 мест. Почти не держит тепло.','10 places. Barely holds heat.'],['Барак','Barracks'],['10 мест. Утеплённые стены: +10°.','10 places. Insulated walls: +10°.'],
 ['Жилой блок','Housing block'],['12 мест. Хорошая изоляция: +20°.','12 places. Good insulation: +20°.'],['Грибная ферма','Mushroom farm'],['Грибы растут в темноте. Сырая еда.','Mushrooms grow in the dark. Raw food.'],
 ['Кухня','Kitchen'],['Превращает сырую еду в пайки (1 → 2).','Turns raw food into rations (1 → 2).'],['Гидропоника','Hydroponics'],['Много еды, но только в тепле (≥ прохладно).','Lots of food, but only when warm (≥ chilly).'],
 ['Конденсатор','Condenser'],['Собирает влагу из тоннелей. Вода.','Collects moisture from the tunnels. Water.'],['Артезианская скважина','Artesian well'],['Чистая вода с глубины.','Clean water from deep below.'],
@@ -594,8 +600,8 @@ const EN=[
 ['Пост патруля','Patrol post'],['Патрули гасят недовольство.','Patrols suppress discontent.'],['Радиоточка','Radio point'],['Сводки и речи по громкоговорителям.','News and speeches over loudspeakers.'],
 ['Гауптвахта','Guardhouse'],['Смутьяны под замком.','Troublemakers locked up.'],['Дом собраний','Meeting house'],['Вечерние собрания. +надежда.','Evening gatherings. +hope.'],['Часовня','Chapel'],['Свечи на платформе. +надежда.','Candles on the platform. +hope.'],
 // технологии
-['Тепловые узлы','Heat hubs'],['Здание: +10° вокруг себя.','Building: +10° around itself.'],['Магистральные трубы','Steam mains'],['Радиус генератора +2.','Generator radius +2.'],['Утепление','Insulation'],['Все здания +10°.','All buildings +10°.'],
-['Форсированные котлы','Forced boilers'],['Генератор: уровень 3.','Generator: level 3.'],['Тепловые коллекторы','Heat collectors'],['Радиус генератора ещё +2.','Generator radius +2 more.'],['Энергоблок в котле','Core in the boiler'],['Генератор: уровень 4.','Generator: level 4.'],
+['Тепловые узлы','Heat hubs'],['Здание: +10° вокруг себя.','Building: +10° around itself.'],['Магистральные трубы','Steam mains'],['Радиус огня +2.','Fire radius +2.'],['Утепление','Insulation'],['Все здания +10°.','All buildings +10°.'],
+['Форсированные котлы','Forced boilers'],['Печь: открывает улучшение до ур. 2 (мощность 3).','Stove: unlocks upgrade to lvl 2 (power 3).'],['Тепловые коллекторы','Heat collectors'],['Радиус огня ещё +2.','Fire radius +2 more.'],['Энергоблок в котле','Core in the boiler'],['Печь: открывает улучшение до ур. 3 (мощность 4).','Stove: unlocks upgrade to lvl 3 (power 4).'],
 ['Субстрат для грибов','Mushroom substrate'],['Грибные фермы +50%.','Mushroom farms +50%.'],['Фильтры тонкой очистки','Fine filters'],['Конденсаторы +50%.','Condensers +50%.'],['Здание: много еды в тепле.','Building: lots of food when warm.'],
 ['Бурение скважин','Well drilling'],['Здание: артезианская скважина.','Building: artesian well.'],['Тачки и носилки','Wheelbarrows'],['Сбор с завалов +25%.','Debris gathering +25%.'],['Здание: дерево.','Building: wood.'],
 ['Резка вагонов','Carriage cutting'],['Здание: металл.','Building: steel.'],['Угольный пласт','Coal seam'],['Здание: угольный забой.','Building: coal mine.'],['Пневмоинструмент','Pneumatic tools'],['Добывающие здания +20%.','Resource buildings +20%.'],
@@ -630,24 +636,24 @@ const EN=[
 ['Красная коммуна','Red Commune'],['Сокольническая. Делятся едой, требуют дисциплины.','Sokolnicheskaya line. They share food and demand discipline.'],['Хранители архива','Archive Keepers'],['Библиотека им. Ленина. Знания в обмен на помощь.','Lenin Library. Knowledge in exchange for help.'],
 // сообщения симуляции
 ['Построено:','Built:'],[': уровень',': level'],[': утепление',': insulation'],['Экстренная смена: погиб рабочий (','Emergency shift: a worker died ('],['Экстренная смена: двое слегли','Emergency shift: two fell ill'],
-['Уголь кончился — генератор остановился!','Out of coal — the generator stopped!'],['Генератор остановился: нет угля.','The generator stopped: no coal.'],['Давление в котле на пределе!','Boiler pressure critical!'],['Завал разобран:','Debris cleared:'],
+['Уголь кончился — огонь погас!','Out of coal — the fire went out!'],['Огонь погас: нет угля.','The fire went out: no coal.'],['Давление в котле на пределе!','Boiler pressure critical!'],['Завал разобран:','Debris cleared:'],
 ['Исследовано:','Researched:'],['Голод:','Hunger:'],['без еды','without food'],['От голода умерли','Died of hunger:'],['Жажда:','Thirst:'],['без воды','without water'],['От обезвоживания умерли','Died of dehydration:'],
 ['За ночь заболели','Fell ill overnight:'],['Похолодание:','Cold snap:'],['° на станции','° on the station'],['На станции','Station temperature'],['Жителей:','Residents:'],
 ['Обещание выполнено:','Promise kept:'],['Обещание не выполнено:','Promise broken:'],['Обещание нарушено:','Promise broken:'],['Закон подписан:','Law signed:'],['Подписан закон','Signed law'],
 ['привёз:','brought:'],['На станцию пришли','Arrived at the station:'],['выживших','survivors'],['Пришли','Arrived:'],['Ушли','Left:'],['человек.','people.'],['человек','people'],
 ['Котёл взорвался. Погибли','The boiler exploded. Dead:'],['Найден вход в Метро-2.','Entrance to Metro-2 found.'],['Ученик стал инженером.','An apprentice became an engineer.'],['Аванпост:','Outpost:'],['Разведка —','Scouting —'],['Пусто.','Empty.'],
 ['Разведчики ранены, отдыхают 18 ч','Scouts wounded, resting 18 h'],['Прошли без потерь','Passed without losses'],['Груз потерян, отряд ранен','Cargo lost, team wounded'],['Прорвались','Broke through'],
-['День 1. Наверху ничего живого. Генератор запущен, люди ждут решений.','Day 1. Nothing alive on the surface. The generator is running; people await your decisions.'],
+['День 1. Наверху ничего живого. Костёр горит, люди ждут решений.','Day 1. Nothing alive on the surface. The bonfire is burning; people await your decisions.'],
 // обещания
 ['Постройте медпункт','Build a medical post'],['Согрейте жильё: никто не спит в мороз','Heat the housing: nobody sleeps in the freezing cold'],['Запасите 150 пайков','Stock 150 rations'],['Не больше 5 больных','No more than 5 sick'],
 ['Крыша над головой для каждого','A roof over everyone’s head'],['Запасите 200 воды','Stock 200 water'],
 // события
 ['Последняя станция','Last Station'],['Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.','For three weeks a nuclear winter has gripped the surface. The city is dead, the radio silent.'],
-['На «Театральной» собрались','Gathered at Teatralnaya:'],['человек. У вас угольный генератор, немного запасов и тоннели во все стороны.','people. You have a coal generator, some supplies and tunnels in every direction.'],
+['На «Театральной» собрались','Gathered at Teatralnaya:'],['человек. У вас костёр посреди платформы, немного запасов и тоннели во все стороны.','people. You have a bonfire in the middle of the platform, some supplies and tunnels in every direction.'],
 ['Цель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.','There is one goal — survive. Keep people warm, fed, watered and treated. Send scouts along the lines — there is coal, steel, medicine and survivors out there. The forecast is grim: real cold comes by the end of the month.'],
-['Начать','Begin'],['Ночь в палатках','A night in the tents'],['Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к генератору теплее.','People complain: in the tents at the platform edge their hands freeze at night. It is warmer near the generator.'],
+['Начать','Begin'],['Ночь в палатках','A night in the tents'],['Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к огню теплее.','People complain: in the tents at the platform edge their hands freeze at night. It is warmer near the fire.'],
 ['Стройте жильё в кольце тепла и исследуйте бараки.','Build housing inside the heat ring and research barracks.'],['Понятно','Understood'],['Дети без дела','Idle children'],
-['Двадцать детей сидят у генератора. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.','Twenty children sit by the generator. Some suggest putting them to light work, others want a shelter for them.'],
+['Двадцать детей сидят у огня. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.','Twenty children sit by the fire. Some suggest putting them to light work, others want a shelter for them.'],
 ['Подписать «Детский труд»','Sign "Child labour"'],['Больше рук, но людям это не нравится','More hands, but people dislike it'],['Подписать «Детские приюты»','Sign "Children’s shelters"'],['Дети в безопасности, +надежда','Children are safe, +hope'],['Решу позже','Decide later'],
 ['Во что нам верить?','What do we believe in?'],['Люди спрашивают, ради чего держаться. Одни хотят твёрдой руки и порядка. Другие — общей веры, что вместе выживем.','People ask what they are holding on for. Some want a firm hand and order. Others want a shared faith that together we survive.'],
 ['В Уставе открыт выбор пути. Первый подписанный закон определит его навсегда.','The Charter now offers a path. The first law you sign decides it for good.'],['Открыть Устав','Open the Charter'],['Позже','Later'],
@@ -660,9 +666,9 @@ const EN=[
 ['Уходящие видят: на станции есть будущее. Они остаются.','The Leavers see the station has a future. They stay.'],['Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.','Hope is scarce. The Leavers take gear and climb the escalator. People go with them.'],['Ясно','I see'],
 ['Слухи о Метро-2','Rumours of Metro-2'],['Старик-путеец клянётся: под центром есть секретная линия Д-6. Вход где-то у Боровицкой. Там склады, рассчитанные на войну.','An old track worker swears there is a secret line D-6 under the centre. The entrance is near Borovitskaya. It holds wartime stores.'],
 ['Отправить разведку к Боровицкой','Send scouts to Borovitskaya'],['Сказки','Fairy tales'],['Прогноз','Forecast'],['Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до','Thermometers at the vent shafts fall every hour. In five days the real cold arrives — down to'],
-['Запасите уголь, утеплите жильё, поднимите мощность генератора.','Stock coal, insulate housing, raise generator power.'],['Готовиться','Prepare'],['Чёрный холод','The Black Cold'],['Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.','The vent shafts are iced over. The cold creeps down the escalators. Hold out until the end of the month.'],
-['Держаться','Hold on'],['Взрыв котла','Boiler explosion'],['Перегретый котёл не выдержал. Погибли','The overheated boiler gave way. Dead:'],['Генератор не работает сутки.','The generator is down for a day.'],
-['Ультиматум','Ultimatum'],['Жители собрались у генератора. Ещё немного — и вас сместят. Снизьте недовольство.','Residents gathered at the generator. A little more and you will be ousted. Lower discontent.'],['Я всё исправлю','I will fix it'],
+['Запасите уголь, утеплите жильё, поставьте и улучшите печь.','Stock coal, insulate housing, build and upgrade the stove.'],['Готовиться','Prepare'],['Чёрный холод','The Black Cold'],['Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.','The vent shafts are iced over. The cold creeps down the escalators. Hold out until the end of the month.'],
+['Держаться','Hold on'],['Взрыв котла','Boiler explosion'],['Перегретая печь не выдержала. Погибли','The overheated stove gave way. Dead:'],['Печь не работает сутки.','The stove is down for a day.'],
+['Ультиматум','Ultimatum'],['Жители собрались у огня. Ещё немного — и вас сместят. Снизьте недовольство.','Residents gathered at the fire. A little more and you will be ousted. Lower discontent.'],['Я всё исправлю','I will fix it'],
 ['Отчаяние','Despair'],['Люди перестают вставать по утрам. Если надежда угаснет совсем, станция умрёт без вашего участия.','People stop getting up in the morning. If hope dies out, the station will die without you.'],['Нужно что-то менять','Something must change'],
 ['Драка у кухни','Fight at the kitchen'],['Двое не поделили пайку. Толпа ждёт вашего решения.','Two people fought over a ration. The crowd awaits your decision.'],['Выдать обоим двойной паёк','Give both a double ration'],['−6 пайков, −недовольство','−6 rations, −discontent'],
 ['Наказать зачинщика','Punish the instigator'],['+недовольство, но порядок','+discontent, but order'],['Кража со склада','Theft from the stores'],['Ночью пропал металл. Следы ведут в палатки у путей.','Steel went missing overnight. Tracks lead to the tents by the rails.'],
@@ -670,7 +676,7 @@ const EN=[
 ['Больной ребёнок','A sick child'],['Мать просит лекарства для сына. Медикаментов мало.','A mother asks for medicine for her son. Medicine is scarce.'],['Отдать 2 медикамента','Give 2 medicine'],['+надежда','+hope'],['Лекарства — для тяжёлых','Medicine is for the critical'],['−надежда','−hope'],
 ['Перебои света','Power flickers'],['Проводка в северном конце платформы искрит. Можно чинить или отключить.','The wiring at the north end of the platform is sparking. Repair or cut it.'],['Починить (−10 металла)','Repair (−10 steel)'],['Темнее и тревожнее','Darker and more anxious'],
 ['Крысы на складе','Rats in the stores'],['Крысы прогрызли мешки с грибами.','Rats chewed through the mushroom sacks.'],['Устроить облаву','Hunt them down'],['−20 сырой еды, но крыс съедим','−20 raw food, but we eat the rats'],['Смириться','Accept it'],['−30 сырой еды','−30 raw food'],
-['Песня у генератора','A song by the generator'],['Вечером кто-то достал гитару. Половина станции подпевает.','In the evening someone took out a guitar. Half the station sings along.'],['Пусть поют','Let them sing'],
+['Песня у огня','A song by the fire'],['Вечером кто-то достал гитару. Половина станции подпевает.','In the evening someone took out a guitar. Half the station sings along.'],['Пусть поют','Let them sing'],
 ['Просьба жителей','Residents’ request'],['Люди просят: «','People ask: «'],['». Срок — сутки.','». Deadline: one day.'],['Пообещаете — надежда вырастет, но провал ударит больно.','Promise it and hope grows, but failure will hurt.'],['Обещаю','I promise'],['+надежда сейчас','+hope now'],['Не могу обещать','I can’t promise'],
 ['Мы пережили холод','We survived the cold'],['Тридцать дней. Мороз отступил к вентшахтам. На «Театральной» живут','Thirty days. The frost has retreated to the vent shafts. Living at Teatralnaya:'],['человек, погибли','people; died:'],['Станция выстояла.','The station held out.'],
 ['Играть дальше','Keep playing'],['В главное меню','Main menu'],['Конец','The End'],['На станции не осталось живых.','No one is left alive on the station.'],['Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.','The residents ousted you and threw you into the tunnel. The station will go its own way.'],
@@ -770,7 +776,7 @@ function newGame(diff,survivor){
     hope:55,disc:10,unfed:0,unfedStreak:0,thirsty:0,thirstStreak:0,
     today:{deaths:0},deaths:0,
     grid:[],bld:[],nid:1,
-    gen:{lvl:1,on:true,over:false,stress:0},
+    gen:{lvl:1,on:true,over:false,stress:0,stove:0},
     tech:[],research:null,rp:0,
     laws:[],lawCd:0,path:null,
     teams:[],groups:[],st:{},outposts:[],
@@ -810,7 +816,7 @@ function newGame(diff,survivor){
   s.st[HUB]={k:2,t:'hub'};
   for(const e of G.adj[HUB])if(s.st[e.to])s.st[e.to].k=Math.max(1,s.st[e.to].k);
   computeHeat(s);
-  log(s,'День 1. Наверху ничего живого. Генератор запущен, люди ждут решений.','');
+  log(s,'День 1. Наверху ничего живого. Костёр горит, люди ждут решений.','');
   s.queue.push({id:'intro'});
   return s;
 }
@@ -837,8 +843,13 @@ const LVL_N=['Лютый мороз','Очень холодно','Холодно
 const lvlOf=deg=>deg>=10?4:deg>=0?3:deg>=-10?2:deg>=-20?1:0;
 const HEAT_EFF=[.3,.55,.75,.9,1];
 function ambient(s){const i=s.endless&&s.day>LAST_DAY?18+((s.day-1)%10):Math.min(s.day,LAST_DAY)-1;return WEATHER[i]+D_(s).temp;}
-function genMax(s){return has(s,'t_power2')?4:has(s,'t_power1')?3:2;}
-function genRadius(s){return 3+(has(s,'t_radius1')?2:0)+(has(s,'t_radius2')?2:0);}
+// Очаг: сначала костёр (мощность 1), на него ставят печь и улучшают её (ур. 1–3).
+const STOVE_COST=[{wood:15,steel:10},{steel:25,wood:15},{steel:40,cores:1}],STOVE_REQ=[null,'t_power1','t_power2'];
+function stoveLvl(s){return s.gen.stove==null?Math.max(1,Math.min(3,genMaxOld(s)-1)):s.gen.stove;}
+function genMaxOld(s){return has(s,'t_power2')?4:has(s,'t_power1')?3:2;}
+function genMax(s){return 1+stoveLvl(s);}
+function fireName(s){const k=stoveLvl(s);return k?`Печь, ур. ${k}`:'Костёр';}
+function genRadius(s){return (stoveLvl(s)?3:2)+(has(s,'t_radius1')?2:0)+(has(s,'t_radius2')?2:0);}
 function genHeat(s){if(!s.gen.on)return 0;return s.gen.lvl*10+(s.gen.over?10:0);}
 function computeHeat(s){
   const amb=ambient(s),R=genRadius(s),gh=genHeat(s);
@@ -927,7 +938,7 @@ function hourTick(s){
   if(s.gen.on&&s.gen.lvl>0){
     const fuel=[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D.cons;
     if(s.res.coal>=fuel)s.res.coal-=fuel;
-    else{s.gen.on=false;s.gen.over=false;toast(s,'Уголь кончился — генератор остановился!','bad');log(s,'Генератор остановился: нет угля.','bad');}
+    else{s.gen.on=false;s.gen.over=false;toast(s,'Уголь кончился — огонь погас!','bad');log(s,'Огонь погас: нет угля.','bad');}
   }
   if(s.gen.over&&s.gen.on){s.gen.stress+=7;if(s.gen.stress>=100)genExplode(s);}
   else s.gen.stress=Math.max(0,s.gen.stress-4);
@@ -1180,9 +1191,9 @@ function checkPromise(s){
 }
 
 const EV={
-  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас угольный генератор, немного запасов и тоннели во все стороны.\n\nЦель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
-  cold_tents:{t:'Ночь в палатках',x:()=>'Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к генератору теплее.\n\nСтройте жильё в кольце тепла и исследуйте бараки.',c:[{t:'Понятно',f:()=>{}}]},
-  children:{t:'Дети без дела',x:()=>'Двадцать детей сидят у генератора. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.',c:[
+  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас костёр посреди платформы, немного запасов и тоннели во все стороны.\n\nЦель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
+  cold_tents:{t:'Ночь в палатках',x:()=>'Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к огню теплее.\n\nСтройте жильё в кольце тепла и исследуйте бараки.',c:[{t:'Понятно',f:()=>{}}]},
+  children:{t:'Дети без дела',x:()=>'Двадцать детей сидят у огня. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.',c:[
     {t:'Подписать «Детский труд»',h:'Больше рук, но людям это не нравится',ok:s=>canSign(s,'child_labor'),f:s=>signLaw(s,'child_labor',true)},
     {t:'Подписать «Детские приюты»',h:'Дети в безопасности, +надежда',ok:s=>canSign(s,'child_shelter'),f:s=>signLaw(s,'child_shelter',true)},
     {t:'Решу позже',f:()=>{}}]},
@@ -1197,17 +1208,17 @@ const EV={
     {t:'Отпустить желающих сейчас',h:'Уйдут 8 человек',f:s=>{kill(s,0);for(let i=0;i<8;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);s.hope-=3;}}]},
   leavers_end:{t:'Решение Уходящих',x:s=>s.hope>=50||has(s,'o_new')||has(s,'f_new')?'Уходящие видят: на станции есть будущее. Они остаются.':'Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.',c:[{t:'Ясно',f:s=>{if(!(s.hope>=50||has(s,'o_new')||has(s,'f_new'))){const n=Math.round(popTotal(s)*.12);for(let i=0;i<n;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);log(s,`Ушли ${n} человек.`,'bad');}else s.hope+=5;s.leavers=0;}}]},
   rumor_m2:{t:'Слухи о Метро-2',x:()=>'Старик-путеец клянётся: под центром есть секретная линия Д-6. Вход где-то у Боровицкой. Там склады, рассчитанные на войну.',c:[{t:'Отправить разведку к Боровицкой',f:s=>{s.st['Боровицкая'].k=Math.max(1,s.st['Боровицкая'].k);ui.open='map';}},{t:'Сказки',f:()=>{}}]},
-  storm_warn:{t:'Прогноз',x:s=>`Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до ${WEATHER[26]+D_(s).temp}° на станции.\n\nЗапасите уголь, утеплите жильё, поднимите мощность генератора.`,c:[{t:'Готовиться',f:()=>{}}]},
+  storm_warn:{t:'Прогноз',x:s=>`Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до ${WEATHER[26]+D_(s).temp}° на станции.\n\nЗапасите уголь, утеплите жильё, поставьте и улучшите печь.`,c:[{t:'Готовиться',f:()=>{}}]},
   storm:{t:'Чёрный холод',x:()=>'Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.',c:[{t:'Держаться',f:s=>{s.hope+=3;}}]},
-  explosion:{t:'Взрыв котла',x:(s,p)=>`Перегретый котёл не выдержал. Погибли ${p.k}. Генератор не работает сутки.`,c:[{t:'…',f:()=>{}}]},
-  ultimatum:{t:'Ультиматум',x:()=>'Жители собрались у генератора. Ещё немного — и вас сместят. Снизьте недовольство.',c:[{t:'Я всё исправлю',f:s=>{s.disc-=5;}}]},
+  explosion:{t:'Взрыв котла',x:(s,p)=>`Перегретая печь не выдержала. Погибли ${p.k}. Печь не работает сутки.`,c:[{t:'…',f:()=>{}}]},
+  ultimatum:{t:'Ультиматум',x:()=>'Жители собрались у огня. Ещё немного — и вас сместят. Снизьте недовольство.',c:[{t:'Я всё исправлю',f:s=>{s.disc-=5;}}]},
   despair:{t:'Отчаяние',x:()=>'Люди перестают вставать по утрам. Если надежда угаснет совсем, станция умрёт без вашего участия.',c:[{t:'Нужно что-то менять',f:()=>{}}]},
   fight:{t:'Драка у кухни',x:()=>'Двое не поделили пайку. Толпа ждёт вашего решения.',c:[{t:'Выдать обоим двойной паёк',h:'−6 пайков, −недовольство',ok:s=>s.res.food>=6,f:s=>{s.res.food-=6;s.disc-=3;}},{t:'Наказать зачинщика',h:'+недовольство, но порядок',f:s=>{s.disc+=2;s.hope+=1;}}]},
   theft:{t:'Кража со склада',x:()=>'Ночью пропал металл. Следы ведут в палатки у путей.',c:[{t:'Обыскать палатки',h:'Вернём металл, люди злы',f:s=>{s.res.steel+=8;s.disc+=4;}},{t:'Не поднимать шум',h:'−15 металла',f:s=>{s.res.steel=Math.max(0,s.res.steel-15);}}]},
   sick_child:{t:'Больной ребёнок',x:()=>'Мать просит лекарства для сына. Медикаментов мало.',c:[{t:'Отдать 2 медикамента',h:'+надежда',ok:s=>s.res.meds>=2,f:s=>{s.res.meds-=2;s.hope+=4;}},{t:'Лекарства — для тяжёлых',h:'−надежда',f:s=>{s.hope-=3;if(s.ill.c<s.pop.c)s.ill.c++;}}]},
   lamps:{t:'Перебои света',x:()=>'Проводка в северном конце платформы искрит. Можно чинить или отключить.',c:[{t:'Починить (−10 металла)',ok:s=>s.res.steel>=10,f:s=>{s.res.steel-=10;s.hope+=2;}},{t:'Отключить',h:'Темнее и тревожнее',f:s=>{s.disc+=2;}}]},
   rats:{t:'Крысы на складе',x:()=>'Крысы прогрызли мешки с грибами.',c:[{t:'Устроить облаву',h:'−20 сырой еды, но крыс съедим',f:s=>{s.res.raw=Math.max(0,s.res.raw-20)+12;}},{t:'Смириться',h:'−30 сырой еды',f:s=>{s.res.raw=Math.max(0,s.res.raw-30);}}]},
-  song:{t:'Песня у генератора',x:()=>'Вечером кто-то достал гитару. Половина станции подпевает.',c:[{t:'Пусть поют',f:s=>{s.hope+=3;}}]},
+  song:{t:'Песня у огня',x:()=>'Вечером кто-то достал гитару. Половина станции подпевает.',c:[{t:'Пусть поют',f:s=>{s.hope+=3;}}]},
   promise:{t:'Просьба жителей',x:(s,p)=>`Люди просят: «${PROMISES.find(x=>x.k===p.k).t}». Срок — сутки.\n\nПообещаете — надежда вырастет, но провал ударит больно.`,c:[{t:'Обещаю',h:'+надежда сейчас',f:(s,p)=>{s.promise={k:p.k,left:24};s.hope+=4;}},{t:'Не могу обещать',h:'−надежда',f:s=>{s.hope-=3;}}]},
   victory:{t:'Мы пережили холод',x:s=>`Тридцать дней. Мороз отступил к вентшахтам. На «Театральной» живут ${popTotal(s)} человек, погибли ${s.deaths}.\n\nСтанция выстояла.`,c:[{t:'Играть дальше',f:s=>{s.endless=true;}},{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
   gameover:{t:'Конец',x:(s,p)=>({dead:'На станции не осталось живых.',disc:'Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.',hope:'Надежда угасла. Люди разошлись по тоннелям.',death1:'Режим «До первой смерти»: на станции погиб человек. Игра окончена.'})[p.why]+`\n\nВы продержались ${s.day} дн.`,c:[{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
@@ -1343,7 +1354,7 @@ const TRADE=[
 /* ---------------------------- ДЕЙСТВИЯ (все изменения состояния) ---------------------------- */
 function draftMul(s){const d=s.bld.filter(b=>b.type==='drafting'&&!b.build).sort((a,b)=>(b.lvl||0)-(a.lvl||0)).slice(0,3);return 1+d.reduce((a,b)=>a+.15*lvlMul(b),0);}
 const UP_T=3; // 3 игровых часа = 15 секунд на ×1
-function upgradeStep(s,dt){for(const b of s.bld){if(!(b.upT>0))continue;b.upT-=dt;if(b.upT<=0){b.upT=0;if(b.upK==='ins'){b.ins=(b.ins||0)+1;computeHeat(s);toast(s,`${B[b.type].n}: утепление ${b.ins}`,'good');}else{b.lvl=(b.lvl||0)+1;toast(s,`${B[b.type].n}: уровень ${b.lvl}`,'good');}b.upK=null;ui.dirty=true;}}}
+function upgradeStep(s,dt){if(s.gen.sb>0){s.gen.sb-=dt;if(s.gen.sb<=0){s.gen.sb=0;s.gen.stove=stoveLvl(s)+1;s.gen.lvl=Math.max(s.gen.lvl,1);toast(s,s.gen.stove===1?'Печь поставлена на костёр':`Печь улучшена: ур. ${s.gen.stove}`,'good');ui.dirty=true;}}for(const b of s.bld){if(!(b.upT>0))continue;b.upT-=dt;if(b.upT<=0){b.upT=0;if(b.upK==='ins'){b.ins=(b.ins||0)+1;computeHeat(s);toast(s,`${B[b.type].n}: утепление ${b.ins}`,'good');}else{b.lvl=(b.lvl||0)+1;toast(s,`${B[b.type].n}: уровень ${b.lvl}`,'good');}b.upK=null;ui.dirty=true;}}}
 function canUpgrade(b){const d=B[b.type];return !!(d.prod||d.kitchen||d.rp||d.beds||d.house||d.heat||['archer','catapult','steamgun','raidhut','drafting','patrol','guardhouse','hall','shrine','radio','nursery','arena','still','cemetery'].includes(b.type));}
 function canAfford(s,cost){for(const k in cost)if((s.res[k]||0)<cost[k])return false;return true;}
 function pay(s,cost){for(const k in cost)s.res[k]-=cost[k];}
@@ -1387,7 +1398,8 @@ function act(s,a){
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
     case 'gen':{if(a.k==='on'){if(s.gen.broken)return;if(!s.gen.on&&s.res.coal<1)return;s.gen.on=!s.gen.on;if(!s.gen.on)s.gen.over=false;}
       if(a.k==='lvl')s.gen.lvl=clamp(s.gen.lvl+a.d,0,genMax(s));
-      if(a.k==='over'){if(!s.gen.on)return;s.gen.over=!s.gen.over;}
+      if(a.k==='over'){if(!s.gen.on||!stoveLvl(s))return;s.gen.over=!s.gen.over;}
+      if(a.k==='stove'){const k=stoveLvl(s);if(k>=3||s.gen.sb>0)return;const rq=STOVE_REQ[k];if(rq&&!has(s,rq))return;const c=STOVE_COST[k];if(!canAfford(s,c))return;pay(s,c);s.gen.stove=k;s.gen.sb=UP_T;}
       computeHeat(s);break;}
     case 'research':{if(s.research||has(s,a.id))return;const T=TECHBY[a.id];if(T.req&&!T.req.every(r=>has(s,r)))return;if(!canAfford(s,T.cost))return;
       pay(s,T.cost);s.research=a.id;s.rp=s.flags.bonusRp||0;s.flags.bonusRp=0;break;}
@@ -1729,6 +1741,21 @@ function buildStation3D(){
     for(let i=0;i<5;i++){const w=mesh(new T.TorusGeometry(.12,.006,4,12),KM.iron(),false);w.position.set(bx+.35,-.4,bz-.6+i*.28);w.rotation.y=Math.PI/2;sc.add(w);}
     const sgn=new T.Mesh(new T.PlaneGeometry(.7,.35),new T.MeshBasicMaterial({toneMapped:false,map:ctex(140,70,(c,w,h)=>{c.fillStyle='#c8a030';c.fillRect(0,0,w,h);c.fillStyle='#1a1a1a';for(let i=-2;i<8;i++){c.beginPath();c.moveTo(i*20,0);c.lineTo(i*20+10,0);c.lineTo(i*20-10,h);c.lineTo(i*20-20,h);c.fill();}})}));
     sgn.position.set(bx+.1,.05,bz);sgn.rotation.y=Math.PI/2;sc.add(sgn);}
+  // логово мутантов: откуда каждую ночь идёт волна (правый конец нижнего пути)
+  {const lx=wx(GW+.6),lz=wz(GH-1);
+    const post=mesh(new T.CylinderGeometry(.03,.03,1.6,6),KM.iron());post.position.set(lx,-.5+.8,lz-.62);sc.add(post);
+    const skull=ctex(256,256,(c,w,h)=>{c.fillStyle='#c8a030';c.beginPath();c.moveTo(w/2,8);c.lineTo(w-8,h-12);c.lineTo(8,h-12);c.closePath();c.fill();c.lineWidth=12;c.strokeStyle='#1a1a1a';c.stroke();
+      c.fillStyle='#1a1a1a';c.beginPath();c.arc(w/2,140,46,0,7);c.fill();c.fillRect(w/2-30,160,60,40);c.fillStyle='#c8a030';c.beginPath();c.arc(w/2-18,138,12,0,7);c.arc(w/2+18,138,12,0,7);c.fill();
+      for(let i=-2;i<=2;i++)c.fillRect(w/2+i*11-3,180,6,22);});
+    const sg=new T.Mesh(new T.PlaneGeometry(.75,.75),new T.MeshBasicMaterial({map:skull,transparent:true,toneMapped:false,side:T.DoubleSide}));sg.position.set(lx,1.0,lz-.6);sg.rotation.y=-Math.PI/2;sc.add(sg);
+    const lamp=new T.Mesh(new T.SphereGeometry(.08,10,8),new T.MeshBasicMaterial({color:0xff3020,toneMapped:false}));lamp.position.set(lx,1.5,lz-.62);sc.add(lamp);
+    const halo=new T.Sprite(new T.SpriteMaterial({map:R3.tx.glow,color:0xff2a18,transparent:true,opacity:.7,depthWrite:false,blending:T.AdditiveBlending}));halo.scale.set(1.4,1.4,1);halo.position.copy(lamp.position);sc.add(halo);
+    const rl=new T.PointLight(0xff2a18,1.2,6,2);rl.position.set(lx+.8,.6,lz);sc.add(rl);
+    const mouth=new T.Sprite(new T.SpriteMaterial({map:R3.tx.glow,color:0x8a1008,transparent:true,opacity:.5,depthWrite:false,blending:T.AdditiveBlending}));mouth.scale.set(3,2,1);mouth.position.set(lx+2.5,0,lz);sc.add(mouth);
+    // красные метки на шпалах: путь мутантов
+    for(let i=0;i<5;i++){const ch=new T.Mesh(new T.PlaneGeometry(.28,.28),new T.MeshBasicMaterial({map:ctex(64,64,(c,w,h)=>{c.strokeStyle='#e03a24';c.lineWidth=10;c.beginPath();c.moveTo(48,8);c.lineTo(16,32);c.lineTo(48,56);c.stroke();}),transparent:true,toneMapped:false,depthWrite:false}));
+      ch.rotation.x=-Math.PI/2;ch.position.set(lx+1.6-i*.9,-.46,lz);sc.add(ch);(R3.lairMarks=R3.lairMarks||[]).push(ch);}
+    R3.lair={lamp,halo,rl};}
   // вывеска станции и плакаты общины
   R3.signs=R3.signs||[];
   const mkSign=()=>ctex(1024,110,(c,w,h)=>{c.fillStyle='#d9d2c0';c.fillRect(0,0,w,h);c.strokeStyle='#3a2f24';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
@@ -1884,40 +1911,43 @@ function buildEscalators(sx){
 
 }
 function makeGenerator(){
-  const T=THREE,g=new T.Group(),M=R3.mat;
-  // фундамент-ступени
+  const T=THREE,root=new T.Group(),M=R3.mat;
+  // костёр: кольцо камней, накрест брёвна, языки пламени
+  const bf=new T.Group();root.add(bf);R3.bf=bf;R3.flames=[];
+  for(let i=0;i<11;i++){const a=i/11*Math.PI*2;const st=mesh(new T.DodecahedronGeometry(.11+((i*37)%5)*.012,0),KM.stone());st.position.set(Math.cos(a)*.5,.06,Math.sin(a)*.5);st.rotation.set(i,i*2,0);st.scale.y=.7;bf.add(st);}
+  const ash=mesh(new T.CircleGeometry(.42,20),kmat('x',{color:0x1a1512,roughness:1}),false);ash.rotation.x=-Math.PI/2;ash.position.y=.02;bf.add(ash);
+  for(let i=0;i<5;i++){const a=i/5*Math.PI*2;const lg=mesh(new T.CylinderGeometry(.045,.055,.7,7),KM.beam());lg.position.set(Math.cos(a)*.14,.16,Math.sin(a)*.14);lg.rotation.set(0,-a,1.15);lg.rotation.order='YXZ';lg.rotation.set(1.05,-a+Math.PI/2,0);bf.add(lg);}
+  for(let i=0;i<4;i++){const c=new T.Mesh(new T.ConeGeometry(.16-i*.025,.55+i*.08,8,1,true),new T.MeshBasicMaterial({color:i?0xff8a2a:0xffd070,transparent:true,opacity:.85-i*.12,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false,side:T.DoubleSide}));
+    c.position.set(Math.cos(i*2)*.07*(i?1:0),.3+i*.04,Math.sin(i*2)*.07*(i?1:0));bf.add(c);R3.flames.push(c);}
+  // печь: ур. 1 — топка с куполом, ур. 2 — мостки и клапаны, ур. 3 — высокая труба и магистрали
+  const s1=new T.Group(),s2=new T.Group(),s3=new T.Group();root.add(s1,s2,s3);R3.st=[s1,s2,s3];
+  let g=s1;
   kcyl(g,.86,.92,.08,KM.stone(),0,0,0,32);kcyl(g,.74,.8,.08,KM.stone(),0,.08,0,32);
-  // котёл
-  const boiler=kcyl(g,.52,.56,1.25,KM.iron(),0,.16,0,32);
+  kcyl(g,.52,.56,1.25,KM.iron(),0,.16,0,32);
   for(const y of [.3,.62,.94,1.26]){const band=mesh(new T.TorusGeometry(.55-(y-.3)*.03,.03,6,32),KM.brass(),false);band.rotation.x=Math.PI/2;band.position.y=y;g.add(band);}
-  // топки с решётками
   R3.coreParts=[];
   for(let i=0;i<4;i++){const a=i/4*Math.PI*2+Math.PI/4;const grp=new T.Group();grp.position.set(Math.sin(a)*.545,.48,Math.cos(a)*.545);grp.rotation.y=a;g.add(grp);
     const fire=new T.Mesh(new T.PlaneGeometry(.26,.24),M.core.clone());grp.add(fire);R3.coreParts.push(fire);
     for(let k=-2;k<=2;k++){const bar=mesh(new T.BoxGeometry(.015,.24,.015),KM.dark(),false);bar.position.set(k*.05,0,.01);grp.add(bar);}
     const arch=mesh(new T.TorusGeometry(.14,.025,6,12,Math.PI),KM.brass(),false);arch.position.y=.12;grp.add(arch);}
-  // мостки с перилами
+  const dome=mesh(new T.SphereGeometry(.53,32,12,0,Math.PI*2,0,Math.PI/2),KM.iron());dome.position.y=1.41;g.add(dome);
+  kcyl(g,.24,.28,.25,KM.brass(),0,1.85,0,20);kcyl(g,.18,.2,.35,KM.iron(),0,2.1,0,20);
+  g=s2;
   const deck=mesh(new T.RingGeometry(.56,.82,32),KM.iron(),false);deck.rotation.x=-Math.PI/2;deck.position.y=1.0;deck.material=kmat('iron',{metalness:.45,roughness:.55,side:T.DoubleSide});g.add(deck);
   const rail=mesh(new T.TorusGeometry(.82,.012,4,40),KM.iron(),false);rail.rotation.x=Math.PI/2;rail.position.y=1.16;g.add(rail);
   for(let i=0;i<12;i++){const a=i/12*Math.PI*2;kbox(g,.015,.16,.015,KM.iron(),Math.cos(a)*.82,1.0,Math.sin(a)*.82);}
-  // лестница
   for(let k=0;k<6;k++)kbox(g,.18,.015,.02,KM.iron(),0,.16+k*.15,.6);kbox(g,.015,.9,.015,KM.iron(),-.09,.16,.6);kbox(g,.015,.9,.015,KM.iron(),.09,.16,.6);
-  // купол и трубы
-  const dome=mesh(new T.SphereGeometry(.53,32,12,0,Math.PI*2,0,Math.PI/2),KM.iron());dome.position.y=1.41;g.add(dome);
-  kcyl(g,.24,.28,.25,KM.brass(),0,1.85,0,20);
-  kcyl(g,.18,.2,1.3,KM.iron(),0,2.1,0,20);
+  for(const sd of [-1,1]){kcyl(g,.06,.06,.7,KM.pipe(),sd*.32,1.5,-.15,10);kcyl(g,.08,.08,.05,KM.brass(),sd*.32,2.2,-.15,10);}
+  for(const a of [.6,2.2]){const gg=mesh(new T.CylinderGeometry(.07,.07,.02,16),KM.brass(),false);gg.position.set(Math.sin(a)*.56,.95,Math.cos(a)*.56);gg.lookAt(Math.sin(a)*2,.95,Math.cos(a)*2);gg.rotateX(Math.PI/2);g.add(gg);}
+  g=s3;
+  kcyl(g,.18,.2,1.0,KM.iron(),0,2.45,0,20);
   for(const y of [2.4,2.9,3.3]){const b=mesh(new T.TorusGeometry(.2,.02,6,20),KM.brass(),false);b.rotation.x=Math.PI/2;b.position.y=y;g.add(b);}
   const lip=mesh(new T.TorusGeometry(.21,.045,6,20),KM.iron(),false);lip.rotation.x=Math.PI/2;lip.position.y=3.42;g.add(lip);
-  // малые трубы-клапаны
-  for(const s of [-1,1]){kcyl(g,.06,.06,.7,KM.pipe(),s*.32,1.5,-.15,10);kcyl(g,.08,.08,.05,KM.brass(),s*.32,2.2,-.15,10);}
-  // магистрали в пол
   for(let i=0;i<6;i++){const a=i/6*Math.PI*2;kpipe(g,[Math.cos(a)*.5,.35,Math.sin(a)*.5],[Math.cos(a)*1.25,.06,Math.sin(a)*1.25],.05);
     const fl=mesh(new T.TorusGeometry(.06,.015,4,10),KM.brass(),false);fl.position.set(Math.cos(a)*1.25,.06,Math.sin(a)*1.25);fl.rotation.x=Math.PI/2;g.add(fl);}
-  // манометры
-  for(const a of [.6,2.2]){const gg=mesh(new T.CylinderGeometry(.07,.07,.02,16),KM.brass(),false);gg.rotation.x=Math.PI/2;gg.rotation.z=0;gg.position.set(Math.sin(a)*.56,.95,Math.cos(a)*.56);gg.lookAt(Math.sin(a)*2,.95,Math.cos(a)*2);gg.rotateX(Math.PI/2);g.add(gg);}
   R3.genGlow=new T.Sprite(new T.SpriteMaterial({map:R3.tx.glow,color:0xff8a30,transparent:true,opacity:.8,depthWrite:false,blending:T.AdditiveBlending}));
-  R3.genGlow.scale.set(3,3,1);R3.genGlow.position.y=.6;g.add(R3.genGlow);
-  return g;
+  R3.genGlow.scale.set(3,3,1);R3.genGlow.position.y=.6;root.add(R3.genGlow);
+  return root;
 }
 // ---------- здания ----------
 const BSTYLE={archer:'watchtower',catapult:'catapult',steamgun:'steamgun',raidhut:'raidhut',lab:'workshop',drafting:'hall',
@@ -2219,10 +2249,12 @@ function render3D(t){
   R3.gl.intensity=on?(1.7+lvl*.8+(s.gen.over?1.2:0))*fl:0;R3.gl.distance=(genRadius(s)+3)*2;
   R3.gl.color.setHex(s.gen.over?0xff7a2a:0xff9a48);
   for(const w of R3.coreParts)w.material.color.setHex(on?(s.gen.over?0xff5a1a:0xff9a3a):0x221a14);
+  {const sk=stoveLvl(s);R3.bf.visible=!sk;R3.st.forEach((g,i)=>g.visible=sk>i);
+    R3.flames.forEach((f,i)=>{f.visible=on&&!sk;const k=1+.25*Math.sin(t/(70+i*23)+i*1.7)+.12*Math.sin(t/31+i);f.scale.set(1,k,1);f.rotation.y=t/400*(i%2?1:-1);});}
   R3.genGlow.material.opacity=on?(.45+lvl*.12)*fl:0;R3.genGlow.scale.setScalar(2.4+lvl*.5);
   const Rr=genRadius(s)+.5;R3.ring.scale.set(Rr,Rr,1);R3.ring.visible=on;R3.ring.material.opacity=.3+.1*Math.sin(t/500);
   R3.floorGlow.scale.set(Rr*2.4,Rr*2.4,1);R3.floorGlow.material.opacity=on?.07+lvl*.035:0;
-  if(on&&Math.random()<.35+lvl*.08)spawnSteam(new T.Vector3(0,3.65,0),.35,1.3);
+  {const sk=stoveLvl(s);if(on&&Math.random()<.35+lvl*.08)spawnSteam(new T.Vector3(0,sk>=3?3.65:sk?2.5:.9,0),sk?.35:.25,1.3);}
   // здания
   const seen=new Set();R3.lightsUsed=0;R3.frame=(R3.frame||0)+1;
   for(const b of s.bld){
@@ -2359,6 +2391,15 @@ function overlay3D(t){
   if(cold>.15){if(!frostTex)frostTex=makeFrost();cx.globalAlpha=clamp((cold-.15)*1.3,0,.95);cx.drawImage(frostTex,0,0,VW,VH);cx.globalAlpha=1;
     const fg=cx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.7);fg.addColorStop(0,'rgba(190,220,245,0)');fg.addColorStop(1,`rgba(190,220,245,${cold*.22})`);cx.fillStyle=fg;cx.fillRect(0,0,VW,VH);}
   if(ui.labels!==false&&cam3.d<24)drawLabels(s,t);
+  if(R3.lair){const att=!!(s.wave||(s.zombies&&s.zombies.length)),p=Math.sin(t/(att?120:450))*.5+.5;R3.lair.rl.intensity=(att?2.5:.8)+p*(att?2:.6);R3.lair.halo.material.opacity=.35+p*.5;
+    (R3.lairMarks||[]).forEach((m,i)=>m.material.opacity=.35+.65*Math.max(0,Math.sin(t/200-i*.9)));
+    const v=new THREE.Vector3(wx(GW+.6),1.95,wz(GH-1)).project(R3.cam);
+    if(v.z<1){const x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;const hl=s.hour<22?22-s.hour:46-s.hour;
+      const l1=tr('Логово мутантов'),l2=att?tr('ИДУТ МУТАНТЫ'):tr('Отсюда каждую ночь в 22:00 идут мутанты'),l3=att?'':`${hl} ${tr('ч')} ${tr('до волны')}`;
+      cx.font='bold 12px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';const w=Math.max(cx.measureText(l2).width,cx.measureText(l1).width)+16,hh=l3?50:36;
+      cx.fillStyle=att?`rgba(110,20,14,${.8+p*.15})`:'rgba(40,10,8,.85)';cx.fillRect(x-w/2,y-hh,w,hh);cx.fillStyle='#e03a24';cx.fillRect(x-w/2,y-hh,w,3);
+      cx.fillStyle='#ffb4a6';cx.fillText('☠ '+l1,x,y-hh+12);cx.font='11px "PT Sans", Arial, sans-serif';cx.fillStyle='#e8dcc0';cx.fillText(l2,x,y-hh+27);if(l3){cx.fillStyle='#e8c25a';cx.fillText(l3,x,y-hh+41);}
+      cx.beginPath();cx.moveTo(x-6,y);cx.lineTo(x+6,y);cx.lineTo(x,y+7);cx.fillStyle=att?'rgba(110,20,14,.9)':'rgba(40,10,8,.85)';cx.fill();}}
   {const v=new THREE.Vector3(),P=(x,y,h)=>{v.set(wx(x),h,wz(y)).project(R3.cam);return{x:(v.x+1)/2*VW,y:(1-v.y)/2*VH,ok:v.z<1};};
     for(const b of s.bld){if(b.type!=='catapult'||b.build)continue;const sel=ui.sel&&ui.sel.k==='b'&&ui.sel.id===b.id,act=b.tauntCd>5;if(!sel&&!act)continue;
       const c0=P(b.x,b.y,.05),c1=P(b.x+tauntR(s,b),b.y,.05),c2=P(b.x,b.y+tauntR(s,b),.05);if(!c0.ok)continue;
@@ -2520,7 +2561,7 @@ function bLabel(s,b,R,occ){
   if(o.raw!=null){const ppl=o.raw*rationMult(s)/foodPerPerson(s);return{t:`+${Math.round(o.raw)} еды/день · кормит ${Math.floor(ppl)} чел.`,k:'ok'};}
   if(o.water!=null)return{t:`+${Math.round(o.water)} воды/день · поит ${Math.floor(o.water/waterPerPerson(s))} чел.`,k:'ok'};
   if(o.kcap!=null)return{t:`Готовит до ${Math.round(o.kcap*rationMult(s))} пайков/день`,k:'ok'};
-  if(o.coal!=null)return{t:`+${Math.round(o.coal)} угля/день · ${Math.round(o.coal/Math.max(1,R.fuelH))} ч генератора`,k:'ok'};
+  if(o.coal!=null)return{t:`+${Math.round(o.coal)} угля/день · ${Math.round(o.coal/Math.max(1,R.fuelH))} ч огня`,k:'ok'};
   if(o.rp!=null){const T=s.research&&TECHBY[s.research];return{t:`+${Math.round(o.rp)} очков науки/день`+(T?` · ${T.n} ${Math.floor(s.rp/T.rp*100)}%`:' · ничего не изучается'),k:T?'ok':'mute'};}
   for(const k of ['wood','steel','meds','cores'])if(o[k]!=null)return{t:`+${o[k]<1?o[k].toFixed(1):Math.round(o[k])} ${RES[k].n.toLowerCase()}/день`,k:'ok'};
   return null;
@@ -2541,8 +2582,8 @@ function needsHTML(s){
     wGap>0?`Не хватает ${Math.round(wGap)} в день. Запаса на ${(s.res.water/Math.max(1,wNeed)).toFixed(1)} дн. Нужно ещё ≈ ${Math.ceil(wGap/condDay)} конденсатор(а).`:`Хватает. Запас ${Math.floor(s.res.water)}.`));
   // уголь
   const cH=R.fuelH,left=cH?s.res.coal/cH:Infinity;
-  out.push(row(ico('coal'),'Уголь',left<24?'bad':R.out.coal<R.need.coal?'warn':'ok',`${cH?cH.toFixed(1)+' в час':'генератор стоит'}`,
-    cH?`Хватит на ${left===Infinity?'∞':Math.floor(left)} ч. Добыча ${Math.round(R.out.coal)}/день при расходе ${Math.round(R.need.coal)}/день.${R.out.coal<R.need.coal?' Поставьте людей на угольные завалы или постройте забой.':''}`:'Запустите генератор, иначе люди замёрзнут.'));
+  out.push(row(ico('coal'),'Уголь',left<24?'bad':R.out.coal<R.need.coal?'warn':'ok',`${cH?cH.toFixed(1)+' в час':'огонь погас'}`,
+    cH?`Хватит на ${left===Infinity?'∞':Math.floor(left)} ч. Добыча ${Math.round(R.out.coal)}/день при расходе ${Math.round(R.need.coal)}/день.${R.out.coal<R.need.coal?' Поставьте людей на угольные завалы или постройте забой.':''}`:'Разожгите огонь, иначе люди замёрзнут.'));
   // жильё
   const cap=housing(s),hl=Math.max(0,n-cap);
   out.push(row(ico('house2','#cfe3f2'),'Жильё',hl?'bad':'ok',`${Math.min(n,cap)} / ${n} под крышей`,hl?`Без крыши ${hl} чел. Нужно ещё ≈ ${Math.ceil(hl/10)} палаток (по 10 мест).`:`Свободных мест: ${cap-n}.`));
@@ -2860,16 +2901,22 @@ function renderInfo(){
   el.hidden=false;let h='';
   if(ui.sel.k==='gen'){
     const lv=s.gen.lvl;const fuel=[0,3,5,8,12][lv]*(s.gen.over?1.5:1)*D_(s).cons;
-    h=`<h3>Генератор</h3><div class="sub">Сердце станции. Тепло в радиусе ${genRadius(s)} клеток.</div>
+    const sk=stoveLvl(s),nc=sk<3?STOVE_COST[sk]:null,rq=sk<3?STOVE_REQ[sk]:null,rqOk=!rq||has(s,rq);
+    const cst=nc?Object.entries(nc).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · '):'';
+    const stoveCtl=s.gen.sb>0?`<div class="row"><span>${sk?'Улучшение печи':'Ставим печь'}</span><span>${Math.ceil(s.gen.sb/UP_T*15)} с</span></div><div class="prog"><i style="width:${(1-s.gen.sb/UP_T)*100}%;background:#7fc48a"></i></div>`
+      :nc?`<div class="ctrl"><button class="btn primary" data-gen="stove" ${rqOk&&canAfford(s,nc)?'':'disabled'}>${sk?`Улучшить печь до ур. ${sk+1}`:'Поставить печь на костёр'}</button><span class="hint">${cst}</span></div>${rqOk?'':`<p class="hint">Нужна технология «${TECH.find(t=>t.id===rq).n}».</p>`}`
+      :'<p class="hint">Печь улучшена до предела.</p>';
+    h=`<h3>${fireName(s)}</h3><div class="sub">${sk?'Печь на старом костре — сердце станции.':'Открытый огонь посреди платформы. Греет слабо: поставьте на него печь.'} Тепло в радиусе ${genRadius(s)} клеток.</div>
     <div class="row"><span>Состояние</span><span>${s.gen.broken?'сломан':s.gen.on?'работает':'остановлен'}</span></div>
     <div class="row"><span>Мощность</span><span>${lv} / ${genMax(s)} (+${genHeat(s)}°)</span></div>
     <div class="row"><span>Уголь в час</span><span>${s.gen.on?fuel.toFixed(1):0}</span></div>
     <div class="row"><span>Хватит угля</span><span>${s.gen.on&&fuel?Math.floor(s.res.coal/fuel)+' ч':'—'}</span></div>
     <div class="ctrl"><button class="btn ${s.gen.on?'':'primary'}" data-gen="on">${s.gen.on?'Выключить':'Запустить'}</button>
     <button class="btn pm" data-gen="lvl" data-d="-1" aria-label="Меньше мощность">−</button><span class="num">${lv}</span><button class="btn pm" data-gen="lvl" data-d="1" aria-label="Больше мощность">+</button></div>
-    <div class="ctrl"><button class="btn ${s.gen.over?'danger':''}" data-gen="over">${s.gen.over?'Снять форсаж':'Форсаж +10°'}</button><span class="hint">Давление ${Math.round(s.gen.stress)}%</span></div>
+    ${stoveCtl}
+    ${sk?`<div class="ctrl"><button class="btn ${s.gen.over?'danger':''}" data-gen="over">${s.gen.over?'Снять форсаж':'Форсаж +10°'}</button><span class="hint">Давление ${Math.round(s.gen.stress)}%</span></div>
     <div class="prog"><i style="width:${s.gen.stress}%;background:${s.gen.stress>70?'var(--bad)':'var(--amber)'}"></i></div>
-    <p class="hint">Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% котёл взорвётся.</p>`;
+    <p class="hint">Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% печь взорвётся.</p>`:'<p class="hint">Каждый уровень печи даёт +1 к мощности огня (+10°).</p>'}`;
   }else if(ui.sel.k==='p'){
     const t=tile(s,ui.sel.x,ui.sel.y);if(!t.pile){ui.sel=null;el.hidden=true;return;}
     const P=t.pile;
@@ -2993,7 +3040,7 @@ function renderMenu(){
   const hasSave=!!store('ls_save');
   el.innerHTML=`<div class="sheet panel" id="menu" style="width:min(780px,100%)">
   <p class="logo">Последняя <span>станция</span></p>
-  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь ${LAST_DAY} дней.</p>
+  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло очага, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь ${LAST_DAY} дней.</p>
   <div class="title" style="color:var(--frost-dim);font-size:12px">Сложность</div>
   <div class="diffs">${Object.entries(DIFF).map(([k,d])=>`<button class="diff ${ui.diff===k?'on':''}" data-diff="${k}"><b>${d.n}</b><small>${d.d}</small></button>`).join('')}</div>
   <label class="chk"><input type="checkbox" id="survivor" ${ui.survivor?'checked':''}> Режим «Выживший»: без паузы, скорость максимум ×2</label>
