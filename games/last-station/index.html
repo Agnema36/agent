@@ -1947,11 +1947,18 @@ function kcyl(p,r1,r2,h,mat,x=0,y=0,z=0,seg=12){const m=mesh(new THREE.CylinderG
 function kpipe(p,a,b,r,mat){const A=new THREE.Vector3(...a),Bv=new THREE.Vector3(...b);const len=A.distanceTo(Bv);const m=mesh(new THREE.CylinderGeometry(r,r,len,8),mat||KM.pipe());
   m.position.copy(A).add(Bv).multiplyScalar(.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),Bv.clone().sub(A).normalize());p.add(m);return m;}
 // двускатная крыша со свесами и коньком; возвращает материал кровли
+let ICE_MAT=null,ICE_GEO=null;
 function kroof(p,w,d,y,rise,mat,ax){
   // ax:'x' — конёк вдоль X
   const over=.06,run=(ax==='z'?w:d)/2+over,len=(ax==='z'?d:w)+over*2,sl=Math.hypot(run,rise),ang=Math.atan2(rise,run);
   for(const s of [-1,1]){const g=new THREE.BoxGeometry(ax==='z'?sl:len,.03,ax==='z'?len:sl);const m=mesh(g,mat);
     if(ax==='z'){m.position.set(s*run/2,y+rise/2,0);m.rotation.z=-s*ang;}else{m.position.set(0,y+rise/2,s*run/2);m.rotation.x=s*ang;}p.add(m);}
+  // снежная подушка на скатах и сосульки по свесу
+  if(R3.tx){const sm=snowMat(0xe8eef4),ic=ICE_MAT||(ICE_MAT=new THREE.MeshStandardMaterial({color:0xcfe6ff,roughness:.2,metalness:.1,transparent:true,opacity:.85})),cg=ICE_GEO||(ICE_GEO=new THREE.ConeGeometry(.012,.07,5).rotateX(Math.PI));
+    for(const s of [-1,1]){const g=new THREE.BoxGeometry(ax==='z'?sl*.92:len*.96,.022,ax==='z'?len*.96:sl*.92);const m=mesh(g,sm,false);
+      if(ax==='z'){m.position.set(s*run/2,y+rise/2+.024,0);m.rotation.z=-s*ang;}else{m.position.set(0,y+rise/2+.024,s*run/2);m.rotation.x=s*ang;}p.add(m);
+      const n=Math.max(3,Math.round(len*7));for(let i=0;i<n;i++){if(Math.random()<.35)continue;const t=(i+.5)/n*len-len/2,k=.5+Math.random()*.9;const c=new THREE.Mesh(cg,ic);c.scale.set(1,k,1);
+        if(ax==='z')c.position.set(s*run,y-.035*k,t);else c.position.set(t,y-.035*k,s*run);p.add(c);}}}
   const ridge=mesh(new THREE.CylinderGeometry(.025,.025,len,6),KM.iron());if(ax==='z')ridge.rotation.x=Math.PI/2;else ridge.rotation.z=Math.PI/2;ridge.position.set(0,y+rise+.01,0);p.add(ridge);
   return mat;
 }
@@ -1987,7 +1994,7 @@ function kplinth(p,w,d){return kbox(p,w+.04,.05,d+.04,KM.stone(),0,0,0);}
 
 function snowMat(col){
   R3.snowMats=R3.snowMats||{};if(R3.snowMats[col])return R3.snowMats[col];
-  if(!R3.snowTex2){R3.snowTex2=ctex(256,256,(c,w,h)=>{c.fillStyle='#c4c0b8';c.fillRect(0,0,w,h);
+  if(!R3.snowTex2){R3.snowTex2=ctex(256,256,(c,w,h)=>{c.fillStyle='#e4e9ef';c.fillRect(0,0,w,h);
     for(let i=0;i<2400;i++){const v=150+Math.random()*80|0;c.fillStyle=`rgba(${v},${v-4},${v-12},.35)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
     for(let i=0;i<60;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.16})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*14,2+Math.random()*6,Math.random()*3,0,7);c.fill();}});
     R3.snowTex2.wrapS=R3.snowTex2.wrapT=THREE.RepeatWrapping;R3.snowTex2.repeat.set(2.5,2.5);}
