@@ -258,6 +258,7 @@ const B={
   hospital:{n:'Лазарет',cat:'med',cost:{wood:30,steel:20},time:8,job:'e',jobs:5,beds:10,heal:1,h:1.1,col:'#836868',tech:'t_hospital',d:'10 коек. Лечит тяжёлых без лекарств.'},
   pharmacy:{n:'Аптека',cat:'med',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
   depot:{n:'Дрезинное депо',cat:'scout',cost:{wood:15,steel:10},time:4,teams:1,h:.9,col:'#61584a',d:'Отряд разведчиков для экспедиций по тоннелям.'},
+  coreworks:{n:'Цех энергоблоков',cat:'res',cost:{wood:40,steel:60},time:10,job:'e',jobs:5,prod:{cores:.01},h:1.1,col:'#6a5a4a',tech:'t_coreworks',d:'Инженеры собирают энергоблоки. Медленно.'},
   heater:{n:'Тепловой узел',cat:'heat',cost:{steel:10},time:3,heat:10,radius:2,fuel:1,h:.7,col:'#6a4a3a',tech:'t_heater',d:'+10° в радиусе 2. Сжигает 1 уголь/ч.'},
   cemetery:{n:'Кладбище',cat:'special',cost:{wood:10},time:2,h:.3,col:'#45494d',law:'cemetery',d:'Достойные похороны. Смерти меньше бьют по надежде.'},
   arena:{n:'Бойцовская арена',cat:'special',cost:{wood:20},time:3,h:.5,col:'#6b4b3b',law:'arena',d:'Снимает недовольство. Иногда травмы.'},
@@ -295,6 +296,17 @@ const TECH=[
   {id:'t_draisine',cat:'Разведка и наука',n:'Мотодрезины',rp:50,cost:{steel:20},d:'Отряды быстрее в 1,6 раза.'},
   {id:'t_teams',cat:'Разведка и наука',n:'Второй отряд',rp:60,cost:{wood:20,steel:10},d:'+1 отряд на каждое депо.'},
   {id:'t_outpost',cat:'Разведка и наука',n:'Аванпосты',rp:80,cost:{wood:30,steel:20},d:'Станции могут слать ресурсы.'},
+  {id:'t_coldmat',cat:'Тепло',n:'Морозостойкие материалы',rp:70,cost:{wood:20,steel:20},req:['t_insul'],d:'Каждый уровень утепления даёт +8° вместо +5°.'},
+  {id:'t_heatpipes',cat:'Тепло',n:'Теплотрассы',rp:60,cost:{steel:25},req:['t_heater'],d:'Тепловые узлы греют в радиусе 3.'},
+  {id:'t_cook2',cat:'Еда и вода',n:'Паровые котлы',rp:45,cost:{steel:15},d:'Кухни перерабатывают на 50% больше.'},
+  {id:'t_seedbank',cat:'Еда и вода',n:'Семенной фонд',rp:90,cost:{wood:20,steel:20},req:['t_hydro'],d:'Гидропоника работает в любом холоде.'},
+  {id:'t_drills',cat:'Ресурсы',n:'Термобуры',rp:80,cost:{steel:30},req:['t_coal'],d:'Завалы и угольные забои +25%.'},
+  {id:'t_prefab',cat:'Ресурсы',n:'Сборные конструкции',rp:90,cost:{wood:30,steel:30},d:'Стройка на 40% быстрее и на 20% дешевле.'},
+  {id:'t_recycle',cat:'Ресурсы',n:'Переработка',rp:60,cost:{wood:15,steel:15},d:'Снос возвращает всё. Улучшения на 20% дешевле.'},
+  {id:'t_coreworks',cat:'Ресурсы',n:'Сборка энергоблоков',rp:150,cost:{steel:60,cores:1},req:['t_tools'],d:'Здание: цех энергоблоков.'},
+  {id:'t_antibio',cat:'Жильё и медицина',n:'Антибиотики из плесени',rp:70,cost:{wood:10,steel:15},req:['t_hospital'],d:'Лечение быстрее, тяжёлые чаще выживают.'},
+  {id:'t_prosth',cat:'Жильё и медицина',n:'Протезы',rp:80,cost:{steel:30},req:['t_hospital'],d:'Тяжелобольные умирают вдвое реже.'},
+  {id:'t_logistics',cat:'Разведка и наука',n:'Логистика Кольца',rp:70,cost:{wood:20,steel:20},req:['t_outpost'],d:'Аванпосты шлют на 50% больше.'},
 ];
 const TECHBY=Object.fromEntries(TECH.map(t=>[t.id,t]));
 
@@ -311,6 +323,16 @@ const LAWS=[
   {id:'overcrowd',cat:'adapt',n:'Переполненные медпункты',d:'Коек в 1,5 раза больше, лечение медленнее.',ex:'radical',fx:{}},
   {id:'arena',cat:'adapt',n:'Бойцовская арена',d:'Здание. Снимает недовольство, но бывают травмы.',fx:{}},
   {id:'moonshine',cat:'adapt',n:'Самогон',d:'Здание «Самогонный цех». Снимает недовольство.',fx:{}},
+  {id:'apprentice',cat:'adapt',n:'Ученичество',d:'Каждый день один ребёнок становится инженером (нужна мастерская).',ex:'child_labor',fx:{hope:3}},
+  {id:'mandatory',cat:'adapt',n:'Трудовая повинность',d:'Больные выходят на работу. Чаще тяжелеют. +недовольство.',fx:{disc:5}},
+  {id:'emergency',cat:'adapt',n:'Экстренная смена',d:'Любое здание может работать сутки без остановки. Риск травм.',fx:{disc:2}},
+  {id:'communal',cat:'adapt',n:'Общие кухни',d:'Еды уходит на 15% меньше. Людям не нравится есть из общего котла.',ex:'private',fx:{disc:3}},
+  {id:'private',cat:'adapt',n:'Личные пайки',d:'Еды уходит на 10% больше, зато +надежда каждый день.',ex:'communal',fx:{hope:3}},
+  {id:'quarantine',cat:'adapt',n:'Карантин',d:'Болеют на 20% реже. Изоляция злит людей.',fx:{disc:2}},
+  {id:'crowding',cat:'adapt',n:'Уплотнение',d:'Мест в жилье в 1,5 раза больше. Чаще болеют, −надежда.',fx:{hope:-3}},
+  {id:'recycling',cat:'adapt',n:'Сбор вторсырья',d:'Добывающие здания +10%. Недовольство растёт.',fx:{disc:2}},
+  {id:'expedition',cat:'adapt',n:'Разведка любой ценой',d:'Отряды на 30% быстрее, но опасности страшнее.',fx:{}},
+  {id:'barter',cat:'adapt',n:'Договор с Кольцом',d:'Обмен у торговцев даёт в 1,5 раза больше.',fx:{hope:2}},
   {id:'o_patrol',cat:'order',n:'Патрули',d:'Пост патруля: −недовольство.',fx:{disc:-3}},
   {id:'o_radio',cat:'order',n:'Агитация',d:'Радиоточка: +надежда, −недовольство.',req:'o_patrol',fx:{}},
   {id:'o_prison',cat:'order',n:'Гауптвахта',d:'Смутьяны под замком: −недовольство.',req:'o_radio',fx:{disc:-3}},
@@ -477,14 +499,19 @@ function newGame(diff,survivor){
 const tile=(s,x,y)=>s.grid[y*GW+x];
 function place(s,type,x,y,instant){
   const t=tile(s,x,y);const d=B[type];
-  const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,build:instant?0:d.time};
+  const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,lvl:0,ins:0,build:instant?0:Math.ceil(d.time*(has(s,'t_prefab')?.6:1))};
   s.bld.push(b);t.b=b.id;return b;
 }
 const bById=(s,id)=>s.bld.find(b=>b.id===id);
 const has=(s,id)=>s.tech.includes(id)||s.laws.includes(id);
 const D_=s=>DIFF[s.diff];
 const popTotal=s=>s.pop.w+s.pop.e+s.pop.c;
-const healthy=(s,t)=>s.pop[t]-s.ill[t]-s.crit[t];
+const healthy=(s,t)=>s.pop[t]-s.crit[t]-(has(s,'mandatory')?0:s.ill[t]);
+const lvlMul=b=>1+.2*(b.lvl||0);
+function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
+function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1));return c;}
+const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
+const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
 function log(s,txt,kind){s.log.unshift({d:s.day,h:s.hour,txt,k:kind||''});if(s.log.length>60)s.log.length=60;}
 
 /* ---------------------------- ТЕПЛО ---------------------------- */
@@ -502,9 +529,9 @@ function computeHeat(s){
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
     let d=amb;
     if(Math.hypot(x-GX,y-GY)<=R+.3)d+=gh;
-    for(const h of heaters)if(Math.hypot(x-h.x,y-h.y)<=2.3)d+=10;
+    for(const h of heaters)if(Math.hypot(x-h.x,y-h.y)<=(has(s,'t_heatpipes')?3.3:2.3))d+=10*lvlMul(h);
     const t=tile(s,x,y);
-    if(t.b>0){const b=bById(s,t.b);d+=(B[b.type].ins||5)+(has(s,'t_insul')?10:0);}
+    if(t.b>0){const b=bById(s,t.b);d+=(B[b.type].ins||5)+(has(s,'t_insul')?10:0)+(b.ins||0)*(has(s,'t_coldmat')?8:5);}
     s.heat[y*GW+x]=d;
   }
 }
@@ -537,17 +564,17 @@ function rebalance(s){
   if(!has(s,'child_labor'))for(const j of J)j.o.a.c=0;
 }
 function workforce(a){return a.w+a.e+a.c*.5;}
-function housing(s){let n=0;for(const b of s.bld)if(B[b.type].house&&!b.build)n+=B[b.type].house;return n;}
+function housing(s){let n=0;for(const b of s.bld)if(B[b.type].house&&!b.build)n+=capOf(s,b);return n;}
 function bedCount(s){
   let beds=0,hbeds=0;
   for(const b of s.bld){const d=B[b.type];if(!d.beds||b.build||!b.on)continue;
-    const f=Math.min(1,workforce(b.a)/d.jobs);const n=Math.floor(d.beds*f*(has(s,'overcrowd')?1.5:1));
+    const f=Math.min(1,workforce(b.a)/d.jobs);const n=Math.floor(d.beds*lvlMul(b)*f*(has(s,'overcrowd')?1.5:1));
     if(d.heal)hbeds+=n;else beds+=n;}
   return{beds,hbeds};
 }
 function pickType(s,pool){
   const w={w:0,e:0,c:0};let tot=0;
-  for(const t of ['w','e','c']){w[t]=pool==='crit'?s.crit[t]:pool==='ill'?s.ill[t]:pool==='healthy'?healthy(s,t):s.pop[t];tot+=w[t];}
+  for(const t of ['w','e','c']){w[t]=pool==='crit'?s.crit[t]:pool==='ill'?s.ill[t]:pool==='healthy'?s.pop[t]-s.ill[t]-s.crit[t]:s.pop[t];tot+=w[t];}
   if(tot<=0)return null;let x=rnd()*tot;for(const t of ['w','e','c']){if((x-=w[t])<0)return t;}return 'w';
 }
 function kill(s,n,pool){
@@ -590,30 +617,35 @@ function hourTick(s){
   // стройка
   for(const b of s.bld)if(b.build>0){b.build--;if(!b.build){toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
   // работа
-  if(workHour(s)){
+  for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');}}}
+  const wh=workHour(s);
+  {
     const tools=has(s,'t_tools')?1.2:1;
     for(const b of s.bld){
       const d=B[b.type];if(b.build||!b.on||!d.job)continue;
+      if(!wh&&!(b.emerg>0))continue;
       const wf=workforce(b.a);if(wf<=0)continue;
       const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];
-      if(d.needHeat&&lv<d.needHeat)eff*=.4;
+      if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;
+      eff*=lvlMul(b);
       if(d.prod)for(const k in d.prod){
         let m=d.prod[k]*wf*eff;
         if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
         if(b.type==='condenser'&&has(s,'t_filter'))m*=1.5;
-        if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=tools;
+        if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=tools*(has(s,'recycling')?1.1:1);
+        if(b.type==='coalmine'&&has(s,'t_drills'))m*=1.25;
         s.res[k]+=m;
       }
       if(d.kitchen){
-        const cap=Math.min(s.res.raw,7.5*wf*eff);
+        const cap=Math.min(s.res.raw,7.5*wf*eff*(has(s,'t_cook2')?1.5:1));
         const mult=has(s,'additives')?3:has(s,'soup')?2.5:2;
         s.res.raw-=cap;s.res.food+=cap*mult;
       }
       if(d.rp&&s.research){s.rp+=d.rp*wf*eff*(has(s,'t_research')?1.25:1);}
     }
-    for(const t of s.grid)if(t.pile){
+    if(wh)for(const t of s.grid)if(t.pile){
       const wf=workforce(t.pile.a);if(wf<=0)continue;
-      const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1));
+      const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
     }
@@ -645,9 +677,9 @@ function genExplode(s){
   log(s,`Котёл взорвался. Погибли ${k}.`,'bad');
 }
 function meal(s){
-  const D=D_(s);const n=popTotal(s);const need=n*.5*D.cons;
+  const D=D_(s);const n=popTotal(s);const fm=has(s,'communal')?.85:has(s,'private')?1.1:1;const need=n*.5*D.cons*fm;
   if(s.res.food>=need){s.res.food-=need;s.unfed=0;s.unfedStreak=0;return;}
-  const fed=Math.floor(s.res.food/(.5*D.cons));s.res.food=0;s.unfed=n-fed;s.unfedStreak++;
+  const fed=Math.floor(s.res.food/(.5*D.cons*fm));s.res.food=0;s.unfed=n-fed;s.unfedStreak++;
   toast(s,`Голод: ${s.unfed} без еды`,'bad');
   if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08*(has(s,'f_mutual')?.5:1)),'all');if(k){log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');}}
 }
@@ -660,7 +692,7 @@ function drink(s){
 }
 function homesHeat(s){
   // распределяем людей по домам, возвращаем {people per level, homeless}
-  const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({cap:B[b.type].house,lv:lvlOf(heatAt(s,b.x,b.y))})).sort((a,b)=>b.lv-a.lv);
+  const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({cap:capOf(s,b),lv:lvlOf(heatAt(s,b.x,b.y))})).sort((a,b)=>b.lv-a.lv);
   let left=popTotal(s);const per=[0,0,0,0,0];
   for(const h of homes){const n=Math.min(left,h.cap);per[h.lv]+=n;left-=n;}
   return{per,homeless:left};
@@ -675,20 +707,22 @@ function nightSickness(s){
   if(has(s,'additives'))n+=Math.round(popTotal(s)*.006);
   if(s.unfed>0)n+=Math.round(s.unfed*.05);
   if(has(s,'child_shelter')&&s.bld.some(b=>b.type==='nursery'&&!b.build))n=Math.round(n*.85);
+  if(has(s,'quarantine'))n=Math.round(n*.8);
+  if(has(s,'crowding'))n=Math.round(n*1.15+.4);
   if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');}
 }
 function morning(s){
   const D=D_(s);
   // лечение
   let {beds,hbeds}=bedCount(s);
-  const rec=has(s,'radical')?.75:has(s,'overcrowd')?.4:.5;
+  const rec=(has(s,'radical')?.75:has(s,'overcrowd')?.4:.5)+(has(s,'t_antibio')?.15:0);
   // тяжёлые в лазарет
   for(const t of ['w','e','c']){
     let n=s.crit[t];
     for(let i=0;i<n;i++){
-      if(hbeds>0){hbeds--;if(rnd()<.5){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
+      if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
       else if(beds>0&&s.res.meds>=1){beds--;s.res.meds--;if(rnd()<.75){s.crit[t]--;s.ill[t]++;}}
-      else if(rnd()<.3){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
+      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
     }
   }
   let treat=beds+hbeds;
@@ -696,13 +730,13 @@ function morning(s){
     const n=s.ill[t];
     for(let i=0;i<n;i++){
       if(treat>0){treat--;if(rnd()<rec)s.ill[t]--;}
-      else if(rnd()<.25*D.sick){s.ill[t]--;s.crit[t]++;}
+      else if(rnd()<.25*D.sick*(has(s,'mandatory')?1.4:1)){s.ill[t]--;s.crit[t]++;}
       else if(rnd()<.1)s.ill[t]--;
     }
   }
   rebalance(s);
   // аванпосты
-  for(const o of s.outposts){const g={coal:40,wood:30,steel:15,raw:25,water:30,meds:2,mixed:15}[o.t]||10;
+  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:2,mixed:15}[o.t]||10)*(has(s,'t_logistics')?1.5:1);
     if(o.t==='mixed'){s.res.coal+=g;s.res.wood+=g;}else s.res[o.t]+=g;}
   if(s.gen.broken){s.gen.broken=Math.max(0,s.gen.broken-24);}
 }
@@ -724,13 +758,20 @@ function newDay(s){
   const built=t=>s.bld.filter(b=>b.type===t&&!b.build);
   if(built('arena').length){dd-=4;if(rnd()<.5)sicken(s,1);}
   if(built('still').length){dd-=4;sicken(s,rnd()<.4?1:0);}
-  for(const b of built('patrol'))dd-=2*Math.min(1,workforce(b.a)/5);
+  for(const b of built('patrol'))dd-=2*Math.min(1,workforce(b.a)/5)*lvlMul(b);
   if(built('radio').length){dd-=1;dh+=1;}
   for(const b of built('guardhouse'))dd-=3*Math.min(1,workforce(b.a)/3);
   if(has(s,'o_martial')){dd-=2;dh-=1;}
-  dh+=built('hall').length*2+built('shrine').length*3+(built('nursery').length?1:0)+(built('cemetery').length?1:0);
+  dh+=built('hall').reduce((a,b)=>a+2*lvlMul(b),0)+built('shrine').reduce((a,b)=>a+3*lvlMul(b),0)+(built('nursery').length?1:0)+(built('cemetery').length?1:0);
   if(has(s,'f_mutual'))dh+=1;
   if(has(s,'f_wardens'))dd-=2;
+  if(has(s,'mandatory'))dd+=2;
+  if(has(s,'quarantine'))dd+=1;
+  if(has(s,'communal'))dd+=1;
+  if(has(s,'private'))dh+=1;
+  if(has(s,'crowding'))dh-=1;
+  if(has(s,'recycling'))dd+=1;
+  if(has(s,'apprentice')&&built('workshop').length&&s.pop.c-s.ill.c-s.crit.c>0){s.pop.c--;s.pop.e++;log(s,'Ученик стал инженером.','good');}
   if(has(s,'o_new'))dd=Math.min(dd,dd*.5);
   s.disc=clamp(s.disc+dd*D.disc,0,100);
   s.hope=clamp(s.hope+dh,0,100);
@@ -796,7 +837,7 @@ function checkPromise(s){
 }
 
 const EV={
-  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас угольный генератор, немного запасов и тоннели во все стороны.\n\nДержите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
+  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас угольный генератор, немного запасов и тоннели во все стороны.\n\nЦель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
   cold_tents:{t:'Ночь в палатках',x:()=>'Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к генератору теплее.\n\nСтройте жильё в кольце тепла и исследуйте бараки.',c:[{t:'Понятно',f:()=>{}}]},
   children:{t:'Дети без дела',x:()=>'Двадцать детей сидят у генератора. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.',c:[
     {t:'Подписать «Детский труд»',h:'Больше рук, но людям это не нравится',ok:s=>canSign(s,'child_labor'),f:s=>signLaw(s,'child_labor',true)},
@@ -834,11 +875,11 @@ const EV={
     {t:'Только здоровых',h:(s,p)=>`${Math.ceil(p.n*.6)} человек`,f:(s,p)=>{sendGroup(s,p.at,Math.ceil(p.n*.6),0);s.hope-=1;}},
     {t:'Оставить',h:'−надежда',f:s=>{s.hope-=3;}}]},
   st_danger:{t:'Опасный перегон',x:(s,p)=>p.txt,c:[
-    {t:'Пройти напрямик',h:'Риск ранений',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.45*D_(s).danger){tm.rest=18;toast(s,'Разведчики ранены, отдыхают 18 ч','bad');}else toast(s,'Прошли без потерь','good');}},
+    {t:'Пройти напрямик',h:'Риск ранений',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.45*dangerMul(s)){tm.rest=18;toast(s,'Разведчики ранены, отдыхают 18 ч','bad');}else toast(s,'Прошли без потерь','good');}},
     {t:'Переждать',h:'+8 ч',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm)tm.rest=8;}}]},
   st_raiders:{t:'Мародёры',x:()=>'В перегоне — застава мародёров. Требуют плату за проход.',c:[
     {t:'Отдать половину груза',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm)for(const k in tm.cargo)tm.cargo[k]=Math.floor(tm.cargo[k]/2);}},
-    {t:'Прорываться',h:'Можно потерять весь груз',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.5*D_(s).danger){tm.cargo={};tm.rest=12;toast(s,'Груз потерян, отряд ранен','bad');}else toast(s,'Прорвались','good');}}]},
+    {t:'Прорываться',h:'Можно потерять весь груз',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.5*dangerMul(s)){tm.cargo={};tm.rest=12;toast(s,'Груз потерян, отряд ранен','bad');}else toast(s,'Прорвались','good');}}]},
   st_commune:{t:'Красная коммуна',x:(s,p)=>p.txt,c:[
     {t:'Поддержать их порядок',h:'+120 сырой еды, +недовольство',f:(s,p)=>{addCargo(s,p.team,'raw',120);s.disc+=3;}},
     {t:'Отказаться',h:'Уйти ни с чем',f:()=>{}}]},
@@ -872,7 +913,7 @@ function findPath(s,from,to){
   const p=[to];let c=to;while(c!==from){c=prev[c];p.unshift(c);}return p;
 }
 function edgeLen(a,b){const e=G.adj[a].find(e=>e.to===b);return e?e.len:Math.hypot(G.nodes[a].x-G.nodes[b].x,G.nodes[a].y-G.nodes[b].y);}
-function teamSpeed(s){return has(s,'t_draisine')?60:38;}
+function teamSpeed(s){return (has(s,'t_draisine')?60:38)*(has(s,'expedition')?1.3:1);}
 function moveTeams(s){
   for(const tm of s.teams){
     if(tm.rest>0){tm.rest--;continue;}
@@ -957,6 +998,7 @@ const TRADE=[
 ];
 
 /* ---------------------------- ДЕЙСТВИЯ (все изменения состояния) ---------------------------- */
+function canUpgrade(b){const d=B[b.type];return !!(d.prod||d.kitchen||d.rp||d.beds||d.house||d.heat||['patrol','guardhouse','hall','shrine','radio','nursery','arena','still','cemetery'].includes(b.type));}
 function canAfford(s,cost){for(const k in cost)if((s.res[k]||0)<cost[k])return false;return true;}
 function pay(s,cost){for(const k in cost)s.res[k]-=cost[k];}
 function buildAvail(s,type){const d=B[type];if(d.tech&&!has(s,d.tech))return false;if(d.law&&!has(s,d.law))return false;return true;}
@@ -980,13 +1022,16 @@ function signLaw(s,id,force){
 }
 function act(s,a){
   switch(a.t){
-    case 'build':{if(!buildAvail(s,a.type)||!canPlace(s,a.type,a.x,a.y)||!canAfford(s,B[a.type].cost))return;
-      pay(s,B[a.type].cost);place(s,a.type,a.x,a.y,false);computeHeat(s);break;}
-    case 'demolish':{const b=bById(s,a.id);if(!b)return;for(const k in B[b.type].cost)s.res[k]+=Math.floor(B[b.type].cost[k]*.5);
+    case 'build':{if(!buildAvail(s,a.type)||!canPlace(s,a.type,a.x,a.y)||!canAfford(s,buildCost(s,a.type)))return;
+      pay(s,buildCost(s,a.type));place(s,a.type,a.x,a.y,false);computeHeat(s);break;}
+    case 'demolish':{const b=bById(s,a.id);if(!b)return;for(const k in B[b.type].cost)s.res[k]+=Math.floor(B[b.type].cost[k]*(has(s,'t_recycle')?1:.5));
       tile(s,b.x,b.y).b=0;s.bld=s.bld.filter(x=>x!==b);if(b.type==='depot'){const sl=teamSlots(s);s.teams=s.teams.slice(0,Math.max(sl,s.teams.filter(t=>t.path.length).length));}computeHeat(s);break;}
     case 'work':{let j;if(a.id!=null){const b=bById(s,a.id);if(!b)return;j=jobsOf(s).find(x=>x.o===b);}
       else{const t=tile(s,a.x,a.y);if(!t.pile)return;j=jobsOf(s).find(x=>x.o===t.pile);}
       if(!j)return;const n=a.n||1;for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
+    case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.lvl=(b.lvl||0)+1;toast(s,`${B[b.type].n}: уровень ${b.lvl}`,'good');break;}
+    case 'insulate':{const b=bById(s,a.id);if(!b||b.build)return;const c=upCost(s,b,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.ins=(b.ins||0)+1;computeHeat(s);toast(s,`${B[b.type].n}: утепление ${b.ins}`,'good');break;}
+    case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
     case 'gen':{if(a.k==='on'){if(s.gen.broken)return;if(!s.gen.on&&s.res.coal<1)return;s.gen.on=!s.gen.on;if(!s.gen.on)s.gen.over=false;}
       if(a.k==='lvl')s.gen.lvl=clamp(s.gen.lvl+a.d,0,genMax(s));
@@ -1004,7 +1049,7 @@ function act(s,a){
     case 'trade':{const tm=s.teams.find(t=>t.id===a.team);const T=TRADE[a.i];if(!tm||!T)return;const st=s.st[tm.at];if(!st||st.t!=='trade')return;
       const have=(tm.cargo[T.give]||0)+(s.res[T.give]||0);if(have<T.gn)return;
       let need=T.gn;const fromCargo=Math.min(need,tm.cargo[T.give]||0);tm.cargo[T.give]=(tm.cargo[T.give]||0)-fromCargo;need-=fromCargo;s.res[T.give]-=need;
-      tm.cargo[T.get]=(tm.cargo[T.get]||0)+T.n;break;}
+      tm.cargo[T.get]=(tm.cargo[T.get]||0)+Math.round(T.n*(has(s,'barter')?1.5:1));break;}
     case 'choose':{const e=s.queue[0];if(!e)return;const E=EV[e.id];const c=E.c[a.i];if(!c)return;if(c.ok&&!c.ok(s,e.p))return;
       s.queue.shift();c.f(s,e.p||{});if(e.id==='purpose')s.flags.purposeOpen=1;checkEnd(s);break;}
     case 'speed':{if(a.v===0&&s.survivor)return;s.paused=a.v===0;if(a.v)s.speed=a.v;break;}
@@ -1239,10 +1284,17 @@ function init3D(){
   R3.selRing=new T.Mesh(new T.RingGeometry(.55,.64,40),new T.MeshBasicMaterial({color:0xf2a33a,transparent:true,opacity:.9,depthWrite:false}));
   R3.selRing.rotation.x=-Math.PI/2;R3.selRing.position.y=.035;sc.add(R3.selRing);
   // жители
-  const pg=new T.CylinderGeometry(.045,.06,.24,6);pg.translate(0,.12,0);
-  const hgeo=new T.SphereGeometry(.045,8,6);hgeo.translate(0,.29,0);
-  R3.people=new T.InstancedMesh(pg,R3.mat.person,60);R3.heads=new T.InstancedMesh(hgeo,R3.mat.head,60);
-  R3.people.castShadow=true;sc.add(R3.people);sc.add(R3.heads);
+  const stripes=ctex(64,64,(c,w,h)=>{for(let y=0;y<h;y+=8){c.fillStyle=(y/8)%2?'#3b3c3a':'#8e8c84';c.fillRect(0,y,w,8);}
+    for(let i=0;i<120;i++){c.fillStyle=`rgba(${40+Math.random()*30|0},${30+Math.random()*20|0},20,${Math.random()*.35})`;c.fillRect(Math.random()*w,Math.random()*h,3,3);}
+    c.fillStyle='#5a4a3a';c.fillRect(10,30,12,10);c.fillStyle='#4a5040';c.fillRect(40,12,10,9);});
+  const parts=[
+    ['legs',(()=>{const g=new T.CylinderGeometry(.03,.034,.13,6);g.translate(0,.065,0);return g;})(),new T.MeshStandardMaterial({color:0x34322f,roughness:1})],
+    ['torso',(()=>{const g=new T.CylinderGeometry(.042,.055,.16,8);g.translate(0,.2,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
+    ['arms',(()=>{const g=new T.BoxGeometry(.13,.035,.035);g.translate(0,.25,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
+    ['head',(()=>{const g=new T.SphereGeometry(.034,8,6);g.translate(0,.315,0);return g;})(),new T.MeshStandardMaterial({color:0xa48a72,roughness:.9})],
+    ['cap',(()=>{const g=new T.CylinderGeometry(.036,.036,.03,8);g.translate(0,.345,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
+  ];
+  R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso';sc.add(m);return m;});
   // иней в воздухе из вентшахт
   const N=1100,pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*26;pos[i*3+1]=Math.random()*9;pos[i*3+2]=-7+Math.random()*15;}
@@ -1284,6 +1336,16 @@ function buildStation3D(){
     const wire=new T.Mesh(new T.CylinderGeometry(.01,.01,2.2,4),R3.mat.metal);wire.position.set(i+1.5,5.8,wz(0)+.6);sc.add(wire);
     (R3.lamps=R3.lamps||[]).push({lamp,halo});
   }
+  // вывеска станции и плакаты общины
+  const sign=new T.Mesh(new T.PlaneGeometry(5.2,.55),new T.MeshStandardMaterial({map:ctex(1024,110,(c,w,h)=>{c.fillStyle='#d9d2c0';c.fillRect(0,0,w,h);c.strokeStyle='#3a2f24';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
+    c.fillStyle='#1d2a5a';c.font='bold 72px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('Т Е А Т Р А Л Ь Н А Я',w/2,h/2+4);}),roughness:.7}));
+  sign.position.set(.5,3.45,wz(0)+.02);sign.rotation.x=.45;sc.add(sign);
+  const POST=[['ДЕРЖИСЬ','#8a2a1e'],['ТЕПЛО — ЭТО ЖИЗНЬ','#7a4a1a'],['НАВЕРХ НЕ ВЫХОДИТЬ','#2a3a5a'],['ВОДА ПО НОРМЕ','#2a4a3a'],['ВМЕСТЕ ВЫЖИВЕМ','#6a2a2a'],['БЕРЕГИ УГОЛЬ','#3a3a3a']];
+  for(let k=0;k<POST.length;k++){const [txt,bg]=POST[k];const ps=new T.Mesh(new T.PlaneGeometry(.75,1),new T.MeshStandardMaterial({roughness:.9,map:ctex(150,200,(c,w,h)=>{c.fillStyle='#cfc4a8';c.fillRect(0,0,w,h);c.fillStyle=bg;c.fillRect(8,8,w-16,h-16);
+      c.fillStyle='#e8dcc0';c.beginPath();c.arc(w/2,70,30,0,7);c.fill();c.fillStyle=bg;c.beginPath();c.arc(w/2,70,18,0,7);c.fill();
+      c.fillStyle='#e8dcc0';c.font='bold 20px Oswald, Arial Narrow, sans-serif';c.textAlign='center';const ws=txt.split(' ');let y=130;for(let i=0;i<ws.length;i+=2){c.fillText(ws.slice(i,i+2).join(' '),w/2,y);y+=24;}
+      for(let i=0;i<40;i++){c.fillStyle=`rgba(60,40,20,${Math.random()*.25})`;c.fillRect(Math.random()*w,Math.random()*h,4,4);}})}));
+    ps.position.set(-7.5+k*3.1,1.35,wz(0)-.82);ps.rotation.z=(k%2?.03:-.04);sc.add(ps);}
   // торцевые стены с порталами тоннелей
   for(const s of [-1,1]){
     const x=.5+s*L/2;
@@ -1417,7 +1479,7 @@ function makeGenerator(){
 const BSTYLE={
   tent:'tent',barracks:'barracks',house:'house',farm:'farm',hydro:'hydro',kitchen:'kitchen',condenser:'condenser',well:'well',
   sawmill:'sawmill',scrapyard:'scrapyard',coalmine:'coalmine',workshop:'workshop',medpost:'medpost',hospital:'hospital',pharmacy:'pharmacy',
-  depot:'depot',heater:'heater',cemetery:'cemetery',arena:'arena',still:'still',nursery:'nursery',patrol:'patrol',radio:'radio',guardhouse:'guardhouse',hall:'hall',shrine:'shrine'
+  depot:'depot',heater:'heater',coreworks:'workshop',cemetery:'cemetery',arena:'arena',still:'still',nursery:'nursery',patrol:'patrol',radio:'radio',guardhouse:'guardhouse',hall:'hall',shrine:'shrine'
 };
 function makeBuilding(type){
   const T=THREE,M=R3.mat,g=new T.Group(),body=new T.Group();g.add(body);
@@ -1581,6 +1643,20 @@ function makeBuilding(type){
       kwindow(body,u,0,.28,.315,0,.12,.22);for(let i=0;i<3;i++){const c=new T.Mesh(new T.CylinderGeometry(.012,.012,.05,6),M.win);c.position.set(-.1+i*.1,.08,.4);body.add(c);u.wins.push(c);}break;}
     default:{kplinth(body,W,D);kbox(body,W,.4,D,KM.planks(),0,.05,0);}
   }
+  // мелочи: мешки, лопаты, фонари; сосульки и сугробы на холоде
+  body.updateMatrixWorld(true);const bb=new T.Box3().setFromObject(body);
+  const rr=seeded(hash(type)),snowM=kmat('x',{color:0xe9f0f6,roughness:.9});
+  if(!['cemetery','arena','tent'].includes(st)){
+    const sack=kmat('canvas',{roughness:1,color:0xb0a080});
+    for(let i=0;i<2;i++){const sk=mesh(new T.SphereGeometry(.05,8,6),sack);sk.scale.set(1,.7,.8);sk.position.set(-.38+rr()*.1,.035,.38-i*.09);body.add(sk);}
+    if(rr()<.6){const sh=kpipe(body,[.43,0,-.3],[.43,.28,-.25],.008,KM.beam());kbox(body,.05,.07,.01,KM.iron(),.43,0,-.31);}
+    if(rr()<.5){kbox(body,.015,.42,.015,KM.iron(),.44,0,.44);const l=new T.Mesh(new T.SphereGeometry(.028,8,6),M.win);l.position.set(.44,.44,.44);body.add(l);u.wins.push(l);}
+  }
+  const ice=new T.Group(),top=Math.max(.2,bb.max.y*.62);u.ice=ice;body.add(ice);
+  const ig=new T.ConeGeometry(.012,.07,5);ig.rotateX(Math.PI);
+  for(let i=0;i<9;i++){const c=new T.Mesh(ig,snowM);const f=i/8;c.position.set(i<5?-.4+f*1.6:bb.max.x+.02,top-.035,i<5?bb.max.z+.02:.4-(i-5)*.2);c.scale.y=.6+rr()*.9;ice.add(c);}
+  const drifts=new T.Group();u.drift=drifts;g.add(drifts);
+  for(let i=0;i<3;i++){const d=mesh(new T.SphereGeometry(.13+rr()*.06,10,6,0,Math.PI*2,0,Math.PI/2),snowM,false);d.scale.y=.35;d.position.set((rr()<.5?-1:1)*(.35+rr()*.1),0,(rr()<.5?-1:1)*(.35+rr()*.1));drifts.add(d);}
   // свои копии кровли, чтобы иней ложился по месту
   const mp=new Map(u.roofs.map(m=>[m,m.clone()]));body.traverse(o=>{if(o.isMesh&&mp.has(o.material))o.material=mp.get(o.material);});u.roofs=[...mp.values()];
   // строительные леса
@@ -1658,6 +1734,13 @@ function render3D(t){
     for(const w of u.wins)w.visible=lit;for(const w of u.offs)w.visible=!lit;
     // иней на крышах (материалы общие — красим по самой холодной клетке кадра)
     const fz=FROST[lv]*(.3+cold*.7);for(const m of u.roofs){if(m.userData.base==null)m.userData.base=m.color.getHex();if(m.userData.fz!==fz){m.userData.fz=fz;m.color.setHex(m.userData.base).lerp(new T.Color(0xe8eff6),fz);}}
+    if(u.ice){u.ice.visible=fz>.3;u.drift.visible=fz>.15;u.drift.scale.setScalar(.6+fz*.8);}
+    if(u.lv!==b.lvl||u.inz!==b.ins){u.lv=b.lvl;u.inz=b.ins;const sc=1+Math.min(.15,.03*(b.lvl||0));u.body.scale.x=u.body.scale.z=sc;
+      if(u.badge){g.remove(u.badge);u.badge=null;}
+      if(b.lvl||b.ins){const tx=ctex(128,48,(c,w,h)=>{c.fillStyle='rgba(20,24,28,.85)';c.fillRect(0,0,w,h);c.strokeStyle='#b08a4e';c.lineWidth=3;c.strokeRect(2,2,w-4,h-4);
+        c.font='bold 26px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2a33a';const t1=b.lvl?'УР '+b.lvl:'',t2=b.ins?'УТ '+b.ins:'';c.font='bold 22px Oswald, Arial Narrow, sans-serif';
+        if(t1&&t2){c.fillText(t1,w*.3,h/2+1);c.fillStyle='#8fd0f5';c.fillText(t2,w*.72,h/2+1);}else{if(t2)c.fillStyle='#8fd0f5';c.fillText(t1||t2,w/2,h/2+1);}});
+        const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.set(.5,.19,1);sp.position.y=1.25;g.add(sp);u.badge=sp;}}
     if(u.wheel&&lit)(u.wheel.geometry.type==='CylinderGeometry'?u.wheel.rotation.y+=.2:u.wheel.rotation.z+=.03);
     if(u.chimTop&&u.chimTop.isVector3&&lit&&Math.random()<(b.type==='kitchen'?.12:.05)){const p=u.chimTop.clone().add(g.position);spawnSteam(p,.18,.6);}
   }
@@ -1674,7 +1757,7 @@ function render3D(t){
   if(R3.ghost&&(R3.ghost.userData.type!==ui.buildType||!ui.buildType||!hv)){sc.remove(R3.ghost);R3.ghost=null;}
   if(ui.buildType&&hv){
     if(!R3.ghost){R3.ghost=makeBuilding(ui.buildType);R3.ghost.userData.type=ui.buildType;R3.ghost.userData.scaffold.visible=false;sc.add(R3.ghost);}
-    const ok=canPlace(s,ui.buildType,ui.hover.x,ui.hover.y)&&canAfford(s,B[ui.buildType].cost);
+    const ok=canPlace(s,ui.buildType,ui.hover.x,ui.hover.y)&&canAfford(s,buildCost(s,ui.buildType));
     R3.ghost.traverse(o=>{if(o.isMesh)o.material=ok?R3.mat.ghostOk:R3.mat.ghostBad;});
     R3.ghost.position.set(wx(ui.hover.x),0,wz(ui.hover.y));
   }
@@ -1702,13 +1785,14 @@ function drawWalkers3D(s){
   const m=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
-    if(!w){m.makeScale(0,0,0);R3.people.setMatrixAt(i,m);R3.heads.setMatrixAt(i,m);continue;}
+    if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.12||w.w++>500){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=0;}
     const sp=s.paused?0:.008*Math.min(3,s.speed);const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
-    m.makeTranslation(wx(w.x),0,wz(w.y));R3.people.setMatrixAt(i,m);R3.heads.setMatrixAt(i,m);
+    const bob=sp?Math.abs(Math.sin(performance.now()/120+i))*.012:0;w.ang=Math.atan2(dx,dy);
+    m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));for(const im of R3.ppl)im.setMatrixAt(i,m);
   }
-  R3.people.instanceMatrix.needsUpdate=true;R3.heads.instanceMatrix.needsUpdate=true;
+  for(const im of R3.ppl)im.instanceMatrix.needsUpdate=true;
 }
 // 2D-слой поверх 3D: виньетка и иней по краям экрана, как во Frostpunk
 let frostTex=null;
@@ -1824,9 +1908,9 @@ function renderBar(){
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
   const list=Object.entries(B).filter(([k,d])=>d.cat===ui.cat);
-  setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),af=canAfford(s,d.cost);
+  setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),bc=buildCost(s,k),af=canAfford(s,bc);
     const lock=!av?(d.tech?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
-    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${Object.entries(d.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')} · ${d.time} ч</span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
+    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${Object.entries(bc).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')} · ${Math.ceil(d.time*(has(s,'t_prefab')?.6:1))} ч</span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
 }
 function workCtrl(id,a,max,job,xy){
   const tot=a.w+a.e+a.c;
@@ -1859,11 +1943,17 @@ function renderInfo(){
     h=`<h3>${d.n}</h3><div class="sub">${d.d||''}</div>
     <div class="row"><span>Состояние</span><span>${b.build?`строится, ${b.build} ч`:b.on?'работает':'отключено'}</span></div>
     <div class="row"><span>Температура</span><span class="lvl${lv}">${LVL_N[lv]} (${Math.round(deg)}°)</span></div>`;
-    if(d.house)h+=`<div class="row"><span>Мест</span><span>${d.house}</span></div>`;
+    if(d.house)h+=`<div class="row"><span>Мест</span><span>${capOf(s,b)}</span></div>`;
     if(d.job&&!b.build){const eff=HEAT_EFF[lv];h+=`<div class="row"><span>Эффективность</span><span>${Math.round(eff*100*(d.needHeat&&lv<d.needHeat?.4:1))}%</span></div>`+workCtrl(b.id,b.a,d.jobs,d.job,'');}
-    if(d.beds)h+=`<div class="row"><span>Коек</span><span>${d.beds}${d.heal?' · лечит тяжёлых':''}</span></div>`;
+    if(d.beds)h+=`<div class="row"><span>Коек</span><span>${Math.floor(d.beds*lvlMul(b))}${d.heal?' · лечит тяжёлых':''}</span></div>`;
+    if(!b.build){
+      const cs=c=>Object.entries(c).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(', ')||'бесплатно';
+      if(canUpgrade(b)){const uc=upCost(s,b,b.lvl||0);h+=`<div class="row"><span>Уровень</span><span>${b.lvl||0} (+${(b.lvl||0)*20}%)</span></div><div class="ctrl"><button class="btn primary" data-upgrade="${b.id}" ${canAfford(s,uc)?'':'disabled'}>Улучшить +20%</button><span class="hint">${cs(uc)}</span></div>`;}
+      const ic=upCost(s,b,b.ins||0);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)?'':'disabled'}>Утеплить +${has(s,'t_coldmat')?8:5}°</button><span class="hint">${cs(ic)}</span></div>`;
+      if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
+    }
     if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
-    h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём 50%)</button></div>`;
+    h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём ${has(s,'t_recycle')?'всё':'50%'})</button></div>`;
   }
   setHTML(el,`<button class="closex" data-act="unsel" aria-label="Закрыть">×</button>`+h);
 }
@@ -1895,8 +1985,8 @@ function renderOverlay(){
       return`<button class="tech ${sig?'done':''}" data-law="${L.id}" ${ok?'':'disabled'}><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</button>`;};
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
     <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются.</p>
-    <div class="grid3"><div class="col"><h4>Выживание</h4>${LAWS.filter(l=>l.cat==='adapt').slice(0,6).map(lawBtn).join('')}</div>
-    <div class="col"><h4>&nbsp;</h4>${LAWS.filter(l=>l.cat==='adapt').slice(6).map(lawBtn).join('')}</div>
+    <div class="grid3"><div class="col"><h4>Выживание</h4>${LAWS.filter(l=>l.cat==='adapt').slice(0,11).map(lawBtn).join('')}</div>
+    <div class="col"><h4>&nbsp;</h4>${LAWS.filter(l=>l.cat==='adapt').slice(11).map(lawBtn).join('')}</div>
     <div class="col"><h4>Путь: Порядок</h4>${purposeOpen?(s.path==='faith'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='order').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div>
     <div class="col"><h4>Путь: Братство</h4>${purposeOpen?(s.path==='order'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='faith').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div></div></div>`);
     return;
@@ -1946,7 +2036,7 @@ function renderMenu(){
   const hasSave=!!store('ls_save');
   el.innerHTML=`<div class="sheet panel" id="menu" style="width:min(780px,100%)">
   <p class="logo">Последняя <span>станция</span></p>
-  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь ${LAST_DAY} дней.</p>
+  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь ${LAST_DAY} дней.</p>
   <div class="title" style="color:var(--frost-dim);font-size:12px">Сложность</div>
   <div class="diffs">${Object.entries(DIFF).map(([k,d])=>`<button class="diff ${ui.diff===k?'on':''}" data-diff="${k}"><b>${d.n}</b><small>${d.d}</small></button>`).join('')}</div>
   <label class="chk"><input type="checkbox" id="survivor" ${ui.survivor?'checked':''}> Режим «Выживший»: без паузы, скорость максимум ×2</label>
@@ -2061,7 +2151,7 @@ function onUp(e){
   if(d.map){mapClick(e.clientX,e.clientY);return;}
   if(ui.mode!=='game'||!S)return;
   const tl=screenToTile(e.clientX,e.clientY);
-  if(ui.buildType){if(canPlace(S,ui.buildType,tl.x,tl.y)&&canAfford(S,B[ui.buildType].cost)){dispatch({t:'build',type:ui.buildType,x:tl.x,y:tl.y});if(!e.shiftKey)ui.buildType=null;}return;}
+  if(ui.buildType){if(canPlace(S,ui.buildType,tl.x,tl.y)&&canAfford(S,buildCost(S,ui.buildType))){dispatch({t:'build',type:ui.buildType,x:tl.x,y:tl.y});if(!e.shiftKey)ui.buildType=null;}return;}
   if(tl.x<0||tl.y<0||tl.x>=GW||tl.y>=GH){ui.sel=null;ui.dirty=true;return;}
   const t=tile(S,tl.x,tl.y);
   if(t.b===-1)ui.sel={k:'gen'};else if(t.b)ui.sel={k:'b',id:t.b};else if(t.pile)ui.sel={k:'p',x:tl.x,y:tl.y};else ui.sel=null;
@@ -2107,6 +2197,9 @@ document.addEventListener('click',e=>{
   else if(ds.open){ui.open=ui.open===ds.open?null:ds.open;ui.cat=null;if(ds.open==='map'&&S.teams.length&&!ui.team)ui.team=S.teams[0].id;}
   else if(ds.work!=null){const n=+ds.n;if(ds.work==='p')dispatch({t:'work',x:+ds.x,y:+ds.y,n});else dispatch({t:'work',id:+ds.work,n});}
   else if(ds.toggle)dispatch({t:'toggle',id:+ds.toggle});
+  else if(ds.upgrade)dispatch({t:'upgrade',id:+ds.upgrade});
+  else if(ds.insulate)dispatch({t:'insulate',id:+ds.insulate});
+  else if(ds.emerg)dispatch({t:'emerg',id:+ds.emerg});
   else if(ds.demolish){dispatch({t:'demolish',id:+ds.demolish});ui.sel=null;}
   else if(ds.gen)dispatch({t:'gen',k:ds.gen,d:+(ds.d||0)});
   else if(ds.research)dispatch({t:'research',id:ds.research});
