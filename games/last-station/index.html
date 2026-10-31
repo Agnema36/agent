@@ -80,6 +80,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #bar button.on{border-color:var(--amber);color:var(--amber)}
 #bar .sep{width:1px;background:var(--rim);margin:0 4px}
 #bar button.major{color:var(--amber)}
+#bar button.pbar{background:linear-gradient(90deg,rgba(127,196,138,.55) var(--p),rgba(0,0,0,0) var(--p)),linear-gradient(180deg,#2c343c,#1a2026);color:#ffe2b0;text-shadow:0 1px 2px rgba(0,0,0,.8)}
 #cards{display:flex;gap:6px;padding:6px;max-width:100%;overflow-x:auto}
 .card{width:154px;flex:none;padding:8px 9px 8px 12px;background:linear-gradient(180deg,#252c33,#181d22);border:1px solid #0a0d10;border-left:3px solid #6b5432;border-radius:1px;text-align:left;display:flex;flex-direction:column;gap:3px}
 .card:hover:not([disabled]){border-color:var(--amber)}
@@ -259,12 +260,12 @@ const ICON={
 const ico=(k,col)=>`<svg viewBox="0 0 16 16" style="color:${col||RES[k].c}" aria-hidden="true">${ICON[k]}</svg>`;
 
 const DIFF={
-  easy:{n:'Лёгкий',d:'Мягкий холод, щедрые запасы. Для первой партии.',start:1.5,cons:.8,temp:8,disc:.6,sick:.6,danger:.6,law:12},
-  normal:{n:'Нормальный',d:'Как задумано. Каждое решение чего-то стоит.',start:1,cons:1,temp:0,disc:1,sick:1,danger:1,law:18},
-  hard:{n:'Сложный',d:'Меньше запасов, злее холод, люди нетерпеливее.',start:.8,cons:1.15,temp:-6,disc:1.3,sick:1.3,danger:1.3,law:20},
-  extreme:{n:'Экстремальный',d:'Для тех, кто уже пережил «Сложный».',start:.6,cons:1.3,temp:-12,disc:1.6,sick:1.6,danger:1.6,law:24},
-  extremeplus:{n:'Экстремальный+',d:'Запасов почти нет, холод на 16° злее.',start:.5,cons:1.4,temp:-16,disc:1.8,sick:1.8,danger:1.8,law:26},
-  hardcore:{n:'Хардкор',d:'Без паузы и без второго шанса. Смерть станции — конец сохранения.',start:.4,cons:1.5,temp:-20,disc:2,sick:2,danger:2,law:30,hc:1}
+  easy:{n:'Лёгкий',d:'Мягкий холод, щедрые запасы. Для первой партии.',start:1.5,cons:.8,temp:8,disc:.6,sick:.6,danger:.6,law:12,piles:1,deposits:1},
+  normal:{n:'Нормальный',d:'Как задумано. Каждое решение чего-то стоит.',start:1,cons:1,temp:0,disc:1,sick:1,danger:1,law:18,piles:1,deposits:2},
+  hard:{n:'Сложный',d:'Меньше запасов, злее холод, люди нетерпеливее.',start:.8,cons:1.15,temp:-6,disc:1.3,sick:1.3,danger:1.3,law:20,piles:1.2,deposits:3},
+  extreme:{n:'Экстремальный',d:'Для тех, кто уже пережил «Сложный».',start:.6,cons:1.3,temp:-12,disc:1.6,sick:1.6,danger:1.6,law:24,piles:1.35,deposits:3},
+  extremeplus:{n:'Экстремальный+',d:'Запасов почти нет, холод на 16° злее.',start:.5,cons:1.4,temp:-16,disc:1.8,sick:1.8,danger:1.8,law:26,piles:1.5,deposits:4},
+  hardcore:{n:'Хардкор',d:'Без паузы и без второго шанса. Смерть станции — конец сохранения.',start:.4,cons:1.5,temp:-20,disc:2,sick:2,danger:2,law:30,hc:1,piles:1.8,deposits:5}
 };
 // температура на станции по дням сценария (до поправки сложности)
 const WEATHER=[-8,-8,-10,-12,-12,-14,-22,-15,-15,-16,-18,-20,-20,-28,-30,-20,-18,-20,-22,-24,-25,-26,-30,-34,-44,-48,-50,-46,-34,-28];
@@ -285,6 +286,8 @@ const B={
   scrapyard:{n:'Разборка составов',cat:'res',cost:{wood:30},time:6,job:'w',jobs:10,prod:{steel:.4},h:.9,col:'#5d6a74',tech:'t_scrap',d:'Металл из брошенных вагонов.'},
   coalmine:{n:'Угольный забой',cat:'res',cost:{wood:30,steel:15},time:8,job:'w',jobs:10,prod:{coal:1},h:1.2,col:'#4a4744',tech:'t_coal',d:'Пласт под путями. Много угля.'},
   workshop:{n:'Мастерская',cat:'tech',cost:{wood:20},time:4,job:'e',jobs:5,rp:1,h:.9,col:'#6f5a3a',d:'Инженеры ведут исследования.'},
+  lab:{n:'Лаборатория',cat:'tech',cost:{wood:30,steel:30},time:6,job:'e',jobs:5,rp:1.6,h:1,col:'#5a5f6a',tech:'t_research',d:'Инженеры исследуют в 1,6 раза быстрее, чем в мастерской.'},
+  drafting:{n:'Чертёжное бюро',cat:'tech',cost:{wood:25,steel:10},time:4,h:.8,col:'#6a5a48',d:'Ускоряет все мастерские и лаборатории на 15% (действуют до трёх бюро).'},
   medpost:{n:'Медпункт',cat:'med',cost:{wood:15,steel:5},time:3,job:'e',jobs:2,beds:5,h:.7,col:'#7c6262',d:'5 коек. Тяжёлым нужны медикаменты.'},
   hospital:{n:'Лазарет',cat:'med',cost:{wood:30,steel:20},time:8,job:'e',jobs:5,beds:10,heal:1,h:1.1,col:'#836868',tech:'t_hospital',d:'10 коек. Лечит тяжёлых без лекарств.'},
   pharmacy:{n:'Аптека',cat:'med',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
@@ -511,7 +514,7 @@ const EN=[
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
 ['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
 ['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
-['Язык','Language'],['Суровость','Severity'],['Человечность','Humanity'],['Промышленность','Industry'],['Порядок','Order'],['Братство','Brotherhood'],
+['Язык','Language'],['Залежь:','Deposit:'],['Залежь расщищена:','Deposit cleared:'],['Залежь расчищена:','Deposit cleared:'],['Под обвалом. Сначала расчистите плиты и арматуру — потом можно добывать. Детям сюда нельзя.','Under a collapse. Clear the slabs and rebar first, then you can mine. No children here.'],['Расчищено. Богатый запас, до 8 работников.','Cleared. A rich deposit, up to 8 workers.'],['Расчистка','Clearing'],['осталось','left'],['чел·ч','worker-h'],['Запас','Stock'],['Лаборатория','Laboratory'],['Инженеры исследуют в 1,6 раза быстрее, чем в мастерской.','Engineers research 1.6× faster than in a workshop.'],['Чертёжное бюро','Drafting office'],['Ускоряет все мастерские и лаборатории на 15% (действуют до трёх бюро).','Speeds up all workshops and labs by 15% (up to three offices count).'],['ничего не изучается','nothing being researched'],['Ничего не изучается.','Nothing is being researched.'],['Наука','Science'],['всем мастерским','for all workshops'],['Изучается','Researching'],['Прогресс','Progress'],['Ускорение бюро','Office boost'],['Открыть исследования','Open research'],['мастерских с инженерами).','workshops/labs with engineers).'],['Суровость','Severity'],['Человечность','Humanity'],['Промышленность','Industry'],['Порядок','Order'],['Братство','Brotherhood'],
 ['Откроется, когда шкала «','Unlocks when the scale «'],['» заполнится','» is full'],['Каждый закон наполняет шкалу своей ветки; полная шкала открывает её лютый закон.','Each law fills its branch scale; a full scale unlocks that branch’s extreme law.'],
 ['Закон выживания','Law of Survival'],['Лютый закон. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).','Extreme law. Everyone works 30% more. Untreated critical patients die 1.5× more often. Hope −15, discontent −10 (fear).'],
 ['Каждая жизнь','Every Life'],['Лютый закон. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.','Extreme law. Deaths hurt hope half as much, the sick recover faster, hope +15. Work 10% slower.'],
@@ -733,6 +736,7 @@ function newGame(diff,survivor){
     leavers:0,
   };
   for(const k in s.res)s.res[k]=Math.round(s.res[k]);
+  s.res.food=Math.max(s.res.food,90);s.res.water=Math.max(s.res.water,100); // хотя бы сутки на раскачку на любой сложности
   // сетка: пути вдоль краёв, завалы
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
     const t={k:(y===0||y===GH-1)?'track':'floor',b:0,pile:null};
@@ -740,14 +744,21 @@ function newGame(diff,survivor){
   }
   const r=seeded(s.seed);
   const piles=[['coal',5,200],['wood',5,140],['steel',4,110]];
-  for(const [k,n,amt] of piles){
-    let placed=0,tries=0;
+  for(const [k,n0,amt] of piles){
+    const n=Math.round(n0*(D.piles||1));let placed=0,tries=0;
     while(placed<n&&tries++<500){
       const x=1+Math.floor(r()*(GW-2)),y=1+Math.floor(r()*(GH-2));
       if(Math.abs(x-GX)<=2&&Math.abs(y-GY)<=2)continue;
       const t=tile(s,x,y);if(t.k!=='floor'||t.pile)continue;
       t.pile={r:k,amt:Math.round(amt*(.8+r()*.4)*D.start),a:{w:0,e:0,c:0}};placed++;
     }
+  }
+  // залежи у краёв: сначала расчистить обвал, потом добывать
+  const kinds=['coal','steel','wood','coal','steel'];
+  for(let d=0,tries=0;d<(D.deposits||2)&&tries<800;tries++){
+    const x=r()<.5?1+Math.floor(r()*3):GW-4+Math.floor(r()*3),y=1+Math.floor(r()*(GH-2));
+    const t=tile(s,x,y);if(t.k!=='floor'||t.pile||t.b)continue;
+    const k=kinds[d%kinds.length];t.pile={r:k,amt:Math.round(({coal:700,steel:350,wood:500})[k]*(.85+r()*.3)),a:{w:0,e:0,c:0},clear:Math.round(50+r()*30),clear0:0,max:8,dep:1};t.pile.clear0=t.pile.clear;d++;
   }
   tile(s,GX,GY).b=-1; // генератор
   // стартовые постройки
@@ -806,7 +817,7 @@ const heatAt=(s,x,y)=>s.heat?s.heat[y*GW+x]:ambient(s);
 function jobsOf(s){
   const L=[];
   for(const b of s.bld){const d=B[b.type];if(d.job&&!b.build)L.push({o:b,d,job:d.job,max:d.jobs,safe:!!d.safe});}
-  for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile)L.push({o:t.pile,job:'w',max:5,safe:true,pile:1});}
+  for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile)L.push({o:t.pile,job:'w',max:t.pile.max||5,safe:!t.pile.clear,pile:1});}
   return L;
 }
 function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];return n;}
@@ -907,10 +918,11 @@ function hourTick(s){
         const mult=has(s,'additives')?3:has(s,'soup')?2.5:2;
         s.res.raw-=cap;s.res.food+=cap*mult;
       }
-      if(d.rp&&s.research){s.rp+=d.rp*wf*eff*(has(s,'t_research')?1.25:1);}
+      if(d.rp&&s.research){s.rp+=d.rp*wf*eff*(has(s,'t_research')?1.25:1)*draftMul(s);}
     }
     if(wh)for(const t of s.grid)if(t.pile){
       const wf=workforce(t.pile.a);if(wf<=0)continue;
+      if(t.pile.clear>0){t.pile.clear=Math.max(0,t.pile.clear-wf*(has(s,'t_drills')?1.5:1));if(!t.pile.clear)toast(s,`Залежь расчищена: ${RES[t.pile.r].n}`,'good');continue;}
       const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
@@ -1265,7 +1277,8 @@ const TRADE=[
 ];
 
 /* ---------------------------- ДЕЙСТВИЯ (все изменения состояния) ---------------------------- */
-function canUpgrade(b){const d=B[b.type];return !!(d.prod||d.kitchen||d.rp||d.beds||d.house||d.heat||['patrol','guardhouse','hall','shrine','radio','nursery','arena','still','cemetery'].includes(b.type));}
+function draftMul(s){const d=s.bld.filter(b=>b.type==='drafting'&&!b.build).sort((a,b)=>(b.lvl||0)-(a.lvl||0)).slice(0,3);return 1+d.reduce((a,b)=>a+.15*lvlMul(b),0);}
+function canUpgrade(b){const d=B[b.type];return !!(d.prod||d.kitchen||d.rp||d.beds||d.house||d.heat||['drafting','patrol','guardhouse','hall','shrine','radio','nursery','arena','still','cemetery'].includes(b.type));}
 function canAfford(s,cost){for(const k in cost)if((s.res[k]||0)<cost[k])return false;return true;}
 function pay(s,cost){for(const k in cost)s.res[k]-=cost[k];}
 function buildAvail(s,type){const d=B[type];if(d.tech&&!has(s,d.tech))return false;if(d.law&&!has(s,d.law))return false;return true;}
@@ -1309,7 +1322,7 @@ function act(s,a){
       pay(s,T.cost);s.research=a.id;s.rp=s.flags.bonusRp||0;s.flags.bonusRp=0;break;}
     case 'law':signLaw(s,a.id);break;
     case 'send':{const tm=s.teams.find(t=>t.id===a.team);if(!tm||tm.rest||tm.explore)return;
-      const from=tm.path.length>=2&&tm.prog>.5?tm.path[1]:tm.at;const p=findPath(s,from,a.to);if(!p)return;tm.path=p;tm.prog=0;tm.at=from;break;}
+      const from=tm.path.length>=2&&tm.prog>.5?tm.path[1]:tm.at;const p=findPath(s,from,a.to);if(!p)return;tm.path=p;tm.prog=0;tm.at=from;tm.trip0=tripLeft(tm)||1;break;}
     case 'outpost':{if(!has(s,'t_outpost'))return;const st=s.st[a.at];if(!st||st.k<2||st.o)return;
       if(!['coal','wood','steel','raw','water','meds','mixed'].includes(st.t))return;
       if(!s.teams.some(t=>t.at===a.at&&t.path.length<2))return;const cost={wood:20,steel:10};if(!canAfford(s,cost))return;pay(s,cost);
@@ -1544,8 +1557,8 @@ function init3D(){
     for(let i=0;i<2600;i++){const v=150+Math.random()*80|0;c.fillStyle=`rgba(${v},${v-4},${v-12},.35)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
     for(let i=0;i<70;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.18})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*16,2+Math.random()*7,Math.random()*3,0,7);c.fill();}
     for(let i=0;i<30;i++){const x=Math.random()*w,y=Math.random()*h,a=Math.random()*6;c.fillStyle='rgba(70,62,52,.22)';for(let k=0;k<4;k++){c.beginPath();c.ellipse(x+Math.cos(a)*k*9+(k%2?3:-3),y+Math.sin(a)*k*9,2.2,3.6,a,0,7);c.fill();}}});
-  snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(9,4);R3.snowTex=snowTex;
-  const SW=GW+12,SD=GH-2,gx=SW*4,gz=SD*4;
+  snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(17,4);R3.snowTex=snowTex;
+  const SW=GW+34,SD=GH-2,gx=SW*3,gz=SD*4;
   const gG=new T.PlaneGeometry(SW,SD,gx,gz);gG.rotateX(-Math.PI/2);gG.translate(-.5,0,wz((GH-1)/2));
   gG.setAttribute('color',new T.BufferAttribute(new Float32Array(gG.attributes.position.count*3),3));
   R3.snowG=gG;R3.snowSeed=Array.from({length:gG.attributes.position.count},()=>Math.random());
@@ -1726,6 +1739,14 @@ function kbarrel(p,x,z){const b=kcyl(p,.05,.05,.13,KM.iron(),x,0,z,10);return b;
 function kcrate(p,x,z,s=.1){const c=kbox(p,s,s,s,KM.planks(),x,0,z);c.rotation.y=x*7;return c;}
 function kplinth(p,w,d){return kbox(p,w+.04,.05,d+.04,KM.stone(),0,0,0);}
 
+function snowMat(col){
+  R3.snowMats=R3.snowMats||{};if(R3.snowMats[col])return R3.snowMats[col];
+  if(!R3.snowTex2){R3.snowTex2=ctex(256,256,(c,w,h)=>{c.fillStyle='#c4c0b8';c.fillRect(0,0,w,h);
+    for(let i=0;i<2400;i++){const v=150+Math.random()*80|0;c.fillStyle=`rgba(${v},${v-4},${v-12},.35)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
+    for(let i=0;i<60;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.16})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*14,2+Math.random()*6,Math.random()*3,0,7);c.fill();}});
+    R3.snowTex2.wrapS=R3.snowTex2.wrapT=THREE.RepeatWrapping;R3.snowTex2.repeat.set(2.5,2.5);}
+  return R3.snowMats[col]=new THREE.MeshStandardMaterial({map:R3.snowTex2,bumpMap:R3.snowTex2,bumpScale:.02,color:col,roughness:1});
+}
 function buildEscalators(sx){
   // выход в город по-московски: три эскалатора, бронзовые балюстрады с «факелами», арка с надписью
   const T=THREE,sc=R3.sc,x0=sx<0?wx(-.5):wx(GW-.5),zc=wz((GH-1)/2);
@@ -1755,9 +1776,10 @@ function buildEscalators(sx){
   const tileW=kmat('x',{color:0x8f8a80,roughness:.7});const dark=kmat('stone',{color:0x4a4844});
   for(const z of [-1.85]){const wall=mesh(new T.BoxGeometry(run+.6,3.4,.14),tileW);wall.position.set(sx*len/2,rise/2+1.4,z);wall.rotation.z=sx*ang;g.add(wall);
     const sk=mesh(new T.BoxGeometry(run+.6,.3,.16),kmat('x',{color:0x3a2a1c}));sk.position.set(sx*len/2,rise/2+.05,z);sk.rotation.z=sx*ang;g.add(sk);}
-  const snowTop=kmat('canvas',{color:0xd6d2ca,roughness:1});
-  for(const z of [-3.6,3.6]){const blk=mesh(new T.BoxGeometry(len+1.5,1.2,3.4),dark,false);blk.position.set(sx*(len/2+.2),-.2,z);g.add(blk);const cap=mesh(new T.BoxGeometry(len+1.5,.08,3.4),snowTop,false);cap.position.set(sx*(len/2+.2),.44,z);g.add(cap);}
-  const under=mesh(new T.BoxGeometry(run,.06,3.6),dark,false);under.position.set(sx*len/2,rise/2-.12,0);under.rotation.z=sx*ang;g.add(under);
+  // сплошные заснеженные откосы по бокам и под ступенями (клин от пола до верхней площадки)
+  const wedge=(depth,mat,z,dy)=>{const sh=new T.Shape();sh.moveTo(0,-.8);sh.lineTo(len+.2,-.8);sh.lineTo(len+.2,rise+dy);sh.lineTo(0,dy);sh.lineTo(0,-.8);
+    const gg=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:false});gg.translate(0,0,-depth/2);const m=mesh(gg,mat,false);m.material.side=T.DoubleSide;m.scale.x=sx;m.position.set(0,0,z);g.add(m);return m;};
+  const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(3.4,bank,3.6,.35);wedge(3.6,snowMat(0x55524c),0,-.2);
   const land=mesh(new T.BoxGeometry(3,.14,4),kmat('stone',{color:0x6a6862}));land.position.set(sx*(len+1.5),rise,0);g.add(land);
   const back=mesh(new T.BoxGeometry(.2,3,4),tileW);back.position.set(sx*(len+3),rise+1.5,0);g.add(back);
   for(const z of [-1.1,0,1.1]){const dr=new T.Mesh(new T.PlaneGeometry(.7,1.4),new T.MeshBasicMaterial({color:0x9fc4e0,toneMapped:false,transparent:true,opacity:.55}));dr.position.set(sx*(len+3)-sx*.11,rise+.75,z);dr.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(dr);
@@ -1803,7 +1825,7 @@ function makeGenerator(){
   return g;
 }
 // ---------- здания ----------
-const BSTYLE={
+const BSTYLE={lab:'workshop',drafting:'hall',
   tent:'tent',barracks:'barracks',house:'house',farm:'farm',hydro:'hydro',kitchen:'kitchen',condenser:'condenser',well:'well',
   sawmill:'sawmill',scrapyard:'scrapyard',coalmine:'coalmine',workshop:'workshop',medpost:'medpost',hospital:'hospital',pharmacy:'pharmacy',
   depot:'depot',heater:'heater',coreworks:'workshop',cemetery:'cemetery',arena:'arena',still:'still',nursery:'nursery',patrol:'patrol',radio:'radio',guardhouse:'guardhouse',hall:'hall',shrine:'shrine'
@@ -1993,14 +2015,24 @@ function makeBuilding(type){
   return g;
 }
 function box(w,h,d,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.castShadow=true;m.receiveShadow=true;return m;}
-function makePile(r,amt){
-  const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(1,Math.min(6,Math.ceil(amt/35)));
+function makeRubble(r,frac){
+  const T=THREE,g=new T.Group(),rr=seeded(hash('rb'+r)),con=kmat('stone',{color:0x8a8780});
+  const n=Math.max(2,Math.round(7*frac));
+  for(let i=0;i<n;i++){const sl=mesh(new T.BoxGeometry(.3+rr()*.25,.06+rr()*.05,.2+rr()*.2),con);sl.position.set((rr()-.5)*.7,.05+rr()*.18,(rr()-.5)*.7);sl.rotation.set((rr()-.5)*.8,rr()*3,(rr()-.5)*.8);g.add(sl);}
+  for(let i=0;i<4;i++)kpipe(g,[(rr()-.5)*.6,.05,(rr()-.5)*.6],[(rr()-.5)*.7,.35+rr()*.2,(rr()-.5)*.7],.008,KM.iron());
+  const ore=mesh(new T.ConeGeometry(.2,.18,8),r==='coal'?R3.mat.coal:r==='steel'?R3.mat.steel:R3.mat.crate);ore.position.set(.2,.06,.15);g.add(ore);
+  const tape=new T.Mesh(new T.RingGeometry(.47,.5,4,1,Math.PI/4),new T.MeshBasicMaterial({color:0xe8c25a,toneMapped:false,side:T.DoubleSide}));tape.rotation.x=-Math.PI/2;tape.position.y=.1;g.add(tape);
+  return g;
+}
+function makePile(r,amt,rich){
+  const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(1,Math.min(rich?9:6,Math.ceil(amt/(rich?70:35))));
   const rr=seeded(hash(r+amt));
   for(let i=0;i<n;i++){const x=(rr()-.5)*.6,z=(rr()-.5)*.6;let m;
     if(r==='coal'){m=new T.Mesh(new T.ConeGeometry(.16+rr()*.1,.16+rr()*.12,7),M.coal);m.position.set(x,.1,z);}
     else if(r==='wood'){m=box(.24,.16,.18,M.crate);m.position.set(x,.08+(i>3?.16:0),z);m.rotation.y=rr()*1.5;}
     else{m=box(.34,.18,.16,M.steel);m.position.set(x,.09,z);m.rotation.y=rr()*3;m.rotation.z=(rr()-.5)*.3;}
     m.castShadow=true;g.add(m);}
+  if(rich)g.scale.setScalar(1.25);
   g.userData={amt};return g;
 }
 function resize3D(){if(!R3.ok)return;if(!R3.camInit&&VW>0){R3.camInit=1;if(VW<VH)cam3.d=27;}R3.rd.setSize(VW,VH,false);R3.cam.aspect=VW/VH;R3.cam.updateProjectionMatrix();}
@@ -2082,8 +2114,8 @@ function render3D(t){
   // завалы
   const ps=new Set();
   for(let i=0;i<s.grid.length;i++){const tt=s.grid[i];if(!tt.pile)continue;ps.add(i);let g=R3.pmap.get(i);
-    const bucket=Math.ceil(tt.pile.amt/35);
-    if(!g||g.userData.bucket!==bucket){if(g)sc.remove(g);g=makePile(tt.pile.r,bucket*35);g.userData.bucket=bucket;g.position.set(wx(i%GW),0,wz(Math.floor(i/GW)));sc.add(g);R3.pmap.set(i,g);}}
+    const pl=tt.pile,bucket=pl.clear>0?'c'+Math.ceil(pl.clear/10):Math.ceil(pl.amt/35);
+    if(!g||g.userData.bucket!==bucket){if(g)sc.remove(g);g=pl.clear>0?makeRubble(pl.r,pl.clear/(pl.clear0||pl.clear)):makePile(pl.r,Math.ceil(pl.amt/35)*35,pl.dep);g.userData.bucket=bucket;g.position.set(wx(i%GW),0,wz(Math.floor(i/GW)));sc.add(g);R3.pmap.set(i,g);}}
   for(const [i,g] of R3.pmap)if(!ps.has(i)){sc.remove(g);R3.pmap.delete(i);}
   // курсор и выделение
   const hv=ui.hover&&ui.hover.x>=0&&ui.hover.y>=0&&ui.hover.x<GW&&ui.hover.y<GH;
@@ -2279,8 +2311,8 @@ function dayRates(s){
     const eff=bEff(s,b),h=b.emerg>0?24:H;
     if(d.prod)for(const k in d.prod){const m=d.prod[k]*wf*eff*h*bMult(s,b,k);o[k]=m;out[k]+=m;}
     if(d.kitchen){const c=7.5*wf*eff*h*(has(s,'t_cook2')?1.5:1);o.kcap=c;kcap+=c;}
-    if(d.rp){const r=d.rp*wf*eff*h*(has(s,'t_research')?1.25:1);o.rp=r;out.rp+=r;}}
-  for(const t of s.grid)if(t.pile){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));}
+    if(d.rp){const r=d.rp*wf*eff*h*(has(s,'t_research')?1.25:1)*draftMul(s);o.rp=r;out.rp+=r;}}
+  for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));}
   for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:2}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t]+=g;}
   const cooked=Math.min(kcap,out.raw+s.res.raw);out.food+=cooked*rationMult(s);out.rawCooked=cooked;
   const n=popTotal(s);
@@ -2301,12 +2333,13 @@ function bLabel(s,b,R,occ){
   if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
   if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
   if(d.teams)return{t:`Отрядов ${teamSlots(s)}`,k:'ok'};
+  if(b.type==='drafting')return{t:`Наука +${Math.round((draftMul(s)-1)*100)}% всем мастерским`,k:'ok'};
   const o=R.per[b.id];if(!o)return null;if(o.idle)return{t:'Нет работников',k:'bad'};
   if(o.raw!=null){const ppl=o.raw*rationMult(s)/foodPerPerson(s);return{t:`+${Math.round(o.raw)} еды/день · кормит ${Math.floor(ppl)} чел.`,k:'ok'};}
   if(o.water!=null)return{t:`+${Math.round(o.water)} воды/день · поит ${Math.floor(o.water/waterPerPerson(s))} чел.`,k:'ok'};
   if(o.kcap!=null)return{t:`Готовит до ${Math.round(o.kcap*rationMult(s))} пайков/день`,k:'ok'};
   if(o.coal!=null)return{t:`+${Math.round(o.coal)} угля/день · ${Math.round(o.coal/Math.max(1,R.fuelH))} ч генератора`,k:'ok'};
-  if(o.rp!=null)return{t:`+${Math.round(o.rp)} очков науки/день`,k:'ok'};
+  if(o.rp!=null){const T=s.research&&TECHBY[s.research];return{t:`+${Math.round(o.rp)} очков науки/день`+(T?` · ${T.n} ${Math.floor(s.rp/T.rp*100)}%`:' · ничего не изучается'),k:T?'ok':'mute'};}
   for(const k of ['wood','steel','meds','cores'])if(o[k]!=null)return{t:`+${o[k]<1?o[k].toFixed(1):Math.round(o[k])} ${RES[k].n.toLowerCase()}/день`,k:'ok'};
   return null;
 }
@@ -2472,10 +2505,17 @@ function renderTop(){
   const pr=s.promise?`<span style="color:var(--amber)">Обещание: ${PROMISES.find(p=>p.k===s.promise.k).t} (${s.promise.left} ч)</span>`:'';
   setHTML($('popline'),`<span>Жители <b>${popTotal(s)}</b></span><span>Рабочие <b>${free(s,'w')}/${s.pop.w}</b></span><span>Инженеры <b>${free(s,'e')}/${s.pop.e}</b></span><span>Дети <b>${s.pop.c}</b></span><span>Больны <b>${ill}</b>${crit?` · тяжёлые <b style="color:var(--bad)">${crit}</b>`:''} · коек <b>${beds+hbeds}</b></span><span>Жильё <b>${housing(s)}</b>${homeless?` · без крыши <b style="color:var(--bad)">${homeless}</b>`:''}</span>${s.unfed?`<span style="color:var(--bad)">Голодают ${s.unfed}</span>`:''}${s.thirsty?`<span style="color:var(--bad)">Жажда ${s.thirsty}</span>`:''}${pr}`);
 }
+function tripLeft(tm){if(tm.path.length<2)return 0;let L=0;for(let i=1;i<tm.path.length;i++)L+=edgeLen(tm.path[i-1],tm.path[i]);return Math.max(0,L-tm.prog*edgeLen(tm.path[0],tm.path[1]));}
+function barP(s,k){
+  if(k==='tech')return s.research?Math.min(100,Math.floor(s.rp/TECHBY[s.research].rp*100)):0;
+  if(k==='laws')return Math.round(100*(1-s.lawCd/D_(s).law));
+  const mv=s.teams.filter(t=>t.path.length>=2&&t.trip0);if(!s.teams.length)return 0;if(!mv.length)return 100;
+  return Math.round(100*Math.min(...mv.map(t=>1-tripLeft(t)/t.trip0)));
+}
 function renderBar(){
   const s=S;
   setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
-    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?'<button class="major on" data-act="evopen" title="Событие ждёт решения">Событие!</button>':''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
+    `<span class="sep"></span><button class="major pbar" style="--p:${barP(s,'tech')}%" data-open="tech">Мастерская</button><button class="major pbar" style="--p:${barP(s,'laws')}%" data-open="laws">Устав</button><button class="major pbar" style="--p:${barP(s,'map')}%" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?'<button class="major on" data-act="evopen" title="Событие ждёт решения">Событие!</button>':''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
   const cards=$('cards');
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
@@ -2507,8 +2547,11 @@ function renderInfo(){
     <p class="hint">Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% котёл взорвётся.</p>`;
   }else if(ui.sel.k==='p'){
     const t=tile(s,ui.sel.x,ui.sel.y);if(!t.pile){ui.sel=null;el.hidden=true;return;}
-    h=`<h3>Завал: ${RES[t.pile.r].n.toLowerCase()}</h3><div class="sub">Разбирать могут рабочие (и дети по закону). Только днём.</div>
-    <div class="row"><span>Осталось</span><span>${fmt(t.pile.amt)}</span></div>${workCtrl('p',t.pile.a,5,'w',`data-x="${ui.sel.x}" data-y="${ui.sel.y}"`)}`;
+    const P=t.pile;
+    h=P.dep?`<h3>Залежь: ${RES[P.r].n.toLowerCase()}</h3><div class="sub">${P.clear>0?'Под обвалом. Сначала расчистите плиты и арматуру — потом можно добывать. Детям сюда нельзя.':'Расчищено. Богатый запас, до 8 работников.'}</div>`
+      :`<h3>Завал: ${RES[P.r].n.toLowerCase()}</h3><div class="sub">Разбирать могут рабочие (и дети по закону). Только днём.</div>`;
+    if(P.clear>0)h+=`<div class="row"><span>Расчистка</span><span>осталось ${Math.ceil(P.clear)} чел·ч</span></div><div class="prog" style="margin:6px 0"><i style="width:${100-P.clear/(P.clear0||P.clear)*100}%"></i></div>`;
+    h+=`<div class="row"><span>Запас</span><span>${fmt(P.amt)}</span></div>${workCtrl('p',P.a,P.max||5,'w',`data-x="${ui.sel.x}" data-y="${ui.sel.y}"`)}`;
   }else if(ui.sel.k==='b'){
     const b=bById(s,ui.sel.id);if(!b){ui.sel=null;el.hidden=true;return;}
     const d=B[b.type];const deg=heatAt(s,b.x,b.y);const lv=lvlOf(deg);
@@ -2525,6 +2568,10 @@ function renderInfo(){
       const ic=upCost(s,b,b.ins||0);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)?'':'disabled'}>Утеплить +${has(s,'t_coldmat')?8:5}°</button><span class="hint">${cs(ic)}</span></div>`;
       if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
     }
+    if(d.rp&&!b.build){const T=s.research&&TECHBY[s.research],rd=dayRates(s).out.rp;
+      h+=T?`<div class="row"><span>Изучается</span><span>${T.n}</span></div><div class="row"><span>Прогресс</span><span>${Math.floor(s.rp)} / ${T.rp} (${Math.floor(s.rp/T.rp*100)}%)${rd>0?` · ≈ ${Math.ceil((T.rp-s.rp)/rd*24)} ч`:''}</span></div><div class="prog" style="margin:6px 0"><i style="width:${Math.min(100,s.rp/T.rp*100)}%"></i></div>`
+        :`<p class="hint">Ничего не изучается.</p>`;
+      h+=`<div class="row"><span>Ускорение бюро</span><span>+${Math.round((draftMul(s)-1)*100)}%</span></div><div class="ctrl"><button class="btn primary" data-open="tech">Открыть исследования</button></div>`;}
     if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
     h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём ${has(s,'t_recycle')?'всё':'50%'})</button></div>`;
   }
@@ -2543,7 +2590,7 @@ function renderOverlay(){
   if(ui.open==='tech'){
     el.hidden=false;el.className='overlay';
     const cats=[...new Set(TECH.map(t=>t.cat))];
-    const ws=s.bld.filter(b=>b.type==='workshop'&&!b.build&&workforce(b.a)>0).length;
+    const ws=s.bld.filter(b=>(b.type==='workshop'||b.type==='lab')&&!b.build&&workforce(b.a)>0).length;
     const cur=s.research?TECHBY[s.research]:null;const rpDay=dayRates(s).out.rp;
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Мастерская</h2>
     <p class="lead">Здесь инженеры придумывают новое. Мастерские дают очки науки: сейчас ${Math.round(rpDay)} в день (${ws} мастерских с инженерами). ${ws?'':'<b>Постройте мастерскую (вкладка «Наука») и поставьте туда инженеров.</b>'} ${cur?`Идёт: <b>${cur.n}</b> — ${Math.floor(s.rp)} / ${cur.rp} очков${rpDay>0?`, осталось ≈ ${Math.ceil((cur.rp-s.rp)/rpDay*24)} ч`:''}.`:'Выберите одно исследование: ресурсы списываются сразу, очки копятся.'}</p>
