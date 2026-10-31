@@ -413,17 +413,17 @@ const LAWS=[
 LAWS.push(
   {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
   {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
-  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +40%, наука +20%. Недовольство растёт каждый день.',fx:{disc:5}});
-const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',water_ration:'harsh',pit:'harsh',radical:'harsh',mandatory:'harsh',emergency:'harsh',crowding:'harsh',arena:'harsh',
+  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +25%, наука +10%. Недовольство растёт каждый день.',fx:{disc:5}});
+const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',water_ration:'harsh',pit:'harsh',radical:'harsh',communal:'harsh',crowding:'harsh',arena:'harsh',
   child_shelter:'care',soup:'care',cemetery:'care',overcrowd:'care',private:'care',quarantine:'care',apprentice:'care',moonshine:'care',
-  recycling:'ind',expedition:'ind',barter:'ind',communal:'ind'};
+  recycling:'ind',expedition:'ind',barter:'ind',mandatory:'ind',emergency:'ind'};
 for(const L of LAWS)if(!L.br)L.br=LAW_BR[L.id]||L.cat;
 const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care:{n:'Человечность',c:'#7fc48a',need:5,cap:'cap_care'},ind:{n:'Промышленность',c:'#c08d5c',need:3,cap:'cap_ind'},
   order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'}};
 // высший закон ветки открывается только когда приняты ВСЕ остальные законы этой ветки
 for(const k in BR)BR[k].need=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap).length;
 const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
-const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.4;if(d.rp)m*=1.2;}return m;};
+const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.25;if(d.rp)m*=1.1;}return m;};
 const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -595,7 +595,7 @@ const EN=[
 ['Откроется, когда шкала «','Unlocks when the scale «'],['» заполнится','» is full'],['Каждый закон наполняет шкалу своей ветки; когда приняты все законы ветки, открывается её высший закон.','Each law fills its branch scale; once every law of a branch is signed, its capstone law unlocks.'],
 ['Закон выживания','Law of Survival'],['Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).','Branch capstone law. Everyone works 30% more. Untreated critical patients die 1.5× more often. Hope −15, discontent −10 (fear).'],
 ['Каждая жизнь','Every Life'],['Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.','Branch capstone law. Deaths hurt hope half as much, the sick recover faster, hope +15. Work 10% slower.'],
-['Индустриальный рывок','Industrial Leap'],['Высший закон ветки. Все производства +40%, наука +20%. Недовольство растёт каждый день.','Branch capstone law. All production +40%, research +20%. Discontent grows every day.'],['Событие ждёт решения','Event awaits a decision'],['Событие!','Event!'],['Закрыть — решить позже','Close — decide later'],['Закрыть','Close'],['Язык / Language','Language'],
+['Индустриальный рывок','Industrial Leap'],['Высший закон ветки. Все производства +25%, наука +10%. Недовольство растёт каждый день.','Branch capstone law. All production +25%, research +10%. Discontent grows every day.'],['Событие ждёт решения','Event awaits a decision'],['Событие!','Event!'],['Закрыть — решить позже','Close — decide later'],['Закрыть','Close'],['Язык / Language','Language'],
 // союз
 ['Союз станций','Station alliance'],['Союз станций: у каждого игрока своя станция, но вы можете пересылать друг другу ресурсы. Создайте союз и передайте код другу — он вводит его у себя в игре.','Station alliance: each player runs their own station, but you can send each other resources. Create an alliance and give the code to a friend — they enter it in their game.'],
 ['Название станции','Station name'],['Создать союз','Create alliance'],['Вступить','Join'],['Другу нужен доступ к этой странице с правом редактирования.','Your friend needs edit access to this page.'],
@@ -813,7 +813,7 @@ function newGame(diff,survivor){
     leavers:0,
   };
   for(const k in s.res)s.res[k]=Math.round(s.res[k]);
-  s.res.food=Math.max(s.res.food,90);s.res.water=Math.max(s.res.water,100); // хотя бы сутки на раскачку на любой сложности
+  {const P=80*D.cons;s.res.food=Math.max(s.res.food,Math.ceil(1.5*P));s.res.water=Math.max(s.res.water,Math.ceil(1.2*P));s.res.wood=Math.max(s.res.wood,100);s.res.stone=Math.max(s.res.stone,70);s.res.steel=Math.max(s.res.steel,25);} // хотя бы сутки на раскачку на любой сложности
   // сетка: пути вдоль краёв, завалы
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
     const t={k:(y===0||y===GH-1)?'track':'floor',b:0,pile:null};
@@ -839,8 +839,8 @@ function newGame(diff,survivor){
   }
   tile(s,GX,GY).b=-1; // генератор
   // стартовые постройки
-  place(s,'tent',GX-2,GY-2,true);place(s,'tent',GX+2,GY-2,true);place(s,'tent',GX-2,GY+2,true);
-  place(s,'kitchen',GX+2,GY+2,true);
+  place(s,'tent',GX-2,GY-1,true);place(s,'tent',GX+2,GY-1,true);place(s,'tent',GX-1,GY+2,true);
+  place(s,'kitchen',GX+1,GY+2,true);
   for(const id in G.nodes)if(!G.nodes[id].secret)s.st[id]={k:0};
   s.st[HUB]={k:2,t:'hub'};
   for(const e of G.adj[HUB])if(s.st[e.to])s.st[e.to].k=Math.max(1,s.st[e.to].k);
@@ -861,7 +861,8 @@ const D_=s=>DIFF[s.diff];
 const popTotal=s=>s.pop.w+s.pop.e+s.pop.c;
 const healthy=(s,t)=>s.pop[t]-s.crit[t]-(has(s,'mandatory')?0:s.ill[t])+(t==='w'?(s.robots||0):0);
 const lvlMul=b=>1+.2*(b.lvl||0);
-function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
+function insCost(s,n){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1);return{wood:Math.ceil(15*k),steel:Math.ceil(5*k)};}
+function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
 function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
 const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
@@ -1400,7 +1401,7 @@ function sciInfo(s){
   const W=s.bld.filter(b=>(b.type==='workshop'||b.type==='lab')&&!b.build&&b.on&&workforce(b.a)>0).sort((a,c)=>(c.lvl||0)-(a.lvl||0)).slice(0,2);
   const pct=W.length?Math.min(300,100+(W.length>1?50:0)+25*W.reduce((a,b)=>a+Math.min(WS_MAXLV,b.lvl||0),0)):0;
   const staff=W.length?W.reduce((a,b)=>a+Math.min(1,workforce(b.a)/B[b.type].jobs)*bEff(s,b)/lvlMul(b)/capMul(s,b),0)/W.length:0;
-  const mult=(has(s,'t_research')?1.25:1)*(has(s,'cap_ind')?1.2:1);
+  const mult=(has(s,'t_research')?1.25:1)*(has(s,'cap_ind')?1.1:1);
   return{W,pct,staff,perH:RP_BASE*pct/100*staff*mult,mult};
 }
 function draftMul(s){const d=s.bld.filter(b=>b.type==='drafting'&&!b.build).sort((a,b)=>(b.lvl||0)-(a.lvl||0)).slice(0,3);return 1+d.reduce((a,b)=>a+.15*lvlMul(b),0);}
@@ -1417,7 +1418,7 @@ function canPlace(s,type,x,y){
 }
 function canSign(s,id){
   const L=LAWBY[id];if(has(s,id))return false;if(s.lawCd>0)return false;
-  if(L.ex&&has(s,L.ex))return false;if(L.req&&!has(s,L.req))return false;
+  if(L.ex&&has(s,L.ex))return false;if(s.laws.some(x=>LAWBY[x]&&LAWBY[x].ex===id))return false;if(L.req&&!has(s,L.req))return false;
   if(L.cap&&brCount(s,L.br)<BR[L.br].need)return false;
   if(L.cat!=='adapt'){if(s.day<5&&!s.flags.purposeOpen)return false;if(s.path&&s.path!==L.cat)return false;}
   return true;
@@ -1442,7 +1443,7 @@ function act(s,a){
       if(a.who){const t=a.who,A=j.o.a;for(let i=0;i<Math.abs(n);i++){if(n>0){if(!canTake(s,j,t)||A.w+A.e+A.c>=j.max||free(s,t)<=0)break;A[t]++;}else{if(A[t]<=0)break;A[t]--;}}break;}
       for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
     case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||b.upT>0||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='lvl';break;}
-    case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=upCost(s,b,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
+    case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=insCost(s,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
     case 'taunt':{const b=bById(s,a.id);if(!b||b.type!=='catapult'||b.build||b.tauntCd>0)return;b.tauntCd=6;b.tauntOn=1;for(const z of s.zombies||[]){z.taunt=b.id;z.tauntT=1;z.att=null;}toast(s,`Таунт: мутанты идут на «${B[b.type].n}»`,'');break;}
     case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
@@ -2796,8 +2797,8 @@ function allyHTML(s){
 
 /* ---------------------------- ОБОРОНА: волны мертвецов из тоннеля ---------------------------- */
 // Путь: из правого конца нижнего пути по рельсам, затем через платформу к ближайшему зданию.
-const ZW={easy:.6,normal:1,hard:1.3,extreme:1.6,extremeplus:1.8,hardcore:2.2};
-const TOWER={archer:{range:4,dps:30,hp:100,regen:10,single:1},catapult:{range:3,dps:4,hp:120,regen:20,splash:.6,tank:1},steamgun:{range:4.5,dps:220,hp:200,regen:15,splash:1.1,coal:2}};
+const ZW={easy:.6,normal:1,hard:1.2,extreme:1.3,extremeplus:1.35,hardcore:1.4};
+const TOWER={archer:{range:4,dps:30,hp:100,regen:10,single:1},catapult:{range:3,dps:4,hp:120,regen:20,splash:.6,tank:1},steamgun:{range:4.5,dps:90,hp:200,regen:15,splash:.9,coal:2}};
 const Z_DMG=5;
 // виды мутантов: здоровье, скорость, урон — множители; d — с какого дня появляются; w — вес в волне; k — размер модели
 const ZT={ghoul:{n:'Упырь',hp:1,sp:1,dm:1,d:1,w:5,k:1.35,h:.62},shambler:{n:'Шатун',hp:1.25,sp:.8,dm:1.1,d:1,w:3,k:1.35,h:.62},
@@ -2813,9 +2814,9 @@ function zIcon(k,c){return`<svg viewBox="0 0 32 32" width="22" height="22" fill=
 function zBestiary(s,day){return`<div class="zbest">${Object.entries(ZT).map(([k,t])=>{const on=day>=t.d;return`<span class="zb ${on?'':'off'}" title="${t.n}: здоровье ×${t.hp}, скорость ×${t.sp}, урон ×${t.dm}${on?'':` — с ${t.d}-го дня`}">${zIcon(k,on?'#e8c0a8':'#4a5560')}<small>${t.n}</small></span>`;}).join('')}</div>`;}
 function zPick(s){const L=Object.entries(ZT).filter(([k,t])=>s.day>=t.d);let x=rnd()*L.reduce((a,[k,t])=>a+t.w,0);for(const [k,t] of L){x-=t.w;if(x<=0)return k;}return 'ghoul';}
 const ZDMG={easy:.7,normal:1,hard:1.25,extreme:1.5,extremeplus:1.75,hardcore:2};
-function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=1?1:0;return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*lvlMul(b)*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
+function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=1?1:0;return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*(1+.3*(b.lvl||0))*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
 function waveSize(s,day){return Math.max(3,Math.round((10+2*(day-1))*(ZW[s.diff]||1)))+(s.waveBonus&&day===(s.hour>=22?s.day+1:s.day)?s.waveBonus:0);}
-const waveHp=day=>40+8*(day-1);
+const waveHp=day=>40+6*(day-1);
 function scheduleWave(s){
   if(s.over)return;
   s.zombies=s.zombies||[];
@@ -2832,7 +2833,7 @@ function waveTarget(s,z){
   const gd=Math.hypot(GX-z.x,GY-z.y);if(!best||gd<bd)return{x:GX,y:GY};return best;
 }
 function zLoot(s,w){
-  const r=rnd(),k=r<.35?'steel':r<.6?'coal':r<.85?'raw':r<.97?'wood':'meds';const n=k==='meds'?1:ri(1,3);
+  const r=rnd(),k=r<.3?'steel':r<.5?'coal':r<.7?'stone':r<.88?'raw':r<.98?'wood':'meds';const n=k==='meds'?1:ri(1,3);
   s.res[k]+=n;w.loot[k]=(w.loot[k]||0)+n;
 }
 function combatStep(s,dt){
@@ -3123,7 +3124,7 @@ function renderInfo(){
     if(!b.build){
       const cs=c=>Object.entries(c).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(', ')||'бесплатно';
       if(canUpgrade(b)){const uc=upCost(s,b,b.lvl||0);h+=`<div class="row"><span>Уровень</span><span>${b.lvl||0} (+${(b.lvl||0)*20}%)</span></div><div class="ctrl"><button class="btn primary" data-upgrade="${b.id}" ${canAfford(s,uc)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='lvl'?`Улучшение: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:'Улучшить +20%'}</button><span class="hint">${cs(uc)}</span></div>${b.upT>0?`<div class="prog" style="margin:4px 0"><i style="width:${100-b.upT/UP_T*100}%"></i></div>`:''}`;}
-      const ic=upCost(s,b,b.ins||0);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
+      const ic=insCost(s,b.ins||0);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
       if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
     }
     if(d.rp&&!b.build){const T=s.research&&TECHBY[s.research],rd=dayRates(s).out.rp;
@@ -3163,7 +3164,7 @@ function renderOverlay(){
   if(ui.open==='laws'){
     el.hidden=false;el.className='overlay';
     const purposeOpen=s.day>=5||s.flags.purposeOpen;
-    const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);const col=BR[L.br]?BR[L.br].c:'#4a5560';
+    const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=(L.ex&&has(s,L.ex))||s.laws.some(x=>LAWBY[x]&&LAWBY[x].ex===L.id&&!has(s,L.id));const col=BR[L.br]?BR[L.br].c:'#4a5560';
       const lock=L.cap&&!sig&&brCount(s,L.br)<BR[L.br].need?`Откроется, когда будут приняты все законы ветки «${BR[L.br].n}»: ${brCount(s,L.br)} из ${BR[L.br].need}`:'';
       return`<button class="tech withpic ${sig?'done':''} ${L.cap?'cap':''}" style="border-left-color:${col};${L.cap?`--capc:${col}`:''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id]||'star',col)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${lock?`<span class="c">${lock}</span>`:blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
     const scale=k=>{const b=BR[k],n=Math.min(b.need,brCount(s,k));return`<div class="scale"><div class="sh"><span style="color:${b.c}">${b.n}</span><span class="num">${n}/${b.need}</span></div><div class="sb">${Array.from({length:b.need},(_,i)=>`<i style="${i<n?`background:${b.c}`:''}"></i>`).join('')}<b style="border-color:${b.c};${has(s,b.cap)?`background:${b.c}`:''}" title="${LAWBY[b.cap].n}"></b></div><div class="hint">→ ${LAWBY[b.cap].n}</div></div>`;};
