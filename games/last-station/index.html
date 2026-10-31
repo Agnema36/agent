@@ -51,6 +51,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .res .d.neg{color:var(--bad)} .res .d.pos{color:var(--ok)}
 #clock{margin-left:auto;display:flex;align-items:center;gap:10px;padding:5px 10px}
 #clock .day{font-family:var(--display);font-size:18px;letter-spacing:.06em}
+#warn{flex-basis:100%;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;pointer-events:none;margin-top:2px}
+#warn:empty{display:none}
+.zbest{display:flex;flex-wrap:wrap;gap:2px 6px;margin-top:5px}.zb{display:flex;flex-direction:column;align-items:center;width:44px;text-align:center}.zb small{font-size:9.5px;line-height:1.1;color:var(--frost-dim)}.zb.off{opacity:.45}
+@media (min-width:900px){#warn{padding-left:330px;padding-right:20px;justify-content:flex-start}body.noneeds #warn{padding-left:0;justify-content:center}}
+.wchip{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:12.5px;background:rgba(14,18,22,.9);border:1px solid #3b4856;border-left:3px solid #e8c25a;color:var(--frost);max-width:min(560px,92vw)}
+.wchip.bad{border-left-color:#e06450;background:rgba(48,16,12,.92)}.wchip.cold{border-left-color:#7fb8e6;background:rgba(14,26,40,.92)}
+.wchip .wi{font-size:14px}
 #temp{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 6px}
 #temp svg.gauge{width:84px;height:50px;flex:none}
 #temp .deg{font-family:var(--display);font-size:22px;color:var(--cold)}
@@ -224,6 +231,7 @@ body.inmenu .hud{display:none!important}
   <div id="res" class="panel"></div>
   <div id="temp" class="panel" title="Температура на станции"></div>
   <div id="clock" class="panel"></div>
+  <div id="warn"></div>
 </div>
 <div id="needs" class="hud panel"></div>
 <div id="toasts" class="hud"></div>
@@ -403,15 +411,17 @@ const LAWS=[
   {id:'f_new',cat:'faith',n:'Подземное братство',d:'Финал пути. Надежда не падает ниже 40.',req:'f_wardens',fx:{hope:25}},
 ];
 LAWS.push(
-  {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Лютый закон. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
-  {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Лютый закон. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
-  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Лютый закон. Все производства +40%, наука +20%. Недовольство растёт каждый день.',fx:{disc:5}});
+  {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
+  {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
+  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +40%, наука +20%. Недовольство растёт каждый день.',fx:{disc:5}});
 const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',water_ration:'harsh',pit:'harsh',radical:'harsh',mandatory:'harsh',emergency:'harsh',crowding:'harsh',arena:'harsh',
   child_shelter:'care',soup:'care',cemetery:'care',overcrowd:'care',private:'care',quarantine:'care',apprentice:'care',moonshine:'care',
   recycling:'ind',expedition:'ind',barter:'ind',communal:'ind'};
 for(const L of LAWS)if(!L.br)L.br=LAW_BR[L.id]||L.cat;
 const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care:{n:'Человечность',c:'#7fc48a',need:5,cap:'cap_care'},ind:{n:'Промышленность',c:'#c08d5c',need:3,cap:'cap_ind'},
   order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'}};
+// высший закон ветки открывается только когда приняты ВСЕ остальные законы этой ветки
+for(const k in BR)BR[k].need=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap).length;
 const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
 const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.4;if(d.rp)m*=1.2;}return m;};
 const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
@@ -489,6 +499,13 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['здоровье','health'],['скорость','speed'],['урон','damage'],['— с','— from day'],['-го дня',''],
+['Атака мутантов! В тоннеле и на платформе:','Mutant attack! In the tunnel and on the platform:'],['Сегодня','Today'],['Завтра','Tomorrow'],['в 22:00 из тоннеля придут','at 22:00 from the tunnel come'],['мутантов — через','mutants — in'],
+['Завтра похолодание:','Cold snap tomorrow:'],['на','by'],['холоднее). Выше риск обморожений и болезней — утеплите жильё, поднимите огонь','colder). Higher risk of frostbite and illness — insulate housing, raise the fire'],
+['Завтра потеплеет:','Warmer tomorrow:'],['Через','In'],['дн. придёт сильный мороз:','days a hard frost arrives:'],['Риск обморожений: ночью могут заболеть ≈','Frostbite risk: may fall ill tonight ≈'],['чел.','may fall ill.'],['Без крыши','Homeless:'],
+['Уголь кончится через','Coal runs out in'],['ч — огонь погаснет','h — the fire will go out'],['Еды меньше чем на день','Less than a day of food'],
+['Высший закон ветки.','Branch capstone law.'],['Откроется, когда будут приняты все законы ветки «','Unlocks when every law of the branch «'],['»:','» is signed:'],['из','of'],
+['Законы не отменяются. Каждый закон наполняет шкалу своей ветки; когда приняты все законы ветки, открывается её высший закон.','Laws cannot be repealed. Each law fills its branch scale; once every law of a branch is signed, its capstone law unlocks.'],
 ['Стрелок','Gunner'],['1 рабочий на посту','1 worker on duty'],['нет','none'],['Нужен свободный рабочий — он станет стрелком башни','Needs a free worker — they become the tower gunner'],
 ['Стоит 1 рабочего.','Costs 1 worker.'],
 ['Упырь','Ghoul'],['Шатун','Shambler'],['Тоннельный пёс','Tunnel hound'],['Громила','Brute'],['Секач','Tusker'],['Раздутень','Bloater'],['мясо','meat'],
@@ -566,10 +583,10 @@ const EN=[
 ['Сохранения','Saves'],['Сохранить','Save'],['Загрузить','Load'],['пусто','empty'],['Сохранено в слот','Saved to slot'],['На «Хардкоре» сохранять в слоты нельзя','Slot saves are disabled on Hardcore'],['жителей','residents'],['Привычка: люди понемногу успокаиваются','Habit: people slowly calm down'],['Все сыты и напоены','Everyone fed and watered'],['Голод или жажда','Hunger or thirst'],
 ['Без крыши:','Homeless:'],['Мёрзнут в жилье:','Freezing at home:'],['Больные без коек:','Sick without beds:'],['Закон:','Law:'],['Посты патруля','Patrol posts'],['из 100','of 100'],['Нет постоянных причин.','No ongoing causes.'],['Итого за сутки','Total per day'],
 ['Смерти, события, обещания и законы меняют надежду сразу.','Deaths, events, promises and laws change hope immediately.'],['Множитель сложности','Difficulty multiplier'],['События и законы меняют недовольство сразу.','Events and laws change discontent immediately.'],['Занято','Assigned'],['свободно','free'],['Дети работают только по закону «Детский труд».','Children work only under the «Child labour» law.'],['Убрать:','Remove:'],['Добавить:','Add:'],['Залежь:','Deposit:'],['Залежь расщищена:','Deposit cleared:'],['Залежь расчищена:','Deposit cleared:'],['Под обвалом. Сначала расчистите плиты и арматуру — потом можно добывать. Детям сюда нельзя.','Under a collapse. Clear the slabs and rebar first, then you can mine. No children here.'],['Расчищено. Богатый запас, до 8 работников.','Cleared. A rich deposit, up to 8 workers.'],['Расчистка','Clearing'],['осталось','left'],['чел·ч','worker-h'],['Запас','Stock'],['Лаборатория','Laboratory'],['Инженеры исследуют в 1,6 раза быстрее, чем в мастерской.','Engineers research 1.6× faster than in a workshop.'],['Чертёжное бюро','Drafting office'],['Ускоряет все мастерские и лаборатории на 15% (действуют до трёх бюро).','Speeds up all workshops and labs by 15% (up to three offices count).'],['ничего не изучается','nothing being researched'],['Ничего не изучается.','Nothing is being researched.'],['Наука','Science'],['всем мастерским','for all workshops'],['Изучается','Researching'],['Прогресс','Progress'],['Ускорение бюро','Office boost'],['Открыть исследования','Open research'],['мастерских с инженерами).','workshops/labs with engineers).'],['Суровость','Severity'],['Человечность','Humanity'],['Промышленность','Industry'],['Порядок','Order'],['Братство','Brotherhood'],
-['Откроется, когда шкала «','Unlocks when the scale «'],['» заполнится','» is full'],['Каждый закон наполняет шкалу своей ветки; полная шкала открывает её лютый закон.','Each law fills its branch scale; a full scale unlocks that branch’s extreme law.'],
-['Закон выживания','Law of Survival'],['Лютый закон. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).','Extreme law. Everyone works 30% more. Untreated critical patients die 1.5× more often. Hope −15, discontent −10 (fear).'],
-['Каждая жизнь','Every Life'],['Лютый закон. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.','Extreme law. Deaths hurt hope half as much, the sick recover faster, hope +15. Work 10% slower.'],
-['Индустриальный рывок','Industrial Leap'],['Лютый закон. Все производства +40%, наука +20%. Недовольство растёт каждый день.','Extreme law. All production +40%, research +20%. Discontent grows every day.'],['Событие ждёт решения','Event awaits a decision'],['Событие!','Event!'],['Закрыть — решить позже','Close — decide later'],['Закрыть','Close'],['Язык / Language','Language'],
+['Откроется, когда шкала «','Unlocks when the scale «'],['» заполнится','» is full'],['Каждый закон наполняет шкалу своей ветки; когда приняты все законы ветки, открывается её высший закон.','Each law fills its branch scale; once every law of a branch is signed, its capstone law unlocks.'],
+['Закон выживания','Law of Survival'],['Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).','Branch capstone law. Everyone works 30% more. Untreated critical patients die 1.5× more often. Hope −15, discontent −10 (fear).'],
+['Каждая жизнь','Every Life'],['Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.','Branch capstone law. Deaths hurt hope half as much, the sick recover faster, hope +15. Work 10% slower.'],
+['Индустриальный рывок','Industrial Leap'],['Высший закон ветки. Все производства +40%, наука +20%. Недовольство растёт каждый день.','Branch capstone law. All production +40%, research +20%. Discontent grows every day.'],['Событие ждёт решения','Event awaits a decision'],['Событие!','Event!'],['Закрыть — решить позже','Close — decide later'],['Закрыть','Close'],['Язык / Language','Language'],
 // союз
 ['Союз станций','Station alliance'],['Союз станций: у каждого игрока своя станция, но вы можете пересылать друг другу ресурсы. Создайте союз и передайте код другу — он вводит его у себя в игре.','Station alliance: each player runs their own station, but you can send each other resources. Create an alliance and give the code to a friend — they enter it in their game.'],
 ['Название станции','Station name'],['Создать союз','Create alliance'],['Вступить','Join'],['Другу нужен доступ к этой странице с правом редактирования.','Your friend needs edit access to this page.'],
@@ -1679,7 +1696,25 @@ function init3D(){
     ['skirt',G_(new T.CylinderGeometry(.052,.07,.13,8,1,true),g=>g.translate(0,.1,0)),(()=>{const m=coatM();m.side=T.DoubleSide;return m;})()],
     ['armL',G_(new T.CylinderGeometry(.017,.015,.13,6),g=>g.translate(0,-.065,0)),coatM()],
     ['armR',G_(new T.CylinderGeometry(.017,.015,.13,6),g=>g.translate(0,-.065,0)),coatM()],
-    ['gloves',(()=>{const a=new T.SphereGeometry(.014,6,4);a.translate(-.058,.14,0);const b=new T.SphereGeometry(.014,6,4);b.translate(.058,.14,0);const p=[...a.toNonIndexed().attributes.position.array,...b.toNonIndexed().attributes.position.array],n=[...a.toNonIndexed().attributes.normal.array,...b.toNonIndexed().attributes.normal.array];const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('normal',new T.Float32BufferAttribute(n,3));return g;})(),new T.MeshStandardMaterial({color:0x2e2620,roughness:.9})],
+    ['gloveL',G_(new T.SphereGeometry(.015,6,4),g=>g.translate(0,-.135,0)),new T.MeshStandardMaterial({color:0x2e2620,roughness:.9})],
+    ['gloveR',G_(new T.SphereGeometry(.015,6,4),g=>g.translate(0,-.135,0)),new T.MeshStandardMaterial({color:0x2e2620,roughness:.9})],
+    ['apron',G_(new T.BoxGeometry(.078,.17,.008),g=>{g.rotateX(-.08);g.translate(0,.135,.06);}),new T.MeshStandardMaterial({map:dirt,color:0xa8a090,roughness:1})],
+    ['pack',G_(new T.BoxGeometry(.065,.075,.04),g=>g.translate(0,.215,-.068)),new T.MeshStandardMaterial({map:dirt,color:0x6a5a44,roughness:1})],
+    ['roll',G_(new T.CylinderGeometry(.016,.016,.08,8),g=>{g.rotateZ(Math.PI/2);g.translate(0,.262,-.07);}),new T.MeshStandardMaterial({color:0x4a5a48,roughness:1})],
+    ['ushanka',G_(new T.CylinderGeometry(.039,.041,.04,10),g=>g.translate(0,.344,-.002)),new T.MeshStandardMaterial({map:dirt,color:0x6a5644,roughness:1})],
+    ['flaps',G_(new T.BoxGeometry(.09,.035,.04),g=>g.translate(0,.318,-.006)),new T.MeshStandardMaterial({map:dirt,color:0x6a5644,roughness:1})],
+    ['scarf',G_(new T.TorusGeometry(.034,.013,5,10),g=>{g.rotateX(Math.PI/2);g.translate(0,.29,.004);}),new T.MeshStandardMaterial({map:dirt,roughness:1})],
+    ['lamp',G_(new T.SphereGeometry(.008,6,4),g=>g.translate(0,.345,.038)),new T.MeshBasicMaterial({color:0xffe9a0,toneMapped:false})],
+    // инструменты в правой руке (в координатах руки: кисть на y=-.13, рукоять вперёд по z)
+    ['tw_pick',G_(new T.CylinderGeometry(.006,.006,.2,5),g=>{g.rotateX(Math.PI/2);g.translate(0,-.13,.07);}),new T.MeshStandardMaterial({color:0x6a4a2a,roughness:.8})],
+    ['tm_pick',G_(new T.CylinderGeometry(.006,.002,.13,5),g=>g.translate(0,-.13,.165)),new T.MeshStandardMaterial({color:0x6a6e72,metalness:.7,roughness:.4})],
+    ['tw_axe',G_(new T.CylinderGeometry(.006,.006,.18,5),g=>{g.rotateX(Math.PI/2);g.translate(0,-.13,.06);}),new T.MeshStandardMaterial({color:0x6a4a2a,roughness:.8})],
+    ['tm_axe',G_(new T.BoxGeometry(.007,.05,.038),g=>g.translate(0,-.105,.14)),new T.MeshStandardMaterial({color:0x8a8e92,metalness:.7,roughness:.35})],
+    ['tw_hammer',G_(new T.CylinderGeometry(.007,.007,.19,5),g=>{g.rotateX(Math.PI/2);g.translate(0,-.13,.065);}),new T.MeshStandardMaterial({color:0x5a3e24,roughness:.8})],
+    ['tm_hammer',G_(new T.BoxGeometry(.03,.07,.032),g=>g.translate(0,-.13,.155)),new T.MeshStandardMaterial({color:0x4a4c50,metalness:.6,roughness:.5})],
+    ['tw_shovel',G_(new T.CylinderGeometry(.006,.006,.22,5),g=>{g.rotateX(Math.PI/2);g.translate(0,-.13,.08);}),new T.MeshStandardMaterial({color:0x6a4a2a,roughness:.8})],
+    ['tm_shovel',G_(new T.BoxGeometry(.045,.006,.055),g=>g.translate(0,-.13,.21)),new T.MeshStandardMaterial({color:0x5a5e62,metalness:.5,roughness:.5})],
+    ['tm_bucket',G_(new T.CylinderGeometry(.024,.019,.04,10),g=>g.translate(0,-.17,0)),new T.MeshStandardMaterial({color:0x6a7076,metalness:.6,roughness:.45})],
     ['belt',G_(new T.CylinderGeometry(.051,.051,.016,8),g=>g.translate(0,.155,0)),new T.MeshStandardMaterial({color:0x221a14,roughness:.8})],
     ['bag',G_(new T.BoxGeometry(.016,.04,.04),g=>g.translate(.058,.13,.0)),new T.MeshStandardMaterial({color:0x5a4630,roughness:1})],
     ['collar',G_(new T.TorusGeometry(.036,.016,5,10),g=>{g.rotateX(Math.PI/2);g.translate(0,.285,0);}),new T.MeshStandardMaterial({color:0x6e5e4a,roughness:1})],
@@ -1735,7 +1770,7 @@ function init3D(){
   R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso'||n==='skirt';m.userData.part=n;sc.add(m);return m;});
   {// шинели разных оттенков: бурые, хаки, серые, светлые
     const pal=[0x8a6e56,0x76704f,0x7a7672,0x9c9282,0x66563f,0x84745c].map(c=>new T.Color(c)),hp=[0x4a4a48,0x5a4c3c,0x3e4044].map(c=>new T.Color(c));
-    for(const m of R3.ppl){const n=m.userData.part;if(!['torso','skirt','armL','armR','hood'].includes(n))continue;for(let i=0;i<60;i++)m.setColorAt(i,n==='hood'?hp[(i*7)%3]:pal[(i*5)%pal.length]);m.instanceColor.needsUpdate=true;}}
+    const sc_=[0x8a2a22,0x2a3e5a,0x5a5a52,0x6a4a22].map(c=>new T.Color(c));for(const m of R3.ppl){const n=m.userData.part;if(n==='scarf'){for(let i=0;i<60;i++)m.setColorAt(i,sc_[(i*3)%4]);m.instanceColor.needsUpdate=true;continue;}if(!['torso','skirt','armL','armR','hood'].includes(n))continue;for(let i=0;i<60;i++)m.setColorAt(i,n==='hood'?hp[(i*7)%3]:pal[(i*5)%pal.length]);m.instanceColor.needsUpdate=true;}}
   R3.pp=Object.fromEntries(R3.ppl.map(m=>[m.userData.part,m]));
   // иней в воздухе из вентшахт
   const N=1100,pos=new Float32Array(N*3);
@@ -1945,14 +1980,26 @@ function buildEscalators(sx){
   const sign=new T.Mesh(new T.PlaneGeometry(2.6,.36),new T.MeshBasicMaterial({toneMapped:false,map:mkE()}));
   sign.rotation.y=sx<0?Math.PI/2:-Math.PI/2;sign.position.set(-sx*.02,2.6,0);g.add(sign);(R3.signs=R3.signs||[]).push({m:sign,f:mkE});
   // стены шахты эскалаторов, пол под ними и верхний вестибюль — без пустот
-  const tileW=kmat('x',{color:0x8f8a80,roughness:.7});const dark=kmat('stone',{color:0x4a4844});
+  const tileTex=ctex(256,256,(c,w,h)=>{c.fillStyle='#5a5852';c.fillRect(0,0,w,h);
+    for(let y=0;y<h;y+=16)for(let x=(y/16)%2?-16:0;x<w;x+=32){const v=150+Math.random()*30|0;c.fillStyle=`rgb(${v},${v-4},${v-14})`;c.fillRect(x+1,y+1,30,14);}
+    for(let i=0;i<40;i++){c.fillStyle=`rgba(40,30,22,${Math.random()*.35})`;c.beginPath();c.arc(Math.random()*w,Math.random()*h,4+Math.random()*16,0,7);c.fill();}
+    for(let x=0;x<w;x+=6+Math.random()*30){c.fillStyle='rgba(50,36,24,.25)';c.fillRect(x,0,2+Math.random()*3,h*(.2+Math.random()*.6));}
+    const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'rgba(220,232,240,.35)');g.addColorStop(.25,'rgba(220,232,240,0)');g.addColorStop(.85,'rgba(20,16,12,0)');g.addColorStop(1,'rgba(20,16,12,.5)');c.fillStyle=g;c.fillRect(0,0,w,h);
+    c.fillStyle='#2a3a5a';c.fillRect(0,h*.62,w,10);});
+  tileTex.wrapS=tileTex.wrapT=T.RepeatWrapping;tileTex.repeat.set(4,1.4);
+  const tileW=new T.MeshStandardMaterial({map:tileTex,roughness:.55,color:0xb8b2a6});const dark=kmat('stone',{color:0x4a4844});
   for(const z of [-1.85]){const wall=mesh(new T.BoxGeometry(run+.6,3.4,.14),tileW);wall.position.set(sx*len/2,rise/2+1.4,z);wall.rotation.z=sx*ang;g.add(wall);
     const sk=mesh(new T.BoxGeometry(run+.6,.3,.16),kmat('x',{color:0x3a2a1c}));sk.position.set(sx*len/2,rise/2+.05,z);sk.rotation.z=sx*ang;g.add(sk);}
   // сплошные заснеженные откосы по бокам и под ступенями (клин от пола до верхней площадки)
   const wedge=(depth,mat,z,dy)=>{const sh=new T.Shape();sh.moveTo(0,-.8);sh.lineTo(len+.2,-.8);sh.lineTo(len+.2,rise+dy);sh.lineTo(0,dy);sh.lineTo(0,-.8);
     const gg=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:false});gg.translate(0,0,-depth/2);const m=mesh(gg,mat,false);m.material.side=T.DoubleSide;m.scale.x=sx;m.position.set(0,0,z);g.add(m);return m;};
   const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(3.4,bank,3.6,.35);wedge(3.6,snowMat(0x55524c),0,-.2);
-  const land=mesh(new T.BoxGeometry(3,.14,4),kmat('stone',{color:0x6a6862}));land.position.set(sx*(len+1.5),rise,0);g.add(land);
+  const landTex=ctex(256,256,(c,w,h)=>{c.fillStyle='#3a3836';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){const v=95+Math.random()*30|0;c.fillStyle=`rgb(${v},${v-3},${v-8})`;c.fillRect(x+1,y+1,30,30);
+      for(let k=0;k<6;k++){c.fillStyle=`rgba(20,18,16,${Math.random()*.4})`;c.fillRect(x+Math.random()*30,y+Math.random()*30,2,2);}}
+    for(let i=0;i<24;i++){c.fillStyle=`rgba(225,232,238,${.25+Math.random()*.4})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,6+Math.random()*24,3+Math.random()*10,Math.random()*3,0,7);c.fill();}
+    for(let i=0;i<12;i++){c.fillStyle=`rgba(40,28,20,${Math.random()*.3})`;c.beginPath();c.arc(Math.random()*w,Math.random()*h,5+Math.random()*14,0,7);c.fill();}});
+  landTex.wrapS=landTex.wrapT=T.RepeatWrapping;landTex.repeat.set(2,2.6);
+  const land=mesh(new T.BoxGeometry(3,.14,4),new T.MeshStandardMaterial({map:landTex,roughness:.85}));land.position.set(sx*(len+1.5),rise,0);g.add(land);
   const back=mesh(new T.BoxGeometry(.2,3,4),tileW);back.position.set(sx*(len+3),rise+1.5,0);g.add(back);
   for(const z of [-1.1,0,1.1]){const dr=new T.Mesh(new T.PlaneGeometry(.7,1.4),new T.MeshBasicMaterial({color:0x9fc4e0,toneMapped:false,transparent:true,opacity:.55}));dr.position.set(sx*(len+3)-sx*.11,rise+.75,z);dr.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(dr);
     const fr=mesh(new T.BoxGeometry(.04,1.5,.8),kmat('x',{color:0x2a2420}),false);fr.position.set(sx*(len+3)-sx*.1,rise+.75,z);g.add(fr);}
@@ -2399,28 +2446,37 @@ function towerFire3D(s,dtR){
 }
 function spawnSteam(p,size,vy){const q=R3.steam.find(x=>!x.life);if(!q)return;q.life=1;q.vy=.006*vy+Math.random()*.004;q.vx=(Math.random()-.5)*.004;q.sp.position.copy(p);q.sp.scale.set(size,size,1);q.sp.visible=true;}
 let ZERO4=null;
-function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);
+const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer',coreworks:'hammer',farm:'shovel',hydro:'shovel',cemetery:'shovel',condenser:'bucket',well:'bucket',kitchen:'bucket',still:'bucket'};
+const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
+const TOOLS=['pick','axe','hammer','shovel','bucket'];
+function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
   const want=Math.min(60,Math.ceil(popTotal(s)/2.5));
   while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
   walkers.length=want;
   const working=workHour(s);
-  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
+  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW),r:t.pile.r}:null).filter(Boolean))
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
-    if(Math.hypot(w.tx-w.x,w.ty-w.y)<.12||w.w++>500){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=0;}
+    if(w.wk!==working){w.wk=working;w.w=999;}
+    if((Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!working)){if(w.w>500||!w.tool||!working)w.w=0;const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=working?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
     const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
-    const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):(w.ang||0);
+    const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):w.tool&&w.face!=null?w.face:(w.ang||0);const busy=!moving&&w.tool&&w.tool!=='bucket'&&working;if(busy&&sp>0)w.sw=(w.sw||i)+sp*9;
     const sw=moving?Math.sin(w.ph)*.55:0,bob=moving?Math.abs(Math.cos(w.ph))*.008:0;
     m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));
-    for(const n of ['torso','skirt','head','gloves0','belt','bag','collar','mask','goggles'])if(R3.pp[n])R3.pp[n].setMatrixAt(i,m);
-    {const helm=i%3===0;R3.pp.hood.setMatrixAt(i,helm?ZERO4:m);R3.pp.helmet.setMatrixAt(i,helm?m:ZERO4);if(i%4===1)R3.pp.bag.setMatrixAt(i,ZERO4);}
+    for(const n of ['torso','skirt','head','belt','bag','collar','mask','goggles'])R3.pp[n].setMatrixAt(i,m);
+    {// разная одежда: каска (с фонарём у шахтёров), капюшон или ушанка; фартук, рюкзак со скаткой, шарф
+      const hat=i%3,P=R3.pp,put=(n,on)=>P[n].setMatrixAt(i,on?m:ZERO4);
+      put('helmet',hat===0);put('hood',hat===1);put('ushanka',hat===2);put('flaps',hat===2);put('lamp',hat===0&&(i%2===0||w.tool==='pick'));
+      const pack=i%4===3;put('pack',pack);put('roll',pack);put('bag',!pack&&i%4!==1);put('apron',i%5===2||w.tool==='bucket');put('scarf',i%2===1);put('mask',i%7!==4);}
     const lim=(n,x,y,a)=>{lm.makeTranslation(x,y,0);rm.makeRotationX(a);lm.multiply(rm);tm.multiplyMatrices(m,lm);R3.pp[n].setMatrixAt(i,tm);};
     lim('legL',-.02,.13,sw);lim('bootL',-.02,.13,sw);lim('legR',.02,.13,-sw);lim('bootR',.02,.13,-sw);
-    lim('armL',-.058,.27,-sw*.8);lim('armR',.058,.27,sw*.8);{const gl=new THREE.Matrix4().makeTranslation(0,.0,Math.sin(sw)*.02);tm.multiplyMatrices(m,gl);R3.pp.gloves.setMatrixAt(i,tm);}
+    const hit=busy?-1.35+Math.sin(w.sw)*1.05:null,aR=busy?hit:w.tool==='bucket'?sw*.3:sw*.8,aL=busy?hit*.85:-sw*.8;
+    lim('armL',-.058,.27,aL);lim('gloveL',-.058,.27,aL);lim('armR',.058,.27,aR);lim('gloveR',.058,.27,aR);
+    for(const k of TOOLS){const on=w.tool===k;if(R3.pp['tw_'+k]){if(on)lim('tw_'+k,.058,.27,aR);else R3.pp['tw_'+k].setMatrixAt(i,ZERO4);}if(on)lim('tm_'+k,.058,.27,aR);else R3.pp['tm_'+k].setMatrixAt(i,ZERO4);}
   }
   for(const im of R3.ppl)im.instanceMatrix.needsUpdate=true;
 }
@@ -2713,6 +2769,14 @@ const Z_DMG=5;
 const ZT={ghoul:{n:'Упырь',hp:1,sp:1,dm:1,d:1,w:5,k:1.35,h:.62},shambler:{n:'Шатун',hp:1.25,sp:.8,dm:1.1,d:1,w:3,k:1.35,h:.62},
   dog:{n:'Тоннельный пёс',hp:.6,sp:1.7,dm:.8,d:2,w:3,k:1.3,h:.45},brute:{n:'Громила',hp:2.6,sp:.7,dm:2,d:4,w:1.5,k:1.5,h:.9},
   boar:{n:'Секач',hp:3,sp:1,dm:1.6,d:6,w:1,k:1.4,h:.6},bloat:{n:'Раздутень',hp:1.5,sp:1.15,dm:1.3,d:8,w:1.5,k:1.35,h:.5}};
+const ZICON={ghoul:'<path d="M14 6a3 3 0 106 0 3 3 0 00-6 0zM15 9l-3 7-5 8M17 9l2 6 1 11M12 16l-2 9M18 15l4 3 1 7" stroke-width="2.4"/><path d="M15 6h1M18 6h1" stroke="#ff4030"/>',
+  shambler:'<path d="M12 8a4 4 0 118 0v3h-8z"/><path d="M11 11h10l2 15H9z"/><path d="M11 13l-6 4M21 13l6 4"/><path d="M14 9h1.5M17 9h1.5" stroke="#ff4030"/>',
+  dog:'<path d="M5 15c4-3 14-3 18-1l5-3 1 4-4 2M9 15l-2 9M12 16l1 8M20 16l-1 8M23 16l2 8M5 15l-3-3"/><path d="M8 11l2-2 2 2 2-2 2 2 2-2 2 2" stroke-width="1.4"/><path d="M27 12h1" stroke="#ff4030"/>',
+  brute:'<path d="M9 9c0-5 14-5 14 0v8H9z"/><path d="M14 4a2 2 0 104 0 2 2 0 00-4 0M9 10l-4 12M23 10l4 12M12 17l-1 10M20 17l1 10"/><path d="M15 4h0.5M16.5 4h0.5" stroke="#ff4030"/>',
+  boar:'<path d="M4 18c0-6 6-9 13-9s11 3 11 8c0 3-3 5-6 5H8c-2 0-4-2-4-4z"/><path d="M27 16l3-3M26 19l3 1M9 22v4M14 22v4M20 22v4M24 22v4M8 9l2-3 2 3 2-3 2 3 2-3 2 3"/><path d="M24 14h1" stroke="#ff4030"/>',
+  bloat:'<ellipse cx="16" cy="13" rx="8" ry="6"/><path d="M10 15l-6 4-1 7M12 17l-4 6v4M20 17l4 6v4M22 15l6 4 1 7M14 19h4"/><path d="M14 19h1M17 19h1" stroke="#ff4030"/>'};
+function zIcon(k,c){return`<svg viewBox="0 0 32 32" width="22" height="22" fill="none" stroke="${c||'#c8b8a8'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ZICON[k]}</svg>`;}
+function zBestiary(s,day){return`<div class="zbest">${Object.entries(ZT).map(([k,t])=>{const on=day>=t.d;return`<span class="zb ${on?'':'off'}" title="${t.n}: здоровье ×${t.hp}, скорость ×${t.sp}, урон ×${t.dm}${on?'':` — с ${t.d}-го дня`}">${zIcon(k,on?'#e8c0a8':'#4a5560')}<small>${t.n}</small></span>`;}).join('')}</div>`;}
 function zPick(s){const L=Object.entries(ZT).filter(([k,t])=>s.day>=t.d);let x=rnd()*L.reduce((a,[k,t])=>a+t.w,0);for(const [k,t] of L){x-=t.w;if(x<=0)return k;}return 'ghoul';}
 const ZDMG={easy:.7,normal:1,hard:1.25,extreme:1.5,extremeplus:1.75,hardcore:2};
 function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=1?1:0;return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*lvlMul(b)*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
@@ -2781,7 +2845,7 @@ function defenseHTML(s){
   const st=s.wave||(s.zombies&&s.zombies.length)?'bad':dps<need||tankHave<tankNeed?'warn':'ok';
   const main=s.wave||(s.zombies&&s.zombies.length)?`атака: ${(s.zombies||[]).length+(s.wave?s.wave.left:0)} мутантов`:`${towers.length} башен · ${Math.round(dps)} урона/ч`;
   const hint=`Ночью в 22:00 из тоннеля справа придут ${next} мутантов (по ${hp} здоровья). Танки: восстановление ${Math.round(tankHave)} из нужных ${tankNeed}/ч${tankHave<tankNeed?' — нужны камнемётные башни или их уровни':''}. Урон: ${Math.round(dps)} из ≈ ${Math.ceil(need)}/ч${dps<need?' — нужны башни лучников':''}.`;
-  return`<div class="need ${st}">${pic('shield',st==='ok'?'#7fc48a':st==='warn'?'#e8c25a':'#e06450')}<div><div class="nm">Оборона<b>${main}</b></div><div class="nh">${hint}</div></div></div>`;
+  return`<div class="need ${st}">${pic('shield',st==='ok'?'#7fc48a':st==='warn'?'#e8c25a':'#e06450')}<div><div class="nm">Оборона<b>${main}</b></div><div class="nh">${hint}</div>${zBestiary(s,dN)}</div></div>`;
 }
 
 /* ---------------------------- НАЛЁТЫ НА СОЮЗНИКА (только в союзе станций) ---------------------------- */
@@ -2822,12 +2886,39 @@ function slotLoad(i){const s=slotInfo(i);if(!s)return;coopStop();allyStop();S=s;
 const mc=$('mapc'),mx=mc.getContext('2d');const mcam={x:600,y:620,z:.8};
 function m2s(x,y){return{x:VW/2+(x-mcam.x)*mcam.z,y:VH/2+(y-mcam.y)*mcam.z};}
 function s2m(x,y){return{x:(x-VW/2)/mcam.z+mcam.x,y:(y-VH/2)/mcam.z+mcam.y};}
+let MAPBG=null;
+function mapBg(){// мёртвая Москва сверху: руины кварталов под снегом, замёрзшая река, дым и туман (рисуется один раз)
+  const S0=2048,O=-300,K=S0/1800,c=document.createElement('canvas');c.width=c.height=S0;const x=c.getContext('2d'),R=seeded(2033);
+  const P=(a,b)=>[(a-O)*K,(b-O)*K];
+  const g=x.createRadialGradient(S0/2,S0/2,100,S0/2,S0/2,S0*.7);g.addColorStop(0,'#2e3236');g.addColorStop(1,'#15181b');x.fillStyle=g;x.fillRect(0,0,S0,S0);
+  // река (Москва-река) — ломаная через центр
+  const riv=[[-300,420],[80,470],[250,610],[420,560],[560,700],[700,760],[800,650],[950,720],[1080,880],[1500,960]].map(([a,b])=>P(a,b));
+  const river=w=>{x.beginPath();riv.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.lineWidth=w;x.lineJoin=x.lineCap='round';x.stroke();};
+  x.strokeStyle='#9aa6ae';river(70);x.strokeStyle='#26323a';river(56);x.strokeStyle='rgba(180,200,215,.18)';x.setLineDash([18,26]);river(20);x.setLineDash([]);
+  const nearRiver=(a,b)=>{for(let i=1;i<riv.length;i++){const [x1,y1]=riv[i-1],[x2,y2]=riv[i];const dx=x2-x1,dy=y2-y1,t=Math.max(0,Math.min(1,((a-x1)*dx+(b-y1)*dy)/(dx*dx+dy*dy)));if(Math.hypot(a-x1-t*dx,b-y1-t*dy)<44)return true;}return false;};
+  // кварталы руин
+  for(let i=0;i<5200;i++){const a=R()*S0,b=R()*S0;if(nearRiver(a,b))continue;const w=8+R()*26,h=6+R()*20,an=(R()-.5)*.5+(R()<.5?0:Math.PI/2),v=48+R()*40|0;
+    x.save();x.translate(a,b);x.rotate(an);x.fillStyle='rgba(0,0,0,.35)';x.fillRect(-w/2+4,-h/2+4,w,h);x.fillStyle=`rgb(${v},${v+2},${v+6})`;x.fillRect(-w/2,-h/2,w,h);
+    x.fillStyle=`rgba(225,232,238,${.35+R()*.45})`;x.fillRect(-w/2,-h/2,w*(.3+R()*.7),h*(.2+R()*.5));
+    if(R()<.4){x.fillStyle='rgba(10,12,14,.8)';x.fillRect(-w/2+w*R()*.6,-h/2+h*R()*.6,w*.3,h*.3);}x.restore();}
+  // улицы-проспекты лучами от центра
+  x.strokeStyle='rgba(200,210,218,.10)';x.lineWidth=10;for(let k=0;k<12;k++){const an=k/12*Math.PI*2+.1;const [cx,cy]=P(600,620);x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(an)*S0,cy+Math.sin(an)*S0);x.stroke();}
+  // ориентиры: стадион, градирня, колесо обозрения
+  {const [a,b]=P(250,980);x.strokeStyle='#5a5e62';x.lineWidth=16;x.beginPath();x.ellipse(a,b,70,50,0,0,7);x.stroke();x.fillStyle='#d8dee4';x.beginPath();x.ellipse(a,b,52,34,0,0,7);x.fill();}
+  {const [a,b]=P(1050,180);x.fillStyle='#3a3e42';x.beginPath();x.arc(a,b,34,0,7);x.fill();x.fillStyle='#14171a';x.beginPath();x.arc(a,b,22,0,7);x.fill();
+    for(let k=0;k<14;k++){x.fillStyle=`rgba(200,205,210,${.12-k*.007})`;x.beginPath();x.arc(a+k*14,b-k*18,26+k*6,0,7);x.fill();}}
+  {const [a,b]=P(60,700);x.strokeStyle='#4a4e52';x.lineWidth=3;x.beginPath();x.arc(a,b,40,0,7);x.stroke();for(let k=0;k<12;k++){x.beginPath();x.moveTo(a,b);x.lineTo(a+Math.cos(k/12*7)*40,b+Math.sin(k/12*7)*40);x.stroke();}}
+  // снежная крупа и туман по краям
+  for(let i=0;i<1600;i++){x.fillStyle=`rgba(230,236,242,${R()*.25})`;x.fillRect(R()*S0,R()*S0,2,2);}
+  for(let i=0;i<70;i++){const a=R()*S0,b=R()*S0,rr=80+R()*260,gg=x.createRadialGradient(a,b,0,a,b,rr);gg.addColorStop(0,'rgba(170,180,190,.16)');gg.addColorStop(1,'rgba(170,180,190,0)');x.fillStyle=gg;x.fillRect(a-rr,b-rr,rr*2,rr*2);}
+  const vg=x.createRadialGradient(S0/2,S0/2,S0*.3,S0/2,S0/2,S0*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(4,6,8,.75)');x.fillStyle=vg;x.fillRect(0,0,S0,S0);
+  return c;
+}
 function renderMap(t){
-  const s=S;mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle='#06090c';mx.fillRect(0,0,VW,VH);
-  // сетка
-  mx.strokeStyle='rgba(120,150,170,.06)';mx.lineWidth=1;
-  for(let gx=0;gx<=1200;gx+=100){const a=m2s(gx,0),b=m2s(gx,1200);mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);mx.stroke();}
-  for(let gy=0;gy<=1200;gy+=100){const a=m2s(0,gy),b=m2s(1200,gy);mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);mx.stroke();}
+  const s=S;mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle='#101317';mx.fillRect(0,0,VW,VH);
+  if(!MAPBG)MAPBG=mapBg();{const a=m2s(-300,-300);mx.drawImage(MAPBG,a.x,a.y,1800*mcam.z,1800*mcam.z);}
+  // тёмная подложка под линиями, чтобы они читались на фоне города
+  for(const L of LINES){if(L.secret&&!s.flags.metro2)continue;const ids=G.lines[L.id];mx.strokeStyle='rgba(6,8,10,.85)';mx.lineWidth=Math.max(5,8*mcam.z);mx.lineJoin='round';mx.beginPath();ids.forEach((id,i)=>{const p=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y);});if(L.ring){const p=m2s(G.nodes[ids[0]].x,G.nodes[ids[0]].y);mx.lineTo(p.x,p.y);}mx.stroke();}
   const vis=id=>s.st[id]!=null;
   for(const L of LINES){
     if(L.secret&&!s.flags.metro2)continue;
@@ -2882,8 +2973,30 @@ function gaugeSVG(t){
 }
 const HOPE_ICO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 6 6 6 12a6 6 0 01-12 0c0-3 2-5 3-7 0 2 1 3 2 3 0-3-1-5 1-8z" fill="#8fd0f5"/></svg>';
 const DISC_ICO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V5a1.5 1.5 0 013 0v4-6a1.5 1.5 0 013 0v6-5a1.5 1.5 0 013 0v6-3a1.5 1.5 0 013 0v7c0 4-3 7-7 7h-1c-3 0-5-2-6-4l-2-4a1.5 1.5 0 012.5-1.5L7 13z" fill="#f06a4a"/></svg>';
+function warnings(s){
+  const W=[],D=D_(s),att=!!(s.wave||(s.zombies&&s.zombies.length));
+  // мутанты
+  if(att)W.push(['bad','☠',`Атака мутантов! В тоннеле и на платформе: ${(s.zombies||[]).length+(s.wave?s.wave.left:0)}`]);
+  else{const tonight=s.hour<22,n=waveSize(s,tonight?s.day:s.day+1),h=tonight?22-s.hour:46-s.hour;
+    W.push([h<=4?'bad':'',  '☠',`${tonight?'Сегодня':'Завтра'} в 22:00 из тоннеля придут ${n} мутантов — через ${h} ч`]);}
+  // погода завтра
+  if(s.day<LAST_DAY||s.endless){const now=ambient(s),tm=WEATHER[Math.min(s.day+1,LAST_DAY)-1]+D.temp,dt=now-tm;
+    if(dt>=3)W.push(['cold','❄',`Завтра похолодание: ${tm}° (на ${dt}° холоднее). Выше риск обморожений и болезней — утеплите жильё, поднимите огонь`]);
+    else if(dt<=-3)W.push(['','☀',`Завтра потеплеет: ${tm}°`]);
+    const big=[2,3,4,5].map(i=>WEATHER[Math.min(s.day+i,LAST_DAY)-1]+D.temp).findIndex(t=>t<=now-12);
+    if(big>=0&&dt<3)W.push(['cold','❄',`Через ${big+2} дн. придёт сильный мороз: ${WEATHER[Math.min(s.day+big+2,LAST_DAY)-1]+D.temp}°`]);}
+  // обморожения этой ночью
+  {const {per,homeless}=homesHeat(s),P=[.12,.07,.035,.012,.003];let e=0;for(let l=0;l<5;l++)e+=per[l]*P[l]*D.sick;e+=homeless*P[lvlOf(ambient(s)+genHeat(s)*.5)]*1.8*D.sick;e=Math.round(e);
+    if(e>=1)W.push([e>=4?'bad':'cold','🌡',`Риск обморожений: ночью могут заболеть ≈ ${e} чел.${homeless?` Без крыши ${homeless}.`:''}`]);}
+  // уголь
+  {const fuel=s.gen.on?[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D.cons:0;if(fuel>0&&s.res.coal/fuel<24)W.push(['bad','⚠',`Уголь кончится через ${Math.floor(s.res.coal/fuel)} ч — огонь погаснет`]);}
+  if(s.res.food<popTotal(s))W.push(['bad','⚠','Еды меньше чем на день']);
+  return W.slice(0,4);
+}
 function renderTop(){
   const s=S;
+  document.body.classList.toggle('noneeds',!!ui.needsHidden);
+  setHTML($('warn'),warnings(s).map(([k,i,t])=>`<div class="wchip ${k}"><span class="wi">${i}</span><span>${t}</span></div>`).join(''));
   const nd=$('needs');nd.hidden=!!ui.needsHidden;
   setHTML(nd,`<div class="needhead"><span class="title" style="font-size:13px;color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
   setHTML($('res'),RES_ORDER.map(k=>{const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
@@ -3017,14 +3130,14 @@ function renderOverlay(){
     el.hidden=false;el.className='overlay';
     const purposeOpen=s.day>=5||s.flags.purposeOpen;
     const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);const col=BR[L.br]?BR[L.br].c:'#4a5560';
-      const lock=L.cap&&!sig&&brCount(s,L.br)<BR[L.br].need?`Откроется, когда шкала «${BR[L.br].n}» заполнится`:'';
+      const lock=L.cap&&!sig&&brCount(s,L.br)<BR[L.br].need?`Откроется, когда будут приняты все законы ветки «${BR[L.br].n}»: ${brCount(s,L.br)} из ${BR[L.br].need}`:'';
       return`<button class="tech withpic ${sig?'done':''} ${L.cap?'cap':''}" style="border-left-color:${col};${L.cap?`--capc:${col}`:''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id]||'star',col)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${lock?`<span class="c">${lock}</span>`:blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
     const scale=k=>{const b=BR[k],n=Math.min(b.need,brCount(s,k));return`<div class="scale"><div class="sh"><span style="color:${b.c}">${b.n}</span><span class="num">${n}/${b.need}</span></div><div class="sb">${Array.from({length:b.need},(_,i)=>`<i style="${i<n?`background:${b.c}`:''}"></i>`).join('')}<b style="border-color:${b.c};${has(s,b.cap)?`background:${b.c}`:''}" title="${LAWBY[b.cap].n}"></b></div><div class="hint">→ ${LAWBY[b.cap].n}</div></div>`;};
     const col=k=>{const list=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap),cap=LAWBY[BR[k].cap];
       const locked=(k==='order'||k==='faith')&&!purposeOpen?'<span class="hint">Откроется на 5-й день.</span>':(k==='order'&&s.path==='faith')||(k==='faith'&&s.path==='order')?'<span class="hint">Выбран другой путь.</span>':'';
       return`<div class="col"><h4 style="color:${BR[k].c}">${BR[k].n}</h4>${locked||list.map(lawBtn).join('')+lawBtn(cap)}</div>`;};
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
-    <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются. Каждый закон наполняет шкалу своей ветки; полная шкала открывает её лютый закон.</p>
+    <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются. Каждый закон наполняет шкалу своей ветки; когда приняты все законы ветки, открывается её высший закон.</p>
     <div class="scales">${Object.keys(BR).map(scale).join('')}</div>
     <div class="grid3 laws5">${Object.keys(BR).map(col).join('')}</div></div>`);
     return;
