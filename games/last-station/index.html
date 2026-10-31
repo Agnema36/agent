@@ -109,7 +109,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .btn.danger{border-color:#6a2a22;color:#f3a090}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 .pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:16px}
-.wrow{display:grid;grid-template-columns:84px 28px 30px 28px 1fr;gap:6px;align-items:center;margin:4px 0}
+.wrow{display:grid;grid-template-columns:78px 28px 26px 28px auto 1fr;gap:6px;align-items:center;margin:4px 0}
 .wrow .num{text-align:center}
 .wrow .wn{font-size:13px}
 .closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:18px}
@@ -309,7 +309,7 @@ const B={
   depot:{n:'Дрезинное депо',cat:'scout',cost:{wood:15,steel:10},time:4,teams:1,h:.9,col:'#61584a',d:'Отряд разведчиков для экспедиций по тоннелям.'},
   coreworks:{n:'Цех энергоблоков',cat:'res',cost:{wood:40,steel:60},time:10,job:'e',jobs:5,prod:{cores:.01},h:1.1,col:'#6a5a4a',tech:'t_coreworks',d:'Инженеры собирают энергоблоки. Медленно.'},
   archer:{n:'Башня лучников',cat:'defense',cost:{wood:30,steel:5},time:3,job:'w',jobs:2,h:1.4,col:'#5a4a3a',d:'Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.'},
-  catapult:{n:'Камнемётная башня',cat:'defense',cost:{stone:35,wood:5},time:3,job:'w',jobs:2,h:1.1,col:'#6a6660',d:'Танк: мутанты бьют её первой. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.'},
+  catapult:{n:'Камнемётная башня',cat:'defense',cost:{stone:35,wood:5},time:3,job:'w',jobs:2,h:1.1,col:'#6a6660',d:'Танк с таунтом: мутанты рядом переключаются на неё, кнопка «Таунт» зовёт всех. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.'},
   steamgun:{n:'Паровая пушка',cat:'defense',cost:{steel:40,stone:30,coal:30},time:6,job:'e',jobs:2,h:1.2,col:'#4a3a30',req10:1,d:'Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.'},
   raidhut:{n:'Казарма налётчиков',cat:'defense',cost:{wood:30,steel:20},time:6,job:'w',jobs:3,h:.6,col:'#4a4038',d:'Только в союзе и только у баррикад слева внизу. Готовит налётчиков для набега на союзника.'},
   heater:{n:'Тепловой узел',cat:'heat',cost:{steel:10},time:3,heat:10,radius:2,fuel:1,h:.7,col:'#6a4a3a',tech:'t_heater',d:'+10° в радиусе 2. Сжигает 1 уголь/ч.'},
@@ -534,8 +534,8 @@ const EN=[
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
 ['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
 ['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
-['Язык','Language'],['Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель','“Until the first death” mode: the game ends as soon as the first resident dies'],['Режим «До первой смерти»: на станции погиб человек. Игра окончена.','“Until the first death” mode: a resident has died. Game over.'],['Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.','Damage: crossbows and bows, radius 4, single target. Place next to stone-thrower towers.'],
-['Танк: мутанты бьют её первой. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.','Tank: mutants attack it first. Durability 120, repairs 20/h per level. Light area damage.'],['Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.','The strongest tower: burns 2 coal/h in combat, radius 4.5, area damage.'],
+['Язык','Language'],['Таунт:','Taunt:'],['мутанты идут на','mutants are heading to'],['Аура таунта','Taunt aura'],['перезарядка','cooldown'],['все мутанты бьют эту башню 1 ч','all mutants attack this tower for 1 h'],['Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель','“Until the first death” mode: the game ends as soon as the first resident dies'],['Режим «До первой смерти»: на станции погиб человек. Игра окончена.','“Until the first death” mode: a resident has died. Game over.'],['Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.','Damage: crossbows and bows, radius 4, single target. Place next to stone-thrower towers.'],
+['Танк с таунтом: мутанты рядом переключаются на неё, кнопка «Таунт» зовёт всех. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.','Tank with taunt: nearby mutants switch to it, the Taunt button calls them all. Durability 120, repairs 20/h per level. Light area damage.'],['Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.','The strongest tower: burns 2 coal/h in combat, radius 4.5, area damage.'],
 ['Из тоннеля идут мутанты:','Mutants are coming from the tunnel:'],['мутантов.','mutants.'],['К ночи из тоннеля придут мутанты:','By night mutants will come from the tunnel:'],['Мутанты сломали:','Mutants destroyed:'],['мутантов','mutants'],
 ['Ночью в 22:00 из тоннеля справа придут','At 22:00 tonight from the right tunnel come'],['мутантов (по','mutants ('],['Танки: восстановление','Tanks: repair'],['из нужных','of needed'],['— нужны камнемётные башни или их уровни','— need stone-thrower towers or their levels'],['Урон:','Damage:'],['из ≈','of ≈'],['— нужны башни лучников','— need archer towers'],['Камень','Stone'],['камень','stone'],['Башня лучников','Archer tower'],['Арбалеты и луки. Радиус 4, по одной цели. Здоровье 100.','Crossbows and bows. Radius 4, single target. Health 100.'],
 ['Камнемётная башня','Stone-thrower tower'],['Метает камни по группе. Радиус 3,5. Здоровье 250.','Hurls stones at groups. Radius 3.5. Health 250.'],['Паровая пушка','Steam cannon'],['Жжёт 2 угля/ч в бою. Радиус 4,5, бьёт по площади. Здоровье 200.','Burns 2 coal/h in combat. Radius 4.5, area damage. Health 200.'],
@@ -1374,6 +1374,7 @@ function act(s,a){
       for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
     case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.lvl=(b.lvl||0)+1;toast(s,`${B[b.type].n}: уровень ${b.lvl}`,'good');break;}
     case 'insulate':{const b=bById(s,a.id);if(!b||b.build)return;const c=upCost(s,b,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.ins=(b.ins||0)+1;computeHeat(s);toast(s,`${B[b.type].n}: утепление ${b.ins}`,'good');break;}
+    case 'taunt':{const b=bById(s,a.id);if(!b||b.type!=='catapult'||b.build||b.tauntCd>0)return;b.tauntCd=6;b.tauntOn=1;for(const z of s.zombies||[]){z.taunt=b.id;z.tauntT=1;z.att=null;}toast(s,`Таунт: мутанты идут на «${B[b.type].n}»`,'');break;}
     case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
     case 'gen':{if(a.k==='on'){if(s.gen.broken)return;if(!s.gen.on&&s.res.coal<1)return;s.gen.on=!s.gen.on;if(!s.gen.on)s.gen.over=false;}
@@ -1619,8 +1620,8 @@ function init3D(){
     for(let i=0;i<2600;i++){const v=150+Math.random()*80|0;c.fillStyle=`rgba(${v},${v-4},${v-12},.35)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
     for(let i=0;i<70;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.18})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*16,2+Math.random()*7,Math.random()*3,0,7);c.fill();}
     for(let i=0;i<30;i++){const x=Math.random()*w,y=Math.random()*h,a=Math.random()*6;c.fillStyle='rgba(70,62,52,.22)';for(let k=0;k<4;k++){c.beginPath();c.ellipse(x+Math.cos(a)*k*9+(k%2?3:-3),y+Math.sin(a)*k*9,2.2,3.6,a,0,7);c.fill();}}});
-  snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(17,4);R3.snowTex=snowTex;
-  const SW=GW+34,SD=GH-2,gx=SW*3,gz=SD*4;
+  snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(9,4);R3.snowTex=snowTex;
+  const SW=GW+.4,SD=GH-2,gx=SW*4,gz=SD*4;
   const gG=new T.PlaneGeometry(SW,SD,gx,gz);gG.rotateX(-Math.PI/2);gG.translate(-.5,0,wz((GH-1)/2));
   gG.setAttribute('color',new T.BufferAttribute(new Float32Array(gG.attributes.position.count*3),3));
   R3.snowG=gG;R3.snowSeed=Array.from({length:gG.attributes.position.count},()=>Math.random());
@@ -1691,6 +1692,12 @@ function buildStation3D(){
   }
   // пол за пределами сетки (торцы платформы)
   for(const sx of [-1,1])buildEscalators(sx);
+  // граница стройки: забор из старых шпал по торцам платформы
+  {const sl=kmat('x',{color:0x4a3626,roughness:.95}),snw=kmat('x',{color:0xd8d4cc,roughness:1});
+    for(const sx of [-1,1]){const x=sx<0?wx(-.5)-.12:wx(GW-.5)+.12;
+      for(let y=1;y<GH-1;y++)for(let k=0;k<2;k++){const b=mesh(new T.BoxGeometry(.16,.12,.95),sl);b.position.set(x+(k?sx*.02:0),.06+k*.12,wz(y)+(k?.04:0));b.rotation.y=(((y*7+k*3)%5)-2)*.02;sc.add(b);
+        if(k)for(const o of [-.3,.25]){const c=mesh(new T.SphereGeometry(.07,6,4,0,Math.PI*2,0,Math.PI/2),snw,false);c.scale.set(1.2,.35,2);c.position.set(x,.24,wz(y)+o);sc.add(c);}}
+      for(let y=1;y<GH-1;y+=3){const post=mesh(new T.BoxGeometry(.06,.5,.06),KM.iron());post.position.set(x,.25,wz(y)+.48);sc.add(post);}}}
   // задняя стена со сводом (разрез, как диорама)
   const R=8.5,cz=wz(0)-1.1+R;
   const vault=new T.Mesh(new T.CylinderGeometry(R,R,L,40,1,true,Math.PI/2+Math.PI*.22,Math.PI*.28),R3.mat.wall);
@@ -1830,12 +1837,12 @@ function snowMat(col){
 function buildEscalators(sx){
   // выход в город по-московски: три эскалатора, бронзовые балюстрады с «факелами», арка с надписью
   const T=THREE,sc=R3.sc,x0=sx<0?wx(-.5):wx(GW-.5),zc=wz((GH-1)/2);
-  const hall=new T.Mesh(new T.BoxGeometry(3,.14,GH-2),kmat('stone',{color:0x6a6862}));hall.position.set(x0+sx*1.5,-.07,zc);hall.receiveShadow=true;sc.add(hall);
+
   const len=7,rise=3.6,ang=Math.atan2(rise,len),run=Math.hypot(len,rise);
   const stepTex=ctex(64,256,(c,w,h)=>{c.fillStyle='#2a2d30';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=16){c.fillStyle='#4a4e52';c.fillRect(0,y,w,3);}for(let x=4;x<w;x+=8){c.fillStyle='rgba(0,0,0,.35)';c.fillRect(x,0,1,h);}});
   stepTex.wrapS=stepTex.wrapT=T.RepeatWrapping;stepTex.repeat.set(1,6);
   const stepM=new T.MeshStandardMaterial({map:stepTex,metalness:.6,roughness:.45}),wood=kmat('x',{color:0x5a3a22,roughness:.6}),bronze=KM.brass();
-  const g=new T.Group();g.position.set(x0+sx*3,0,zc);sc.add(g);
+  const g=new T.Group();g.position.set(x0+sx*.75,0,zc);sc.add(g);
   for(let i=0;i<3;i++){const z=(i-1)*1.1;
     const e=mesh(new T.BoxGeometry(run,.12,.6),stepM);e.position.set(sx*len/2,rise/2,z);e.rotation.z=sx*ang;g.add(e);
     for(const o of [-.36,.36]){const bal=mesh(new T.BoxGeometry(run,.32,.08),wood);bal.position.set(sx*len/2,rise/2+.2,z+o);bal.rotation.z=sx*ang;g.add(bal);
@@ -1866,7 +1873,7 @@ function buildEscalators(sx){
     const fr=mesh(new T.BoxGeometry(.04,1.5,.8),kmat('x',{color:0x2a2420}),false);fr.position.set(sx*(len+3)-sx*.1,rise+.75,z);g.add(fr);}
   const drift=mesh(new T.SphereGeometry(1.4,14,8,0,Math.PI*2,0,Math.PI/2),kmat('x',{color:0xdfe6ec,roughness:1}),false);drift.scale.set(1,.25,1.3);drift.position.set(sx*(len+2.4),rise+.05,0);g.add(drift);
   // турникеты внизу
-  for(let i=0;i<4;i++){kbox(g,.18,.32,.08,kmat('x',{color:0x7a7a7a,metalness:.6,roughness:.4}),-sx*.6,0,-1.2+i*.8);}
+
 }
 function makeGenerator(){
   const T=THREE,g=new T.Group(),M=R3.mat;
@@ -2311,6 +2318,10 @@ function overlay3D(t){
       else if(f.k==='stone'){const k=(performance.now()/400)%1;const mxp=(a.x+c.x)/2,myp=Math.min(a.y,c.y)-60;const qx=(1-k)*(1-k)*a.x+2*(1-k)*k*mxp+k*k*c.x,qy=(1-k)*(1-k)*a.y+2*(1-k)*k*myp+k*k*c.y;cx.fillStyle='#a8a296';cx.beginPath();cx.arc(qx,qy,4,0,7);cx.fill();if(k>.9){cx.fillStyle='rgba(180,170,150,.5)';cx.beginPath();cx.arc(c.x,c.y,14,0,7);cx.fill();}}
       else{const g=cx.createRadialGradient(c.x,c.y,2,c.x,c.y,28);g.addColorStop(0,'rgba(255,200,80,.8)');g.addColorStop(1,'rgba(255,80,20,0)');cx.fillStyle=g;cx.beginPath();cx.arc(c.x,c.y,28,0,7);cx.fill();
         cx.strokeStyle='rgba(255,150,40,.7)';cx.lineWidth=5;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(c.x,c.y);cx.stroke();}}
+    for(const b of s.bld){if(b.type!=='catapult'||b.build)continue;const sel=ui.sel&&ui.sel.k==='b'&&ui.sel.id===b.id,act=b.tauntCd>5;if(!sel&&!act)continue;
+      const c0=P(b.x,b.y,.05),c1=P(b.x+tauntR(s,b),b.y,.05),c2=P(b.x,b.y+tauntR(s,b),.05);if(!c0.ok)continue;
+      const pulse=act?.5+.5*Math.sin(performance.now()/120):.35;cx.strokeStyle=`rgba(224,100,80,${pulse})`;cx.lineWidth=act?3:1.5;cx.setLineDash(act?[]:[6,5]);
+      cx.beginPath();cx.ellipse(c0.x,c0.y,Math.hypot(c1.x-c0.x,c1.y-c0.y),Math.hypot(c2.x-c0.x,c2.y-c0.y),Math.atan2(c1.y-c0.y,c1.x-c0.x),0,7);cx.stroke();cx.setLineDash([]);}
     for(const b of s.bld){if(!TOWER[b.type]||b.hp==null)continue;const mx=towerStats(s,b).hpMax;const q=P(b.x,b.y,1.5);if(!q.ok)continue;cx.fillStyle='rgba(0,0,0,.7)';cx.fillRect(q.x-18,q.y-3,36,5);cx.fillStyle=b.hp/mx>.4?'#7fc48a':'#e06450';cx.fillRect(q.x-18,q.y-3,36*Math.max(0,b.hp/mx),5);}
     for(const z of s.zombies||[]){if(z.hp>=z.max)continue;const q=P(z.x,z.y,.5);if(!q.ok)continue;cx.fillStyle='rgba(0,0,0,.7)';cx.fillRect(q.x-11,q.y-3,22,4);cx.fillStyle='#e06450';cx.fillRect(q.x-11,q.y-3,22*Math.max(0,z.hp/z.max),4);}}
 }
@@ -2568,7 +2579,10 @@ function scheduleWave(s){
   const n=waveSize(s,s.day);s.wave={left:n,cd:0,hp:waveHp(s.day),kills:0,loot:{},breach:0};
   toast(s,`Из тоннеля идут мутанты: ${n}`,'bad');log(s,`Ночная волна: ${n} мутантов.`,'bad');
 }
+function tauntR(s,b){return 3+.3*(b.lvl||0);}
 function waveTarget(s,z){
+  if(z.taunt&&z.tauntT>0){const tb=bById(s,z.taunt);if(tb&&!tb.build)return tb;}
+  {let tb=null,td=1e9;for(const b of s.bld){if(b.build||b.type!=='catapult')continue;const d=Math.hypot(b.x-z.x,b.y-z.y);if(d<=tauntR(s,b)&&d<td){td=d;tb=b;}}if(tb)return tb;}
   let best=null,bd=1e9;const near=f=>{for(const b of s.bld){if(b.build||!f(b))continue;const d=Math.hypot(b.x-z.x,b.y-z.y);if(d<bd){bd=d;best=b;}}};
   {const cnt={};for(const o of s.zombies||[])if(o.att&&o!==z)cnt[o.att]=(cnt[o.att]||0)+1;
    for(const b of s.bld){if(b.build||!TOWER[b.type]||!TOWER[b.type].tank)continue;const d=Math.hypot(b.x-z.x,b.y-z.y)+1.5*(cnt[b.id]||0);if(d<bd){bd=d;best=b;}}if(best)return best;bd=1e9;}near(b=>TOWER[b.type]);if(best)return best;near(()=>true);
@@ -2582,8 +2596,10 @@ function combatStep(s,dt){
   if(!s.wave&&!(s.zombies&&s.zombies.length))return;
   const w=s.wave,Z=s.zombies=s.zombies||[];
   if(w&&w.left>0){w.cd-=dt;if(w.cd<=0){w.cd=.04;w.left--;Z.push({x:GW+7+rnd()*1.5,y:GH-1+(rnd()-.5)*.3,hp:w.hp,max:w.hp,sp:2.4*(s.diff==='hardcore'?1.2:1)*(.85+rnd()*.3),ph:0});}}
+  for(const b of s.bld)if(b.tauntCd>0)b.tauntCd=Math.max(0,b.tauntCd-dt);
   // движение
   for(const z of Z){
+    if(z.tauntT>0)z.tauntT-=dt;
     let tx,ty,tg=null;if(z.x>GW-1.5&&!z.on){tx=GW-1.6;ty=GH-1;}else{z.on=1;tg=waveTarget(s,z);tx=tg.x;ty=tg.y;}
     const dx=tx-z.x,dy=ty-z.y,d=Math.hypot(dx,dy)||1;const st=z.sp*dt;
     if(z.on&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*dt;z.att=tg.id;
@@ -2764,7 +2780,7 @@ function renderBar(){
 function workCtrl(id,a,max,job,xy,safe){
   const s=S,tot=a.w+a.e+a.c,j={job,safe:!!safe};
   const rowW=(t,name)=>{if(!canTake(s,j,t)&&!a[t])return'';const can=canTake(s,j,t)&&tot<max&&free(s,t)>0;
-    return`<div class="wrow"><span class="wn">${name}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><span class="hint">свободно ${Math.max(0,free(s,t))}</span></div>`;};
+    return`<div class="wrow"><span class="wn">${name}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><button class="btn" data-work="${id}" data-who="${t}" data-n="${max}" ${xy} ${can?'':'disabled'}>Все</button><span class="hint">свободно ${Math.max(0,free(s,t))}</span></div>`;};
   return`<div class="ctrl"><span class="num">Занято ${tot} / ${max}</span><button class="btn" data-work="${id}" data-n="${max}" ${xy}>Все</button><button class="btn" data-work="${id}" data-n="-${max}" ${xy}>0</button></div>
    ${rowW('w','Рабочие')}${rowW('e','Инженеры')}${rowW('c','Дети')}${job!=='e'&&!has(s,'child_labor')?'<p class="hint">Дети работают только по закону «Детский труд».</p>':''}`;
 }
@@ -2811,6 +2827,7 @@ function renderInfo(){
       h+=T?`<div class="row"><span>Изучается</span><span>${T.n}</span></div><div class="row"><span>Прогресс</span><span>${Math.floor(s.rp)} / ${T.rp} (${Math.floor(s.rp/T.rp*100)}%)${rd>0?` · ≈ ${Math.ceil((T.rp-s.rp)/rd*24)} ч`:''}</span></div><div class="prog" style="margin:6px 0"><i style="width:${Math.min(100,s.rp/T.rp*100)}%"></i></div>`
         :`<p class="hint">Ничего не изучается.</p>`;
       h+=`<div class="row"><span>Ускорение бюро</span><span>+${Math.round((draftMul(s)-1)*100)}%</span></div><div class="ctrl"><button class="btn primary" data-open="tech">Открыть исследования</button></div>`;}
+    if(b.type==='catapult'&&!b.build)h+=`<div class="row"><span>Аура таунта</span><span>радиус ${tauntR(s,b).toFixed(1)}</span></div><div class="ctrl"><button class="btn primary" data-taunt="${b.id}" ${b.tauntCd>0?'disabled':''}>${b.tauntCd>0?`Таунт: перезарядка ${Math.ceil(b.tauntCd)} ч`:'Таунт: все мутанты бьют эту башню 1 ч'}</button></div>`;
     if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
     h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём ${has(s,'t_recycle')?'всё':'50%'})</button></div>`;
   }
@@ -3085,6 +3102,7 @@ document.addEventListener('click',e=>{
   else if(ds.allysend){const sel=document.getElementById('ar-'+ds.allysend);if(sel)allySend(ds.allysend,sel.value,+ds.n);}
   else if(ds.toggle)dispatch({t:'toggle',id:+ds.toggle});
   else if(ds.upgrade)dispatch({t:'upgrade',id:+ds.upgrade});
+  else if(ds.taunt)dispatch({t:'taunt',id:+ds.taunt});
   else if(ds.insulate)dispatch({t:'insulate',id:+ds.insulate});
   else if(ds.emerg)dispatch({t:'emerg',id:+ds.emerg});
   else if(ds.demolish){dispatch({t:'demolish',id:+ds.demolish});ui.sel=null;}
