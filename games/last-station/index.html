@@ -223,7 +223,7 @@ const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function seeded(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296;};}
 const $=id=>document.getElementById(id);
-function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;}}
+function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;if(typeof trDOM==='function')trDOM(el);}}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmt=n=>{n=Math.floor(n+1e-6);return n>=10000?(n/1000).toFixed(1)+'k':String(n);};
 function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
@@ -436,6 +436,224 @@ function buildGraph(){
   return{nodes,adj,lines};
 }
 const G=buildGraph();
+/* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
+let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
+const EN=[
+// — интерфейс
+['Нужды станции','Station needs'],['Скрыть','Hide'],['Нужды','Needs'],['Подписи','Labels'],['Союз','Alliance'],['Журнал','Log'],['Тепло','Heat'],
+['Карта метро','Metro map'],['Мастерская','Workshop'],['Устав','Charter'],['Меню','Menu'],['День','Day'],['на станции','on the station'],
+['Надежда','Hope'],['Недовольство','Discontent'],['Жители','Residents'],['Рабочие','Workers'],['Инженеры','Engineers'],['Дети','Children'],['Больны','Sick'],
+['тяжёлые','critical'],['коек','beds'],['Жильё','Housing'],['без крыши','homeless'],['Голодают','Hungry'],['Жажда','Thirst'],['Обещание:','Promise:'],
+['Отопление','Heating'],['Еда и вода','Food & water'],['Ресурсы','Resources'],['Медицина','Medicine'],['Наука','Science'],['Разведка','Scouting'],['Особые','Special'],['Путь','Path'],
+['Нужно исследование:','Requires research:'],['Нужен закон:','Requires law:'],['Работников:','Workers:'],['инженеры','engineers'],['рабочие','workers'],['дети','children'],['Пусто','Empty'],
+['Все','All'],['всё','everything'],['ч','h'],['д','d'],['дн.','days.'],['Пауза','Pause'],['Скорость','Speed'],['ХОСТ','HOST'],['ГОСТЬ','GUEST'],
+['Сердце станции. Тепло в радиусе','Heart of the station. Heat within a radius of'],['клеток.','tiles.'],['Состояние','State'],['сломан','broken'],['работает','running'],['остановлен','stopped'],
+['Мощность','Power'],['Уголь в час','Coal per hour'],['Хватит угля','Coal lasts'],['Выключить','Turn off'],['Запустить','Start'],['Снять форсаж','Stop overdrive'],['Форсаж +10°','Overdrive +10°'],['Давление','Pressure'],
+['Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% котёл взорвётся.','Overdrive heats more and burns 1.5× more coal. At 100% the boiler explodes.'],
+['Завал:','Debris:'],['Разбирать могут рабочие (и дети по закону). Только днём.','Workers (and children, by law) can clear it. Daytime only.'],['Осталось','Remaining'],
+['строится,','under construction,'],['отключено','disabled'],['Температура','Temperature'],['Мест','Places'],['Эффективность','Efficiency'],['Коек','Beds'],['лечит тяжёлых','treats critical'],
+['Даёт','Output'],['Уровень','Level'],['Улучшить +20%','Upgrade +20%'],['Утепление','Insulation'],['Утеплить','Insulate'],['бесплатно','free'],['Экстренная смена','Emergency shift'],
+['Отрядов','Teams'],['Открыть карту метро','Open metro map'],['Отключить','Disable'],['Включить','Enable'],['Снести (вернём','Demolish (refund'],
+['Лютый мороз','Deep freeze'],['Очень холодно','Very cold'],['Холодно','Cold'],['Прохладно','Chilly'],['Комфортно','Comfortable'],
+['Стройка:','Construction:'],['Жильцов','Residents'],['° вокруг','° around'],['Нет врачей','No doctors'],['Нет работников','No workers'],
+['еды/день · кормит','food/day · feeds'],['чел.','people'],['воды/день · поит','water/day · serves'],['Готовит до','Cooks up to'],['пайков/день','rations/day'],
+['угля/день ·','coal/day ·'],['ч генератора','h of generator'],['очков науки/день','research pts/day'],['/день','/day'],
+['Еда','Food'],['в день','per day'],['Не хватает','Short by'],['пайков в день. Запаса на','rations per day. Stock lasts'],['дн. Нужно ещё ≈','days. Build ≈'],
+['грибн. ферм','more mushroom farms'],['и кухня','and a kitchen'],['Хватает. Запас','Enough. Stock'],['пайков.','rations.'],['в день. Запаса на','per day. Stock lasts'],
+['конденсатор(а).','more condenser(s).'],['в час','per hour'],['генератор стоит','generator is off'],['Хватит на','Lasts'],['ч. Добыча','h. Mined'],['/день при расходе','/day vs use'],
+['Поставьте людей на угольные завалы или постройте забой.','Put people on coal piles or build a coal mine.'],['Запустите генератор, иначе люди замёрзнут.','Start the generator or people will freeze.'],
+['под крышей','under a roof'],['Без крыши','Homeless:'],['чел. Нужно ещё ≈','people. Build ≈'],['палаток (по 10 мест).','more tents (10 places each).'],['Свободных мест:','Free places:'],
+['Здоровье','Health'],['больных ·','sick ·'],[', тяжёлых',', critical'],['(нужны медикаменты или лазарет)','(need medicine or an infirmary)'],['Тяжёлых','Critical:'],
+['Люди','People'],[': рабочих',': workers'],[', инженеров',', engineers'],[', детей',', children'],['Без дела: рабочих','Idle: workers'],
+['Здесь инженеры придумывают новое. Мастерские дают очки науки: сейчас','Engineers invent new things here. Workshops produce research points: now'],
+['в день (','per day ('],['мастерских с инженерами).','workshops with engineers).'],['Постройте мастерскую (вкладка «Наука») и поставьте туда инженеров.','Build a workshop (Science tab) and assign engineers.'],
+['Идёт:','In progress:'],['очков','pts'],[', осталось ≈',', ≈'],['Выберите одно исследование: ресурсы списываются сразу, очки копятся.','Choose one research: resources are paid up front, points accumulate.'],
+['Жильё и медицина','Housing & medicine'],['Разведка и наука','Scouting & science'],['Изучено','Researched'],['Идёт исследование','Researching'],['Сначала:','First:'],
+['Мастерская занята','Workshop busy'],['Не хватает ресурсов','Not enough resources'],['Нет мастерских','No workshops'],
+['Устав станции','Station charter'],['Следующий закон можно подписать через','Next law can be signed in'],['Можно подписать закон.','You can sign a law.'],['Законы не отменяются.','Laws cannot be repealed.'],
+['Выживание','Survival'],['Путь: Порядок','Path: Order'],['Путь: Братство','Path: Brotherhood'],['Выбран другой путь.','Another path was chosen.'],['Откроется на 5-й день.','Unlocks on day 5.'],
+['Несовместим с','Incompatible with'],['Погибло всего:','Total deaths:'],['Аванпостов:','Outposts:'],['Изучено станций:','Stations explored:'],
+['Колесо или щипок — масштаб, перетаскивание — сдвиг. Выберите отряд, затем станцию.','Wheel or pinch to zoom, drag to pan. Pick a team, then a station.'],
+['Вернуться на станцию','Back to the station'],['Отряды','Teams'],['Нет отрядов. Постройте «Дрезинное депо» (вкладка «Разведка»).','No teams. Build a "Draisine depot" (Scouting tab).'],
+['в пути →','en route →'],['Отряд','Team'],['отдых','resting'],['разведка','exploring'],['Груз:','Cargo:'],['Без груза','No cargo'],['Вернуть на базу','Return to base'],
+['Статус','Status'],['наша база','our base'],['изучена','explored'],['известна','known'],['неизвестна','unknown'],['Найдено','Found'],['Фракция','Faction'],['Аванпост','Outpost'],['шлёт ресурсы','sends resources'],
+['Отправить отряд','Send team'],['Пути нет: изучите соседние станции.','No route: explore neighbouring stations.'],['Выберите отряд, чтобы отправить его сюда.','Pick a team to send here.'],
+['Станция ещё не видна. Изучите соседние.','Station not visible yet. Explore its neighbours.'],['Основать аванпост (20 дерева, 10 металла)','Found an outpost (20 wood, 10 steel)'],
+['Нужен отряд на станции.','A team must be at the station.'],['Обмен','Trade'],['Берётся из груза отряда, затем со склада. Полученное едет в грузе.','Taken from the team’s cargo first, then from the stockpile. What you get travels in the cargo.'],
+// меню
+['Последняя','Last'],['станция','Station'],['Сложность','Difficulty'],['Новая игра','New game'],['Продолжить','Continue'],['Вернуться в игру','Resume'],['Кооператив','Co-op'],
+['Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь','Moscow after the nuclear winter. Your task is to survive. You lead the community at Teatralnaya: generator heat, food, water, medicine, laws and hope. Scouts travel the metro lines for resources and survivors. Hold out for'],
+['дней.','days.'],['Режим «Выживший»: без паузы, скорость максимум ×2','Survivor mode: no pause, max speed ×2'],
+['Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.','One player hosts the station; the other joins with a code and runs the same station. The second player needs edit access to this page.'],
+['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
+['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
+['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
+['Язык','Language'],['Язык / Language','Language'],
+// союз
+['Союз станций','Station alliance'],['Союз станций: у каждого игрока своя станция, но вы можете пересылать друг другу ресурсы. Создайте союз и передайте код другу — он вводит его у себя в игре.','Station alliance: each player runs their own station, but you can send each other resources. Create an alliance and give the code to a friend — they enter it in their game.'],
+['Название станции','Station name'],['Создать союз','Create alliance'],['Вступить','Join'],['Другу нужен доступ к этой странице с правом редактирования.','Your friend needs edit access to this page.'],
+['· ваша станция «','· your station «'],['Код союза передайте другу.','Give the alliance code to your friend.'],['· жителей','· residents'],['· надежда','· hope'],['(у вас','(you have'],['Отправить','Send'],
+['Пока никого. Когда друг вступит в союз и зайдёт в игру, его станция появится здесь.','Nobody yet. When your friend joins the alliance and opens the game, their station appears here.'],['Выйти из союза','Leave alliance'],
+['Союз недоступен в этом просмотре','The alliance is unavailable in this view'],['Введите код из 5 символов.','Enter a 5-character code.'],['Введите код из 5 символов','Enter a 5-character code'],
+['прислал(а):','sent:'],['Союзник','Ally'],['Получено от союзника:','Received from an ally:'],['Отправлено','Sent to'],['союзнику','ally'],['Не удалось отправить, ресурсы вернулись','Could not send, resources returned'],
+['на связи','connected'],['нет доступа','no access'],['ошибка связи','connection error'],['ждём напарника','waiting for partner'],['напарников:','partners:'],['создаём…','creating…'],['подключение…','connecting…'],
+['хост не отвечает','host not responding'],['связь потеряна','connection lost'],['ошибка записи','write error'],['действие не отправлено','action not sent'],['Нет доступа к игре','No access to the game'],
+['Игра не найдена или нет доступа','Game not found or no access'],['Кооператив работает только на странице claude.ai','Co-op works only on the claude.ai page'],['Кооператив недоступен: нужен вход в claude.ai и доступ к странице','Co-op unavailable: sign in to claude.ai and get access to the page'],
+['Не удалось создать:','Could not create:'],['ошибка','error'],['Решение отправится хосту.','The decision will be sent to the host.'],['Браузер не разрешил полноэкранный режим','The browser refused fullscreen'],
+// ресурсы
+['Уголь','Coal'],['Дерево','Wood'],['Металл','Steel'],['Сырая еда','Raw food'],['Пайки','Rations'],['Вода','Water'],['Медикаменты','Medicine'],['Энергоблоки','Power cores'],
+['уголь','coal'],['дерево','wood'],['металл','steel'],['сырая еда','raw food'],['пайки','rations'],['вода','water'],['медикаменты','medicine'],['энергоблоки','power cores'],
+// сложность
+['Лёгкий','Easy'],['Мягкий холод, щедрые запасы. Для первой партии.','Mild cold, generous supplies. For your first game.'],['Нормальный','Normal'],['Как задумано. Каждое решение чего-то стоит.','As intended. Every decision costs something.'],
+['Сложный','Hard'],['Меньше запасов, злее холод, люди нетерпеливее.','Fewer supplies, harsher cold, less patient people.'],['Экстремальный','Extreme'],['Для тех, кто уже пережил «Сложный».','For those who already survived Hard.'],
+['Экстремальный+','Extreme+'],['Запасов почти нет, холод на 16° злее.','Almost no supplies, cold 16° harsher.'],['Хардкор','Hardcore'],['Без паузы и без второго шанса. Смерть станции — конец сохранения.','No pause and no second chance. If the station dies, the save is gone.'],
+// здания
+['Генератор','Generator'],['Палатки','Tents'],['10 мест. Почти не держит тепло.','10 places. Barely holds heat.'],['Барак','Barracks'],['10 мест. Утеплённые стены: +10°.','10 places. Insulated walls: +10°.'],
+['Жилой блок','Housing block'],['12 мест. Хорошая изоляция: +20°.','12 places. Good insulation: +20°.'],['Грибная ферма','Mushroom farm'],['Грибы растут в темноте. Сырая еда.','Mushrooms grow in the dark. Raw food.'],
+['Кухня','Kitchen'],['Превращает сырую еду в пайки (1 → 2).','Turns raw food into rations (1 → 2).'],['Гидропоника','Hydroponics'],['Много еды, но только в тепле (≥ прохладно).','Lots of food, but only when warm (≥ chilly).'],
+['Конденсатор','Condenser'],['Собирает влагу из тоннелей. Вода.','Collects moisture from the tunnels. Water.'],['Артезианская скважина','Artesian well'],['Чистая вода с глубины.','Clean water from deep below.'],
+['Разбор шпал','Sleeper salvage'],['Дерево из шпал и креплений.','Wood from sleepers and supports.'],['Разборка составов','Train scrapyard'],['Металл из брошенных вагонов.','Steel from abandoned carriages.'],
+['Угольный забой','Coal mine'],['Пласт под путями. Много угля.','A seam under the tracks. Plenty of coal.'],['Инженеры ведут исследования.','Engineers do research.'],
+['Медпункт','Medical post'],['5 коек. Тяжёлым нужны медикаменты.','5 beds. Critical patients need medicine.'],['Лазарет','Infirmary'],['10 коек. Лечит тяжёлых без лекарств.','10 beds. Treats critical patients without medicine.'],
+['Аптека','Pharmacy'],['Производит медикаменты.','Produces medicine.'],['Дрезинное депо','Draisine depot'],['Отряд разведчиков для экспедиций по тоннелям.','A scout team for expeditions through the tunnels.'],
+['Цех энергоблоков','Core workshop'],['Инженеры собирают энергоблоки. Медленно.','Engineers assemble power cores. Slowly.'],['Тепловой узел','Heat hub'],['+10° в радиусе 2. Сжигает 1 уголь/ч.','+10° within radius 2. Burns 1 coal/h.'],
+['Кладбище','Cemetery'],['Достойные похороны. Смерти меньше бьют по надежде.','Dignified burials. Deaths hurt hope less.'],['Бойцовская арена','Fighting arena'],['Снимает недовольство. Иногда травмы.','Reduces discontent. Sometimes injuries.'],
+['Самогонный цех','Moonshine still'],['Снимает недовольство. Здоровья не добавляет.','Reduces discontent. Not good for health.'],['Детский приют','Children’s shelter'],['Дети в тепле и безопасности. +надежда.','Children kept warm and safe. +hope.'],
+['Пост патруля','Patrol post'],['Патрули гасят недовольство.','Patrols suppress discontent.'],['Радиоточка','Radio point'],['Сводки и речи по громкоговорителям.','News and speeches over loudspeakers.'],
+['Гауптвахта','Guardhouse'],['Смутьяны под замком.','Troublemakers locked up.'],['Дом собраний','Meeting house'],['Вечерние собрания. +надежда.','Evening gatherings. +hope.'],['Часовня','Chapel'],['Свечи на платформе. +надежда.','Candles on the platform. +hope.'],
+// технологии
+['Тепловые узлы','Heat hubs'],['Здание: +10° вокруг себя.','Building: +10° around itself.'],['Магистральные трубы','Steam mains'],['Радиус генератора +2.','Generator radius +2.'],['Утепление','Insulation'],['Все здания +10°.','All buildings +10°.'],
+['Форсированные котлы','Forced boilers'],['Генератор: уровень 3.','Generator: level 3.'],['Тепловые коллекторы','Heat collectors'],['Радиус генератора ещё +2.','Generator radius +2 more.'],['Энергоблок в котле','Core in the boiler'],['Генератор: уровень 4.','Generator: level 4.'],
+['Субстрат для грибов','Mushroom substrate'],['Грибные фермы +50%.','Mushroom farms +50%.'],['Фильтры тонкой очистки','Fine filters'],['Конденсаторы +50%.','Condensers +50%.'],['Здание: много еды в тепле.','Building: lots of food when warm.'],
+['Бурение скважин','Well drilling'],['Здание: артезианская скважина.','Building: artesian well.'],['Тачки и носилки','Wheelbarrows'],['Сбор с завалов +25%.','Debris gathering +25%.'],['Здание: дерево.','Building: wood.'],
+['Резка вагонов','Carriage cutting'],['Здание: металл.','Building: steel.'],['Угольный пласт','Coal seam'],['Здание: угольный забой.','Building: coal mine.'],['Пневмоинструмент','Pneumatic tools'],['Добывающие здания +20%.','Resource buildings +20%.'],
+['Бараки','Barracks'],['Тёплое жильё.','Warm housing.'],['Жилые блоки','Housing blocks'],['Лучшее жильё.','The best housing.'],['Лечит тяжелобольных.','Treats the critically ill.'],['Производство лекарств.','Medicine production.'],
+['Чертёжные столы','Drafting tables'],['Исследования +25%.','Research +25%.'],['Мотодрезины','Motor draisines'],['Отряды быстрее в 1,6 раза.','Teams 1.6× faster.'],['Второй отряд','Second team'],['+1 отряд на каждое депо.','+1 team per depot.'],
+['Аванпосты','Outposts'],['Станции могут слать ресурсы.','Stations can send resources.'],['Морозостойкие материалы','Frost-proof materials'],['Каждый уровень утепления даёт +8° вместо +5°.','Each insulation level gives +8° instead of +5°.'],
+['Теплотрассы','Heat lines'],['Тепловые узлы греют в радиусе 3.','Heat hubs warm a radius of 3.'],['Паровые котлы','Steam cookers'],['Кухни перерабатывают на 50% больше.','Kitchens process 50% more.'],
+['Семенной фонд','Seed bank'],['Гидропоника работает в любом холоде.','Hydroponics works in any cold.'],['Термобуры','Thermal drills'],['Завалы и угольные забои +25%.','Debris and coal mines +25%.'],
+['Сборные конструкции','Prefabs'],['Стройка на 40% быстрее и на 20% дешевле.','Building 40% faster and 20% cheaper.'],['Переработка','Recycling'],['Снос возвращает всё. Улучшения на 20% дешевле.','Demolition refunds everything. Upgrades 20% cheaper.'],
+['Сборка энергоблоков','Core assembly'],['Здание: цех энергоблоков.','Building: core workshop.'],['Антибиотики из плесени','Mould antibiotics'],['Лечение быстрее, тяжёлые чаще выживают.','Faster treatment, critical patients survive more often.'],
+['Протезы','Prosthetics'],['Тяжелобольные умирают вдвое реже.','Critically ill die half as often.'],['Логистика Кольца','Ring logistics'],['Аванпосты шлют на 50% больше.','Outposts send 50% more.'],
+// законы
+['Детский труд','Child labour'],['Дети работают на безопасных местах (вполсилы).','Children work in safe jobs (at half strength).'],['Детские приюты','Children’s shelters'],['Здание «Детский приют». Дети меньше болеют. +надежда.','Building "Children’s shelter". Children fall ill less. +hope.'],
+['Удлинённая смена','Extended shift'],['Работа до 22:00 вместо 18:00. Недовольство растёт каждый день.','Work until 22:00 instead of 18:00. Discontent grows daily.'],['Похлёбка','Soup'],['Кухни дают на 25% больше пайков.','Kitchens give 25% more rations.'],
+['Опилки в пайках','Sawdust in rations'],['Кухни дают на 50% больше пайков, но люди чаще болеют.','Kitchens give 50% more rations, but people fall ill more.'],['Нормы воды','Water rationing'],['Каждый пьёт на 30% меньше. Недовольство растёт.','Everyone drinks 30% less. Discontent grows.'],
+['Здание «Кладбище». Смерти бьют по надежде слабее.','Building "Cemetery". Deaths hurt hope less.'],['Тоннель мёртвых','Tunnel of the dead'],['Тела уносят в заброшенный перегон. Без затрат, но людям тяжело.','Bodies are carried into an abandoned tunnel. Free, but hard on people.'],
+['Радикальное лечение','Radical treatment'],['Больные выздоравливают быстрее, ценой жёстких мер.','The sick recover faster, at a harsh cost.'],['Переполненные медпункты','Overcrowded clinics'],['Коек в 1,5 раза больше, лечение медленнее.','1.5× more beds, slower treatment.'],
+['Здание. Снимает недовольство, но бывают травмы.','Building. Reduces discontent, but injuries happen.'],['Самогон','Moonshine'],['Здание «Самогонный цех». Снимает недовольство.','Building "Moonshine still". Reduces discontent.'],
+['Ученичество','Apprenticeship'],['Каждый день один ребёнок становится инженером (нужна мастерская).','Every day one child becomes an engineer (needs a workshop).'],['Трудовая повинность','Labour duty'],['Больные выходят на работу. Чаще тяжелеют. +недовольство.','The sick go to work. They worsen more often. +discontent.'],
+['Любое здание может работать сутки без остановки. Риск травм.','Any building can work non-stop for a day. Risk of injuries.'],['Общие кухни','Communal kitchens'],['Еды уходит на 15% меньше. Людям не нравится есть из общего котла.','15% less food used. People dislike eating from a common pot.'],
+['Личные пайки','Personal rations'],['Еды уходит на 10% больше, зато +надежда каждый день.','10% more food used, but +hope every day.'],['Карантин','Quarantine'],['Болеют на 20% реже. Изоляция злит людей.','20% fewer illnesses. Isolation angers people.'],
+['Уплотнение','Crowding'],['Мест в жилье в 1,5 раза больше. Чаще болеют, −надежда.','1.5× more housing places. More illness, −hope.'],['Сбор вторсырья','Scrap collection'],['Добывающие здания +10%. Недовольство растёт.','Resource buildings +10%. Discontent grows.'],
+['Разведка любой ценой','Scouting at any cost'],['Отряды на 30% быстрее, но опасности страшнее.','Teams 30% faster, but dangers are worse.'],['Договор с Кольцом','Ring treaty'],['Обмен у торговцев даёт в 1,5 раза больше.','Trading gives 1.5× more.'],
+['Патрули','Patrols'],['Пост патруля: −недовольство.','Patrol post: −discontent.'],['Агитация','Agitation'],['Радиоточка: +надежда, −недовольство.','Radio point: +hope, −discontent.'],['Смутьяны под замком: −недовольство.','Troublemakers locked up: −discontent.'],
+['Военное положение','Martial law'],['Недовольство −10 сразу и меньше каждый день. Надежда понемногу падает.','Discontent −10 now and lower every day. Hope slowly falls.'],['Новый порядок','New Order'],['Финал пути. Недовольство падает и растёт вдвое медленнее.','Path finale. Discontent drops and grows half as fast.'],
+['Вечерние собрания','Evening gatherings'],['Дом собраний: +надежда.','Meeting house: +hope.'],['Взаимовыручка','Mutual aid'],['Голод и жажда убивают вдвое реже. +надежда.','Hunger and thirst kill half as often. +hope.'],['Здание: ещё больше надежды.','Building: even more hope.'],
+['Хранители','Keepers'],['Добровольцы следят за порядком: −недовольство каждый день.','Volunteers keep order: −discontent every day.'],['Подземное братство','Underground Brotherhood'],['Финал пути. Надежда не падает ниже 40.','Path finale. Hope never drops below 40.'],
+// линии и фракции
+['Сокольническая','Sokolnicheskaya'],['Замоскворецкая','Zamoskvoretskaya'],['Арбатско-Покровская','Arbatsko-Pokrovskaya'],['Кольцевая','Koltsevaya (Ring)'],['Калужско-Рижская','Kaluzhsko-Rizhskaya'],
+['Таганско-Краснопресненская','Tagansko-Krasnopresnenskaya'],['Калининская','Kalininskaya'],['Серпуховско-Тимирязевская','Serpukhovsko-Timiryazevskaya'],['Люблинско-Дмитровская','Lyublinsko-Dmitrovskaya'],
+['Каховская','Kakhovskaya'],['МЦК','MCC'],['Метро-2 (Д-6)','Metro-2 (D-6)'],['Кольцевое товарищество','Ring Fellowship'],['Торговцы Кольцевой. С ними можно меняться.','Traders of the Ring line. You can trade with them.'],
+['Красная коммуна','Red Commune'],['Сокольническая. Делятся едой, требуют дисциплины.','Sokolnicheskaya line. They share food and demand discipline.'],['Хранители архива','Archive Keepers'],['Библиотека им. Ленина. Знания в обмен на помощь.','Lenin Library. Knowledge in exchange for help.'],
+// сообщения симуляции
+['Построено:','Built:'],[': уровень',': level'],[': утепление',': insulation'],['Экстренная смена: погиб рабочий (','Emergency shift: a worker died ('],['Экстренная смена: двое слегли','Emergency shift: two fell ill'],
+['Уголь кончился — генератор остановился!','Out of coal — the generator stopped!'],['Генератор остановился: нет угля.','The generator stopped: no coal.'],['Давление в котле на пределе!','Boiler pressure critical!'],['Завал разобран:','Debris cleared:'],
+['Исследовано:','Researched:'],['Голод:','Hunger:'],['без еды','without food'],['От голода умерли','Died of hunger:'],['Жажда:','Thirst:'],['без воды','without water'],['От обезвоживания умерли','Died of dehydration:'],
+['За ночь заболели','Fell ill overnight:'],['Похолодание:','Cold snap:'],['° на станции','° on the station'],['На станции','Station temperature'],['Жителей:','Residents:'],
+['Обещание выполнено:','Promise kept:'],['Обещание не выполнено:','Promise broken:'],['Обещание нарушено:','Promise broken:'],['Закон подписан:','Law signed:'],['Подписан закон','Signed law'],
+['привёз:','brought:'],['На станцию пришли','Arrived at the station:'],['выживших','survivors'],['Пришли','Arrived:'],['Ушли','Left:'],['человек.','people.'],['человек','people'],
+['Котёл взорвался. Погибли','The boiler exploded. Dead:'],['Найден вход в Метро-2.','Entrance to Metro-2 found.'],['Ученик стал инженером.','An apprentice became an engineer.'],['Аванпост:','Outpost:'],['Разведка —','Scouting —'],['Пусто.','Empty.'],
+['Разведчики ранены, отдыхают 18 ч','Scouts wounded, resting 18 h'],['Прошли без потерь','Passed without losses'],['Груз потерян, отряд ранен','Cargo lost, team wounded'],['Прорвались','Broke through'],
+['День 1. Наверху ничего живого. Генератор запущен, люди ждут решений.','Day 1. Nothing alive on the surface. The generator is running; people await your decisions.'],
+// обещания
+['Постройте медпункт','Build a medical post'],['Согрейте жильё: никто не спит в мороз','Heat the housing: nobody sleeps in the freezing cold'],['Запасите 150 пайков','Stock 150 rations'],['Не больше 5 больных','No more than 5 sick'],
+['Крыша над головой для каждого','A roof over everyone’s head'],['Запасите 200 воды','Stock 200 water'],
+// события
+['Последняя станция','Last Station'],['Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.','For three weeks a nuclear winter has gripped the surface. The city is dead, the radio silent.'],
+['На «Театральной» собрались','Gathered at Teatralnaya:'],['человек. У вас угольный генератор, немного запасов и тоннели во все стороны.','people. You have a coal generator, some supplies and tunnels in every direction.'],
+['Цель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.','There is one goal — survive. Keep people warm, fed, watered and treated. Send scouts along the lines — there is coal, steel, medicine and survivors out there. The forecast is grim: real cold comes by the end of the month.'],
+['Начать','Begin'],['Ночь в палатках','A night in the tents'],['Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к генератору теплее.','People complain: in the tents at the platform edge their hands freeze at night. It is warmer near the generator.'],
+['Стройте жильё в кольце тепла и исследуйте бараки.','Build housing inside the heat ring and research barracks.'],['Понятно','Understood'],['Дети без дела','Idle children'],
+['Двадцать детей сидят у генератора. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.','Twenty children sit by the generator. Some suggest putting them to light work, others want a shelter for them.'],
+['Подписать «Детский труд»','Sign "Child labour"'],['Больше рук, но людям это не нравится','More hands, but people dislike it'],['Подписать «Детские приюты»','Sign "Children’s shelters"'],['Дети в безопасности, +надежда','Children are safe, +hope'],['Решу позже','Decide later'],
+['Во что нам верить?','What do we believe in?'],['Люди спрашивают, ради чего держаться. Одни хотят твёрдой руки и порядка. Другие — общей веры, что вместе выживем.','People ask what they are holding on for. Some want a firm hand and order. Others want a shared faith that together we survive.'],
+['В Уставе открыт выбор пути. Первый подписанный закон определит его навсегда.','The Charter now offers a path. The first law you sign decides it for good.'],['Открыть Устав','Open the Charter'],['Позже','Later'],
+['Беженцы с Комсомольской','Refugees from Komsomolskaya'],['По перегону пришли люди с узла трёх вокзалов: голодные, некоторые больны. Просят пустить.','People from the three-stations hub came down the tunnel: hungry, some sick. They ask to be let in.'],
+['Принять всех (+14 человек)','Take everyone (+14 people)'],['Часть больна. Нужны еда и места.','Some are sick. They need food and places.'],['Принять только здоровых (+8)','Take only the healthy (+8)'],['Остальных отправить назад','Send the rest back'],
+['Закрыть гермоворота','Close the blast doors'],['Надежда упадёт','Hope will fall'],['Уходящие','The Leavers'],
+['Группа жителей уверена: на поверхности, у Кремля, есть убежище с электричеством. Они хотят уйти и звать других.','A group of residents is sure there is a powered shelter on the surface by the Kremlin. They want to leave and call others along.'],
+['Если к 15-му дню надежда будет низкой, они уйдут и уведут людей.','If hope is low by day 15, they will leave and take people with them.'],['Пусть говорят. Убедим делом','Let them talk. We’ll convince them with deeds'],['Нужна надежда ≥ 50 к 15-му дню','Hope ≥ 50 needed by day 15'],
+['Запретить разговоры','Ban the talk'],['Недовольство +8, угроза снята','Discontent +8, threat removed'],['Отпустить желающих сейчас','Let them go now'],['Уйдут 8 человек','8 people will leave'],['Решение Уходящих','The Leavers decide'],
+['Уходящие видят: на станции есть будущее. Они остаются.','The Leavers see the station has a future. They stay.'],['Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.','Hope is scarce. The Leavers take gear and climb the escalator. People go with them.'],['Ясно','I see'],
+['Слухи о Метро-2','Rumours of Metro-2'],['Старик-путеец клянётся: под центром есть секретная линия Д-6. Вход где-то у Боровицкой. Там склады, рассчитанные на войну.','An old track worker swears there is a secret line D-6 under the centre. The entrance is near Borovitskaya. It holds wartime stores.'],
+['Отправить разведку к Боровицкой','Send scouts to Borovitskaya'],['Сказки','Fairy tales'],['Прогноз','Forecast'],['Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до','Thermometers at the vent shafts fall every hour. In five days the real cold arrives — down to'],
+['Запасите уголь, утеплите жильё, поднимите мощность генератора.','Stock coal, insulate housing, raise generator power.'],['Готовиться','Prepare'],['Чёрный холод','The Black Cold'],['Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.','The vent shafts are iced over. The cold creeps down the escalators. Hold out until the end of the month.'],
+['Держаться','Hold on'],['Взрыв котла','Boiler explosion'],['Перегретый котёл не выдержал. Погибли','The overheated boiler gave way. Dead:'],['Генератор не работает сутки.','The generator is down for a day.'],
+['Ультиматум','Ultimatum'],['Жители собрались у генератора. Ещё немного — и вас сместят. Снизьте недовольство.','Residents gathered at the generator. A little more and you will be ousted. Lower discontent.'],['Я всё исправлю','I will fix it'],
+['Отчаяние','Despair'],['Люди перестают вставать по утрам. Если надежда угаснет совсем, станция умрёт без вашего участия.','People stop getting up in the morning. If hope dies out, the station will die without you.'],['Нужно что-то менять','Something must change'],
+['Драка у кухни','Fight at the kitchen'],['Двое не поделили пайку. Толпа ждёт вашего решения.','Two people fought over a ration. The crowd awaits your decision.'],['Выдать обоим двойной паёк','Give both a double ration'],['−6 пайков, −недовольство','−6 rations, −discontent'],
+['Наказать зачинщика','Punish the instigator'],['+недовольство, но порядок','+discontent, but order'],['Кража со склада','Theft from the stores'],['Ночью пропал металл. Следы ведут в палатки у путей.','Steel went missing overnight. Tracks lead to the tents by the rails.'],
+['Обыскать палатки','Search the tents'],['Вернём металл, люди злы','We get the steel back, people are angry'],['Не поднимать шум','Keep it quiet'],['−15 металла','−15 steel'],
+['Больной ребёнок','A sick child'],['Мать просит лекарства для сына. Медикаментов мало.','A mother asks for medicine for her son. Medicine is scarce.'],['Отдать 2 медикамента','Give 2 medicine'],['+надежда','+hope'],['Лекарства — для тяжёлых','Medicine is for the critical'],['−надежда','−hope'],
+['Перебои света','Power flickers'],['Проводка в северном конце платформы искрит. Можно чинить или отключить.','The wiring at the north end of the platform is sparking. Repair or cut it.'],['Починить (−10 металла)','Repair (−10 steel)'],['Темнее и тревожнее','Darker and more anxious'],
+['Крысы на складе','Rats in the stores'],['Крысы прогрызли мешки с грибами.','Rats chewed through the mushroom sacks.'],['Устроить облаву','Hunt them down'],['−20 сырой еды, но крыс съедим','−20 raw food, but we eat the rats'],['Смириться','Accept it'],['−30 сырой еды','−30 raw food'],
+['Песня у генератора','A song by the generator'],['Вечером кто-то достал гитару. Половина станции подпевает.','In the evening someone took out a guitar. Half the station sings along.'],['Пусть поют','Let them sing'],
+['Просьба жителей','Residents’ request'],['Люди просят: «','People ask: «'],['». Срок — сутки.','». Deadline: one day.'],['Пообещаете — надежда вырастет, но провал ударит больно.','Promise it and hope grows, but failure will hurt.'],['Обещаю','I promise'],['+надежда сейчас','+hope now'],['Не могу обещать','I can’t promise'],
+['Мы пережили холод','We survived the cold'],['Тридцать дней. Мороз отступил к вентшахтам. На «Театральной» живут','Thirty days. The frost has retreated to the vent shafts. Living at Teatralnaya:'],['человек, погибли','people; died:'],['Станция выстояла.','The station held out.'],
+['Играть дальше','Keep playing'],['В главное меню','Main menu'],['Конец','The End'],['На станции не осталось живых.','No one is left alive on the station.'],['Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.','The residents ousted you and threw you into the tunnel. The station will go its own way.'],
+['Надежда угасла. Люди разошлись по тоннелям.','Hope died. People scattered into the tunnels.'],['Вы продержались','You held out for'],
+['Разведка','Scouting'],['Забрать','Take it'],['Выжившие','Survivors'],['Их','There are'],['Взять всех','Take everyone'],['человек пойдут на базу','people will head to base'],['Только здоровых','Only the healthy'],['Оставить','Leave them'],
+['Опасный перегон','Dangerous tunnel'],['Пройти напрямик','Go straight through'],['Риск ранений','Risk of injuries'],['Переждать','Wait it out'],['+8 ч','+8 h'],['Мародёры','Raiders'],['В перегоне — застава мародёров. Требуют плату за проход.','Raiders have a checkpoint in the tunnel. They demand a toll.'],
+['Отдать половину груза','Give up half the cargo'],['Прорываться','Break through'],['Можно потерять весь груз','You may lose all cargo'],['Поддержать их порядок','Support their order'],['+120 сырой еды, +недовольство','+120 raw food, +discontent'],['Отказаться','Refuse'],['Уйти ни с чем','Leave empty-handed'],
+['Архив','Archive'],['Скопировать чертежи','Copy the blueprints'],['+60 очков исследований к текущей работе','+60 research points to the current work'],['Метро-2','Metro-2'],['На карте открыта секретная линия Д-6.','The secret line D-6 is now on the map.'],['Вниз','Go down'],
+['Возвращаясь, разведчики молчат. Новость разносится по станции: где-то кончается тьма.','On the way back the scouts are silent. The news spreads through the station: somewhere the darkness ends.'],['Это даёт надежду','This gives hope'],
+// содержимое станций
+['Под тремя вокзалами — сотни людей. Кто-то согласен идти с вами.','Hundreds of people under the three railway stations. Some agree to come with you.'],['Свинарник и грибные плантации ушедшей общины.','A pigsty and mushroom beds of a departed community.'],
+['Ящики семян и лампы досветки из оранжерей.','Crates of seeds and grow lamps from the greenhouses.'],['Лаборатория агроакадемии: споры, субстрат, записи опытов.','The agricultural academy lab: spores, substrate, experiment notes.'],
+['Хранители архива пускают к книгам. Инженеры возвращаются с чертежами.','The Archive Keepers let you to the books. Engineers return with blueprints.'],['За гермодверью — служебный ход вниз. Схема на стене: «Д-6».','Behind a blast door is a service passage down. A diagram on the wall: "D-6".'],
+['Бункер гражданской обороны. Склад медикаментов почти цел.','A civil defence bunker. The medicine store is almost intact.'],['Цех завода: среди хлама — целый энергоблок.','A factory hall: amid the junk, an intact power core.'],
+['Депо Сокольники. Две рабочие мотодрезины и запчасти.','Sokolniki depot. Two working motor draisines and spare parts.'],['Факультетская аптека и лаборатории.','A faculty pharmacy and labs.'],['Глубокая тёплая станция. Люди устали ждать помощи.','A deep, warm station. People are tired of waiting for help.'],
+['Рынок Кольцевого товарищества. Здесь можно меняться.','The Ring Fellowship market. You can trade here.'],['Перевалочный пост Кольцевого товарищества.','A Ring Fellowship transit post.'],['Склады Кольцевого товарищества. Торгуют охотно.','Ring Fellowship warehouses. They trade willingly.'],
+['Красная коммуна делится зерном, если вы поддержите их порядок.','The Red Commune shares grain if you support their order.'],['Оружейный склад. Металла много, патронов нет.','An armoury. Lots of steel, no ammunition.'],
+['Резервный склад правительства. Консервы, лекарства, энергоблоки.','A government reserve store. Canned food, medicine, power cores.'],['Архив и узел связи. Инженеры уносят схемы.','An archive and comms node. Engineers carry off schematics.'],
+['Подземный город на десятки тысяч мест. Пусто. Запасы — нет.','An underground city for tens of thousands. Empty. The supplies are not.'],['Ход к аэродрому. Наверху — лёд и тишина. Отсюда видно небо.','A passage to the airfield. Up top: ice and silence. You can see the sky from here.'],
+['Брошенный угольный склад у ремонтного тупика.','An abandoned coal store by a repair siding.'],['Штабеля шпал и ящиков.','Stacks of sleepers and crates.'],['Ржавые вагоны и рельсы.','Rusty carriages and rails.'],['Консервы и мешки с сухим пайком.','Canned food and sacks of dry rations.'],
+['Резервуары технической воды.','Service water tanks.'],['Медпункт станции. Аптечки на месте.','The station first-aid room. The kits are still there.'],['В подсобке — целый энергоблок.','An intact power core in the back room.'],
+['Обжитая и брошенная станция. Есть чем поживиться.','A lived-in, abandoned station. Plenty to scavenge.'],['Грибные фермы теперь дают больше (как исследование «Субстрат»).','Mushroom farms now yield more (like the "Substrate" research).'],
+['Отряды двигаются быстрее.','Teams move faster.'],['Пока отряд на станции, можно обменять груз (карта → станция).','While a team is at the station, you can trade cargo (map → station).'],['В вестибюле живут люди. Они видели ваш свет.','People live in the vestibule. They saw your light.'],
+['Перегон затоплен по пояс. Вода ледяная.','The tunnel is flooded waist-deep. The water is icy.'],['Счётчик трещит: радиоактивная пыль из вентшахты.','The counter is clicking: radioactive dust from a vent shaft.'],['Свод тоннеля просел, крепь трещит.','The tunnel roof has sagged, the supports are cracking.'],
+['Пусто. Только иней на стенах.','Empty. Only frost on the walls.'],['Найдено:','Found:'],
+// сооружения D-6
+['Объект «Кремль»','Object "Kremlin"'],['Бункер Генштаба','General Staff Bunker'],['Объект «Раменки»','Object "Ramenki"'],['Объект «Внуково»','Object "Vnukovo"'],
+['Слухи','Rumours'],
+];
+const TL={а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'yo',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'};
+function translit(s){return s.replace(/[А-Яа-яЁё]/g,c=>{const l=c.toLowerCase(),t=TL[l]??c;return c===l?t:t.charAt(0).toUpperCase()+t.slice(1);}).replace(/ыy/g,'y').replace(/iy\b/g,'y');}
+let TR_MAP=null,TR_RE=null;
+function buildTR(){
+  TR_MAP=new Map();for(const [r,e] of EN)TR_MAP.set(r,e);
+  for(const id in G.nodes)if(!TR_MAP.has(id))TR_MAP.set(id,translit(id));
+  const L='А-Яа-яЁё';
+  const keys=[...TR_MAP.keys()].sort((a,b)=>b.length-a.length).map(k=>{const e=k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    return (CYR.test(k[0])?'(?<!['+L+'])':'')+e+(CYR.test(k[k.length-1])?'(?!['+L+'])':'');});
+  TR_RE=new RegExp(keys.join('|'),'g');
+}
+const CYR=/[А-Яа-яЁё]/;
+function tr(str){if(LANG!=='en'||str==null)return str;str=String(str);if(!CYR.test(str))return str;if(!TR_RE)buildTR();return str.replace(TR_RE,m=>TR_MAP.get(m)??m);}
+function trDOM(root){
+  if(LANG!=='en'||!root)return;if(!TR_RE)buildTR();
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode()))if(CYR.test(n.nodeValue))n.nodeValue=tr(n.nodeValue);
+  root.querySelectorAll('[title],[placeholder],[aria-label]').forEach(el=>{for(const a of ['title','placeholder','aria-label']){const v=el.getAttribute(a);if(v&&CYR.test(v))el.setAttribute(a,tr(v));}});
+  root.querySelectorAll('input[value]').forEach(el=>{if(el.id==='allyname')return;});
+}
+const stName=id=>LANG==='en'?tr(id):id;
+function setLang(l){
+  LANG=l;store('ls_lang',l);document.documentElement.lang=l;labelCache=null;
+  document.querySelectorAll('*').forEach(el=>{if(el._h!==undefined)el._h=null;});ui.dirty=true;
+  if(ui.mode==='menu')renderMenu();
+}
+
 
 /* что лежит на станциях: детерминированно по имени и зерну партии */
 const SPECIAL={
@@ -1785,7 +2003,7 @@ function render3D(t){
     if(u.lv!==b.lvl||u.inz!==b.ins){u.lv=b.lvl;u.inz=b.ins;const sc=1+Math.min(.15,.03*(b.lvl||0));u.body.scale.x=u.body.scale.z=sc;
       if(u.badge){g.remove(u.badge);u.badge=null;}
       if(b.lvl||b.ins){const tx=ctex(128,48,(c,w,h)=>{c.fillStyle='rgba(20,24,28,.85)';c.fillRect(0,0,w,h);c.strokeStyle='#b08a4e';c.lineWidth=3;c.strokeRect(2,2,w-4,h-4);
-        c.font='bold 26px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2a33a';const t1=b.lvl?'УР '+b.lvl:'',t2=b.ins?'УТ '+b.ins:'';c.font='bold 22px Oswald, Arial Narrow, sans-serif';
+        c.font='bold 26px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2a33a';const t1=b.lvl?(LANG==='en'?'LV ':'УР ')+b.lvl:'',t2=b.ins?(LANG==='en'?'INS ':'УТ ')+b.ins:'';c.font='bold 22px Oswald, Arial Narrow, sans-serif';
         if(t1&&t2){c.fillText(t1,w*.3,h/2+1);c.fillStyle='#8fd0f5';c.fillText(t2,w*.72,h/2+1);}else{if(t2)c.fillStyle='#8fd0f5';c.fillText(t1||t2,w/2,h/2+1);}});
         const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.set(.5,.19,1);sp.position.y=1.25;g.add(sp);u.badge=sp;}}
     if(u.wheel&&lit)(u.wheel.geometry.type==='CylinderGeometry'?u.wheel.rotation.y+=.2:u.wheel.rotation.z+=.03);
@@ -1872,10 +2090,10 @@ function drawLabels(s,t){
   for(const L of labelCache){
     const g=R3.bmap.get(L.b.id);const hgt=g?new THREE.Box3().setFromObject(g.userData.body).max.y:0.8;
     v.set(wx(L.b.x),hgt+.15,wz(L.b.y)).project(R3.cam);if(v.z>1)continue;
-    const x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;const w=cx.measureText(L.t).width+12;
+    const x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;const lt=tr(L.t);const w=cx.measureText(lt).width+12;
     cx.fillStyle=L.k==='bad'?'rgba(70,20,16,.88)':'rgba(12,16,20,.82)';cx.fillRect(x-w/2,y-9,w,18);
     cx.fillStyle=L.k==='bad'?'#e06450':L.k==='ok'?'#b08a4e':'#3b4856';cx.fillRect(x-w/2,y-9,2,18);
-    cx.fillStyle=L.k==='bad'?'#ffb4a6':L.k==='mute'?'#8ea3b5':'#e8dcc0';cx.fillText(L.t,x+1,y);
+    cx.fillStyle=L.k==='bad'?'#ffb4a6':L.k==='mute'?'#8ea3b5':'#e8dcc0';cx.fillText(lt,x+1,y);
   }
 }
 
@@ -2119,7 +2337,7 @@ function renderMap(t){
     if(st.t==='trade'&&st.k===2){mx.fillStyle='#c48a4a';mx.beginPath();mx.arc(p.x,p.y,r*.45,0,7);mx.fill();}
     if(id===HUB){mx.strokeStyle='#f2a33a';mx.lineWidth=3;mx.beginPath();mx.arc(p.x,p.y,r+5,0,7);mx.stroke();}
     if(ui.mapSel===id){mx.strokeStyle='#f2a33a';mx.lineWidth=2;mx.beginPath();mx.arc(p.x,p.y,r+9,0,7);mx.stroke();}
-    if(st.k>=1&&(mcam.z>1.05||id===HUB||st.k===2&&mcam.z>.7)){mx.fillStyle=st.k===2?'#cfe3f2':'#8ea3b5';mx.font=`${Math.round(clamp(11*mcam.z,10,15))}px PT Sans, sans-serif`;mx.fillText(id,p.x+r+4,p.y+4);}
+    if(st.k>=1&&(mcam.z>1.05||id===HUB||st.k===2&&mcam.z>.7)){mx.fillStyle=st.k===2?'#cfe3f2':'#8ea3b5';mx.font=`${Math.round(clamp(11*mcam.z,10,15))}px PT Sans, sans-serif`;mx.fillText(stName(id),p.x+r+4,p.y+4);}
   }
   // путь выбранного отряда
   const tm=s.teams.find(x=>x.id===ui.team);
@@ -2160,7 +2378,7 @@ function renderTop(){
   setHTML($('clock'),`<span class="day">День ${s.day}${s.endless?'':' / '+LAST_DAY}</span><span class="num">${hh}:00</span>
    <div class="speed">${sp.map(v=>`<button data-speed="${v}" class="${(v===0&&s.paused)||(!s.paused&&s.speed===v)?'on':''}" aria-label="${v?'Скорость '+v:'Пауза'}">${v?'×'+v:'II'}</button>`).join('')}</div>
    ${coop.role!=='solo'?`<span class="coopbadge">${coop.role==='host'?'ХОСТ':'ГОСТЬ'} ${coop.code} · ${coop.status}</span>`:''}
-   <button class="iconbtn" data-act="full" title="Во весь экран (F)">⤢</button><button class="iconbtn" data-act="menu">Меню</button>`);
+   <button class="iconbtn" data-lang="${LANG==='ru'?'en':'ru'}" title="Язык / Language">${LANG==='ru'?'EN':'RU'}</button><button class="iconbtn" data-act="full" title="Во весь экран (F)">⤢</button><button class="iconbtn" data-act="menu">Меню</button>`);
   const hope=s.hope,disc=s.disc;
   setHTML($('meters'),`<div class="meter hope">${HOPE_ICO}<span class="lbl">Надежда</span><div class="bar"><div class="fill" style="width:${hope}%"></div></div><span class="num">${Math.round(hope)}</span></div>
    <div class="meter disc">${DISC_ICO}<span class="lbl">Недовольство</span><div class="bar"><div class="fill" style="width:${disc}%"></div></div><span class="num">${Math.round(disc)}</span></div>`);
@@ -2321,8 +2539,10 @@ function renderMenu(){
   <p class="hint">Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.</p>
   <div class="menurow"><button class="btn" data-act="host">Создать кооператив</button><input type="text" id="joincode" maxlength="6" placeholder="КОД" aria-label="Код кооператива"><button class="btn" data-act="join">Подключиться</button><span class="hint" id="coopmsg">${esc(coop.status)}</span></div>
   <p class="hint">Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.</p>
+  <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
   <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.</p>
   </div>`;
+  trDOM(el);
 }
 
 /* ---------------------------- СОХРАНЕНИЯ ---------------------------- */
@@ -2409,7 +2629,7 @@ function loop(t){
 function draw(t){if(R3.ok&&S){render3D(t);overlay3D(t);}else render(t);}
 function flushToasts(t){
   const box=$('toasts');
-  while(toastQ.length){const q=toastQ.shift();const d=document.createElement('div');d.className='toast panel '+(q.k||'');d.textContent=q.txt;box.prepend(d);setTimeout(()=>d.remove(),6000);}
+  while(toastQ.length){const q=toastQ.shift();const d=document.createElement('div');d.className='toast panel '+(q.k||'');d.textContent=tr(q.txt);box.prepend(d);setTimeout(()=>d.remove(),6000);}
   while(box.children.length>6)box.lastChild.remove();
 }
 
@@ -2490,6 +2710,7 @@ document.addEventListener('click',e=>{
   else if(ds.outpost)dispatch({t:'outpost',at:ds.outpost});
   else if(ds.trade!=null)dispatch({t:'trade',team:+ds.tteam,i:+ds.trade});
   else if(ds.diff){ui.diff=ds.diff;renderMenu();return;}
+  else if(ds.lang){setLang(ds.lang);return;}
   else if(ds.act){
     const a=ds.act;
     if(a==='close')ui.open=null;
@@ -2516,6 +2737,7 @@ addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.c
 
 /* ---------------------------- СТАРТ ---------------------------- */
 function boot(data){
+  document.documentElement.lang=LANG;
   try{init3D();}catch(e){R3.ok=false;}
   resize();
   const bottom=$('bottom');const pl=document.createElement('div');pl.id='popline';bottom.insertBefore(pl,$('bar'));
