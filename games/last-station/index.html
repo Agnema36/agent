@@ -105,7 +105,22 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .lvl0{color:#b8d8ff}.lvl1{color:#8ec0ea}.lvl2{color:#9fb3c4}.lvl3{color:#e8c25a}.lvl4{color:#f2a33a}
 
 /* toasts / log */
-#toasts{left:max(10px,env(safe-area-inset-left,0px));top:calc(64px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:4px;width:300px;max-width:calc(100vw - 20px)}
+#needs{left:max(10px,env(safe-area-inset-left,0px));top:calc(64px + env(safe-area-inset-top,0px));width:310px;max-width:calc(100vw - 20px);padding:8px 10px;display:flex;flex-direction:column;gap:6px;max-height:calc(100% - 250px);overflow:auto}
+.need{display:flex;gap:8px;align-items:flex-start;padding:4px 6px 4px 4px;border-left:3px solid #7fc48a;background:rgba(0,0,0,.18)}
+.need.warn{border-left-color:#e8c25a}.need.bad{border-left-color:#e06450;background:rgba(224,100,80,.12)}
+.need svg{width:20px;height:20px;flex:none;margin-top:1px}
+.need .nm{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.need .nm b{font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;color:var(--frost)}
+.need.bad .nm b{color:#ff9a86}
+.need .nh{font-size:11.5px;color:var(--frost-dim);line-height:1.3}
+.needhead{display:flex;justify-content:space-between;align-items:center}
+.pic{width:44px;height:44px;flex:none;padding:6px;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.4);border-radius:2px}
+.tech.withpic{flex-direction:row;gap:10px;align-items:flex-start}
+.tech.withpic .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tech .st{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+.ally{padding:12px;margin:8px 0}
+select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding:6px;border-radius:2px;font:inherit}
+#toasts{left:max(10px,env(safe-area-inset-left,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));top:auto;flex-direction:column-reverse;display:flex;flex-direction:column;gap:4px;width:300px;max-width:calc(100vw - 20px)}
 .toast{padding:7px 10px;font-size:12.5px;border-left:3px solid var(--amber);background:rgba(20,26,33,.92);animation:tin .25s ease-out}
 .toast.bad{border-left-color:var(--bad)}.toast.good{border-left-color:var(--ok)}.toast.cold{border-left-color:var(--cold)}
 @keyframes tin{from{transform:translateX(-12px);opacity:0}to{transform:none;opacity:1}}
@@ -164,6 +179,8 @@ body.inmenu .hud{display:none!important}
 @media (max-width:640px){
   #info{top:auto;bottom:150px;right:8px;left:8px;width:auto;max-height:40%}
   #toasts{display:none}
+  #needs{top:auto;bottom:150px;max-height:30%;width:auto;right:10px}
+  #needs.min .need .nh{display:none}
   .meter .bar{width:70px}
   .meter .lbl{font-size:11px}
   #mapside{top:auto;bottom:10px;left:10px;right:10px;width:auto;max-height:45%}
@@ -179,6 +196,7 @@ body.inmenu .hud{display:none!important}
   <div id="temp" class="panel" title="Температура на станции"></div>
   <div id="clock" class="panel"></div>
 </div>
+<div id="needs" class="hud panel"></div>
 <div id="toasts" class="hud"></div>
 <div id="info" class="hud panel" hidden></div>
 <div id="bottom" class="hud">
@@ -233,7 +251,9 @@ const DIFF={
   easy:{n:'Лёгкий',d:'Мягкий холод, щедрые запасы. Для первой партии.',start:1.5,cons:.8,temp:8,disc:.6,sick:.6,danger:.6,law:12},
   normal:{n:'Нормальный',d:'Как задумано. Каждое решение чего-то стоит.',start:1,cons:1,temp:0,disc:1,sick:1,danger:1,law:18},
   hard:{n:'Сложный',d:'Меньше запасов, злее холод, люди нетерпеливее.',start:.8,cons:1.15,temp:-6,disc:1.3,sick:1.3,danger:1.3,law:20},
-  extreme:{n:'Экстремальный',d:'Для тех, кто уже пережил «Сложный».',start:.6,cons:1.3,temp:-12,disc:1.6,sick:1.6,danger:1.6,law:24}
+  extreme:{n:'Экстремальный',d:'Для тех, кто уже пережил «Сложный».',start:.6,cons:1.3,temp:-12,disc:1.6,sick:1.6,danger:1.6,law:24},
+  extremeplus:{n:'Экстремальный+',d:'Запасов почти нет, холод на 16° злее.',start:.5,cons:1.4,temp:-16,disc:1.8,sick:1.8,danger:1.8,law:26},
+  hardcore:{n:'Хардкор',d:'Без паузы и без второго шанса. Смерть станции — конец сохранения.',start:.4,cons:1.5,temp:-20,disc:2,sick:2,danger:2,law:30,hc:1}
 };
 // температура на станции по дням сценария (до поправки сложности)
 const WEATHER=[-8,-8,-10,-12,-12,-14,-22,-15,-15,-16,-18,-20,-20,-28,-30,-20,-18,-20,-22,-24,-25,-26,-30,-34,-44,-48,-50,-46,-34,-28];
@@ -453,7 +473,7 @@ function stationContent(s,name){
 const GW=18,GH=12,GX=9,GY=6;
 function newGame(diff,survivor){
   const D=DIFF[diff];
-  const s={v:1,diff,survivor:!!survivor,seed:(Math.random()*1e9)|0,
+  const s={v:1,diff,survivor:!!survivor||!!DIFF[diff].hc,seed:(Math.random()*1e9)|0,
     day:1,hour:6,acc:0,speed:1,paused:false,over:null,won:false,endless:false,
     res:{coal:250*D.start,wood:110*D.start,steel:30*D.start,raw:40*D.start,food:100*D.start,water:200*D.start,meds:6*D.start,cores:0},
     pop:{w:45,e:15,c:20},ill:{w:0,e:0,c:0},crit:{w:0,e:0,c:0},
@@ -520,7 +540,7 @@ const lvlOf=deg=>deg>=10?4:deg>=0?3:deg>=-10?2:deg>=-20?1:0;
 const HEAT_EFF=[.3,.55,.75,.9,1];
 function ambient(s){const i=s.endless&&s.day>LAST_DAY?18+((s.day-1)%10):Math.min(s.day,LAST_DAY)-1;return WEATHER[i]+D_(s).temp;}
 function genMax(s){return has(s,'t_power2')?4:has(s,'t_power1')?3:2;}
-function genRadius(s){return 4+(has(s,'t_radius1')?2:0)+(has(s,'t_radius2')?2:0);}
+function genRadius(s){return 3+(has(s,'t_radius1')?2:0)+(has(s,'t_radius2')?2:0);}
 function genHeat(s){if(!s.gen.on)return 0;return s.gen.lvl*10+(s.gen.over?10:0);}
 function computeHeat(s){
   const amb=ambient(s),R=genRadius(s),gh=genHeat(s);
@@ -1204,7 +1224,7 @@ function drawWalkers(s){
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   for(const w of walkers){
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.15||w.w++>400){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.8;w.ty=tg.y+(Math.random()-.5)*.8+.5;w.w=0;}
-    const sp=s.paused?0:.012*Math.min(3,s.speed);const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const sp=s.paused||(s.queue.length&&!s.survivor)?0:.0012*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     const p=iso(w.x,w.y);cx.fillStyle='#11161b';cx.fillRect(p.x-1.5,p.y-7,3,7);cx.fillStyle='#b9c2c9';cx.fillRect(p.x-1.5,p.y-9,3,3);
   }
 }
@@ -1319,7 +1339,7 @@ function buildStation3D(){
     const strip=new T.Mesh(new T.BoxGeometry(L,.02,.12),new T.MeshStandardMaterial({color:0x9a8448,roughness:.7}));strip.position.set(.5,.005,z+(row===0?.44:-.44));sc.add(strip);
   }
   // пол за пределами сетки (торцы платформы)
-  for(const sx of [-1,1]){const f=new T.Mesh(new T.BoxGeometry(6,.14,GH-2),R3.mat.tile);f.position.set(wx(sx<0?-3.5:GW+2.5)+(sx<0?0:0),-.07,wz((GH-1)/2));f.receiveShadow=true;sc.add(f);}
+  for(const sx of [-1,1])buildEscalators(sx);
   // задняя стена со сводом (разрез, как диорама)
   const R=8.5,cz=wz(0)-1.1+R;
   const vault=new T.Mesh(new T.CylinderGeometry(R,R,L,40,1,true,Math.PI/2+Math.PI*.22,Math.PI*.28),R3.mat.wall);
@@ -1439,6 +1459,33 @@ function kbarrel(p,x,z){const b=kcyl(p,.05,.05,.13,KM.iron(),x,0,z,10);return b;
 function kcrate(p,x,z,s=.1){const c=kbox(p,s,s,s,KM.planks(),x,0,z);c.rotation.y=x*7;return c;}
 function kplinth(p,w,d){return kbox(p,w+.04,.05,d+.04,KM.stone(),0,0,0);}
 
+function buildEscalators(sx){
+  // выход в город по-московски: три эскалатора, бронзовые балюстрады с «факелами», арка с надписью
+  const T=THREE,sc=R3.sc,x0=sx<0?wx(-.5):wx(GW-.5),zc=wz((GH-1)/2);
+  const hall=new T.Mesh(new T.BoxGeometry(3,.14,GH-2),kmat('stone',{color:0x6a6862}));hall.position.set(x0+sx*1.5,-.07,zc);hall.receiveShadow=true;sc.add(hall);
+  const len=7,rise=3.6,ang=Math.atan2(rise,len),run=Math.hypot(len,rise);
+  const stepTex=ctex(64,256,(c,w,h)=>{c.fillStyle='#2a2d30';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=16){c.fillStyle='#4a4e52';c.fillRect(0,y,w,3);}for(let x=4;x<w;x+=8){c.fillStyle='rgba(0,0,0,.35)';c.fillRect(x,0,1,h);}});
+  stepTex.wrapS=stepTex.wrapT=T.RepeatWrapping;stepTex.repeat.set(1,6);
+  const stepM=new T.MeshStandardMaterial({map:stepTex,metalness:.6,roughness:.45}),wood=kmat('x',{color:0x5a3a22,roughness:.6}),bronze=KM.brass();
+  const g=new T.Group();g.position.set(x0+sx*3,0,zc);sc.add(g);
+  for(let i=0;i<3;i++){const z=(i-1)*1.1;
+    const e=mesh(new T.BoxGeometry(run,.12,.6),stepM);e.position.set(sx*len/2,rise/2,z);e.rotation.z=sx*ang;g.add(e);
+    for(const o of [-.36,.36]){const bal=mesh(new T.BoxGeometry(run,.32,.08),wood);bal.position.set(sx*len/2,rise/2+.2,z+o);bal.rotation.z=sx*ang;g.add(bal);
+      const rail=mesh(new T.BoxGeometry(run,.04,.1),kmat('x',{color:0x111111,roughness:.4}));rail.position.set(sx*len/2,rise/2+.38,z+o);rail.rotation.z=sx*ang;g.add(rail);}
+  }
+  // «факелы» между эскалаторами
+  for(const z of [-.55,.55])for(let k=0;k<4;k++){const t=(k+.5)/4,px=sx*len*t,py=rise*t;
+    kcyl(g,.02,.03,.55,bronze,px,py+.2,z,8);const gl=new T.Mesh(new T.SphereGeometry(.07,10,8),R3.mat.win);gl.position.set(px,py+.8,z);g.add(gl);
+    const halo=new T.Sprite(new T.SpriteMaterial({map:R3.tx.glow,color:0xffc070,transparent:true,opacity:.5,depthWrite:false,blending:T.AdditiveBlending}));halo.scale.set(.7,.7,1);halo.position.copy(gl.position);g.add(halo);}
+  // свод над эскалаторами и арка
+  const vault=mesh(new T.CylinderGeometry(2.2,2.2,run,24,1,true,0,Math.PI),kmat('stone',{color:0x8a8478,side:T.DoubleSide}),false);
+  vault.rotation.z=Math.PI/2+sx*ang;vault.position.set(sx*len/2,rise/2+.1,0);vault.rotation.order='ZYX';g.add(vault);vault.material.side=T.BackSide;
+  const arch=mesh(new T.TorusGeometry(2.25,.12,8,24,Math.PI),bronze);arch.rotation.y=Math.PI/2;arch.position.set(0,.1,0);g.add(arch);
+  const sign=new T.Mesh(new T.PlaneGeometry(2.6,.36),new T.MeshBasicMaterial({toneMapped:false,map:ctex(512,72,(c,w,h)=>{c.fillStyle='#1d2a5a';c.fillRect(0,0,w,h);c.fillStyle='#e8e2d0';c.font='bold 40px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(sx<0?'ВЫХОД В ГОРОД':'ПЕРЕХОД',w/2,h/2+2);})}));
+  sign.rotation.y=sx<0?Math.PI/2:-Math.PI/2;sign.position.set(-sx*.02,2.6,0);g.add(sign);
+  // турникеты внизу
+  for(let i=0;i<4;i++){kbox(g,.18,.32,.08,kmat('x',{color:0x7a7a7a,metalness:.6,roughness:.4}),-sx*.6,0,-1.2+i*.8);}
+}
 function makeGenerator(){
   const T=THREE,g=new T.Group(),M=R3.mat;
   // фундамент-ступени
@@ -1679,7 +1726,7 @@ function makePile(r,amt){
 function resize3D(){if(!R3.ok)return;if(!R3.camInit&&VW>0){R3.camInit=1;if(VW<VH)cam3.d=27;}R3.rd.setSize(VW,VH,false);R3.cam.aspect=VW/VH;R3.cam.updateProjectionMatrix();}
 function camUpdate(){
   const c=R3.cam,p=cam3;p.d=clamp(p.d,5,30);p.pitch=clamp(p.pitch,.45,1.35);
-  p.tx=clamp(p.tx,-GW/2-2,GW/2+2);p.tz=clamp(p.tz,-GH/2-1,GH/2+1);
+  p.tx=clamp(p.tx,-GW/2-7,GW/2+7);p.tz=clamp(p.tz,-GH/2-1,GH/2+1);
   c.position.set(p.tx+Math.sin(p.yaw)*Math.cos(p.pitch)*p.d,Math.sin(p.pitch)*p.d,p.tz+Math.cos(p.yaw)*Math.cos(p.pitch)*p.d);
   c.lookAt(p.tx,0,p.tz);
 }
@@ -1787,7 +1834,7 @@ function drawWalkers3D(s){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.12||w.w++>500){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=0;}
-    const sp=s.paused?0:.008*Math.min(3,s.speed);const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const sp=s.paused||(s.queue.length&&!s.survivor)?0:.0009*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
     const bob=sp?Math.abs(Math.sin(performance.now()/120+i))*.012:0;w.ang=Math.atan2(dx,dy);
     m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));for(const im of R3.ppl)im.setMatrixAt(i,m);
@@ -1815,6 +1862,226 @@ function overlay3D(t){
   vg.addColorStop(0,`rgba(0,0,0,${night*.3})`);vg.addColorStop(1,`rgba(2,4,8,${.5+night*.3})`);cx.fillStyle=vg;cx.fillRect(0,0,VW,VH);
   if(cold>.15){if(!frostTex)frostTex=makeFrost();cx.globalAlpha=clamp((cold-.15)*1.3,0,.95);cx.drawImage(frostTex,0,0,VW,VH);cx.globalAlpha=1;
     const fg=cx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.7);fg.addColorStop(0,'rgba(190,220,245,0)');fg.addColorStop(1,`rgba(190,220,245,${cold*.22})`);cx.fillStyle=fg;cx.fillRect(0,0,VW,VH);}
+  if(ui.labels!==false&&cam3.d<24)drawLabels(s,t);
+}
+let labelCache=null,labelT=0;
+function drawLabels(s,t){
+  if(!labelCache||t-labelT>600){labelT=t;const R=dayRates(s),occ=occupancy(s);labelCache=s.bld.map(b=>{const L=bLabel(s,b,R,occ);return L&&{b,...L};}).filter(Boolean);}
+  cx.font='11px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';
+  const v=new THREE.Vector3();
+  for(const L of labelCache){
+    const g=R3.bmap.get(L.b.id);const hgt=g?new THREE.Box3().setFromObject(g.userData.body).max.y:0.8;
+    v.set(wx(L.b.x),hgt+.15,wz(L.b.y)).project(R3.cam);if(v.z>1)continue;
+    const x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;const w=cx.measureText(L.t).width+12;
+    cx.fillStyle=L.k==='bad'?'rgba(70,20,16,.88)':'rgba(12,16,20,.82)';cx.fillRect(x-w/2,y-9,w,18);
+    cx.fillStyle=L.k==='bad'?'#e06450':L.k==='ok'?'#b08a4e':'#3b4856';cx.fillRect(x-w/2,y-9,2,18);
+    cx.fillStyle=L.k==='bad'?'#ffb4a6':L.k==='mute'?'#8ea3b5':'#e8dcc0';cx.fillText(L.t,x+1,y);
+  }
+}
+
+/* ---------------------------- ПИКТОГРАММЫ ТЕХНОЛОГИЙ И ЗАКОНОВ ---------------------------- */
+const PIC={
+  flame:'<path d="M16 4c2 5 8 8 8 15a8 8 0 01-16 0c0-4 2-6 4-9 0 3 1 5 3 5 0-4-1-7 1-11z"/>',
+  pipes:'<path d="M4 10h14a4 4 0 014 4v14M4 16h10a2 2 0 012 2v10"/><circle cx="26" cy="7" r="3"/>',
+  house:'<path d="M5 15L16 6l11 9v12H5z"/><path d="M13 27v-7h6v7"/>',
+  insul:'<path d="M5 15L16 6l11 9v12H5z"/><path d="M8 18h16M8 22h16"/><path d="M27 4l2 2-2 2"/>',
+  boiler:'<rect x="9" y="10" width="14" height="18" rx="3"/><path d="M14 10V4h4v6M13 20h6"/><path d="M16 15v3"/>',
+  radius:'<circle cx="16" cy="16" r="3"/><circle cx="16" cy="16" r="8"/><circle cx="16" cy="16" r="13" stroke-dasharray="3 3"/>',
+  core:'<circle cx="16" cy="16" r="4"/><ellipse cx="16" cy="16" rx="12" ry="5"/><ellipse cx="16" cy="16" rx="12" ry="5" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="12" ry="5" transform="rotate(-60 16 16)"/>',
+  mushroom:'<path d="M5 16a11 9 0 0122 0z"/><path d="M13 16v10h6V16"/><circle cx="11" cy="12" r="1.5"/><circle cx="20" cy="11" r="1.5"/>',
+  drop:'<path d="M16 4c-4 7-9 11-9 16a9 9 0 0018 0c0-5-5-9-9-16z"/>',
+  filter:'<path d="M16 3c-3 5-6 8-6 11a6 6 0 0012 0c0-3-3-6-6-11z"/><path d="M6 24h20M8 28h16"/>',
+  sprout:'<path d="M16 28V14M16 16c-6 0-9-4-9-9 6 0 9 4 9 9zM16 14c0-5 3-8 9-8 0 5-3 8-9 8z"/><path d="M8 28h16"/>',
+  drill:'<path d="M10 4h12l-2 6H12zM14 10v12l2 6 2-6V10"/><path d="M12 15h8M12 19h8"/>',
+  cart:'<path d="M4 10h18l-3 10H8z"/><circle cx="11" cy="25" r="3"/><path d="M22 10l4-4h3"/>',
+  saw:'<circle cx="16" cy="16" r="10"/><circle cx="16" cy="16" r="3"/><path d="M16 2v4M16 26v4M2 16h4M26 16h4M6 6l3 3M23 23l3 3M6 26l3-3M23 9l3-3"/>',
+  wagon:'<rect x="4" y="8" width="24" height="12" rx="2"/><path d="M8 12h4M14 12h4M20 12h4"/><circle cx="9" cy="24" r="3"/><circle cx="23" cy="24" r="3"/><path d="M2 28h28"/>',
+  pick:'<path d="M5 9c6-5 16-5 22 0"/><path d="M16 7v22"/>',
+  gear:'<circle cx="16" cy="16" r="5"/><path d="M16 3v5M16 24v5M3 16h5M24 16h5M7 7l4 4M21 21l4 4M7 25l4-4M21 11l4-4"/>',
+  cross:'<rect x="5" y="5" width="22" height="22" rx="3"/><path d="M16 10v12M10 16h12"/>',
+  pill:'<rect x="5" y="11" width="22" height="10" rx="5" transform="rotate(-35 16 16)"/><path d="M13 12l6 8"/>',
+  book:'<path d="M5 6h9a3 3 0 013 3v18a3 3 0 00-3-3H5zM27 6h-9a3 3 0 00-3 3v18a3 3 0 013-3h9z"/>',
+  draisine:'<path d="M5 20h22"/><circle cx="10" cy="24" r="3"/><circle cx="22" cy="24" r="3"/><path d="M16 20V10M10 8l12 4"/><path d="M2 28h28"/><path d="M26 6l3-2M27 10l3 0"/>',
+  team:'<circle cx="11" cy="10" r="4"/><circle cx="22" cy="11" r="3"/><path d="M4 27c0-6 3-9 7-9s7 3 7 9M18 27c0-4 2-7 5-7s5 3 5 7"/>',
+  flag:'<path d="M8 29V4M8 5h16l-4 5 4 5H8"/>',
+  snow:'<path d="M16 3v26M5 9.5l22 13M5 22.5l22-13"/><path d="M13 5l3 3 3-3M13 27l3-3 3 3"/>',
+  kettle:'<path d="M7 14h18v10a4 4 0 01-4 4H11a4 4 0 01-4-4z"/><path d="M11 14c0-3 2-5 5-5s5 2 5 5M12 6c0-2 2-2 2-4M18 6c0-2 2-2 2-4"/>',
+  seed:'<ellipse cx="16" cy="18" rx="7" ry="10"/><path d="M16 8v20"/>',
+  bolt:'<path d="M18 3L8 18h7l-2 11 11-16h-7z"/>',
+  blocks:'<rect x="4" y="16" width="11" height="11"/><rect x="17" y="16" width="11" height="11"/><rect x="10" y="4" width="11" height="11"/>',
+  recycle:'<path d="M10 9l3-5 4 6M22 12l5 6-6 1M15 27H8l-3-6"/><path d="M13 4l8 13M27 18H11M8 21l8-13"/>',
+  flask:'<path d="M12 4h8M13 4v8L6 26a2 2 0 002 3h16a2 2 0 002-3l-7-14V4"/><path d="M9 21h14"/>',
+  leg:'<path d="M14 4v10l-2 10h8M18 4v10"/><path d="M12 24v4h8"/>',
+  route:'<circle cx="7" cy="8" r="3"/><circle cx="25" cy="24" r="3"/><path d="M10 8h10a4 4 0 010 8H12a4 4 0 000 8h10"/>',
+  child:'<circle cx="16" cy="8" r="4"/><path d="M10 28v-8l6-6 6 6v8M12 20h8"/>',
+  school:'<path d="M3 12l13-6 13 6-13 6z"/><path d="M9 15v7c4 3 10 3 14 0v-7M28 12v8"/>',
+  clock:'<circle cx="16" cy="16" r="12"/><path d="M16 9v7l5 3"/>',
+  bowl:'<path d="M4 15h24a12 10 0 01-24 0z"/><path d="M12 10c0-2 2-2 2-4M18 10c0-2 2-2 2-4"/>',
+  sawdust:'<path d="M4 15h24a12 10 0 01-24 0z"/><path d="M9 18l2 2M14 20l1 2M19 18l2 2M23 21l1 1"/>',
+  dropminus:'<path d="M14 5c-3 6-8 9-8 14a8 8 0 0016 0c0-5-5-8-8-14z"/><path d="M22 7h8"/>',
+  grave:'<path d="M9 28V12a7 7 0 0114 0v16z"/><path d="M16 14v8M13 17h6M5 28h22"/>',
+  pit:'<path d="M3 26c4-2 22-2 26 0"/><ellipse cx="16" cy="20" rx="10" ry="4"/><path d="M6 12a10 10 0 0120 0"/>',
+  knife:'<path d="M5 27L22 10l4 2-14 14z"/><path d="M22 10l4-6 2 2-4 6"/>',
+  beds:'<path d="M3 24V10M3 18h26v6M29 24v-6"/><rect x="5" y="13" width="6" height="5" rx="2"/><path d="M13 14h14v4"/>',
+  fist:'<path d="M9 14V9a2 2 0 014 0v4-6a2 2 0 014 0v6-5a2 2 0 014 0v6-3a2 2 0 014 0v9c0 5-4 8-8 8h-2c-4 0-6-3-7-5l-2-4a2 2 0 013-2l2 2z"/>',
+  bottle:'<path d="M13 3h6v6l3 5v14H10V14l3-5z"/><path d="M10 18h12"/>',
+  hammer:'<path d="M6 10l8-6 6 6-3 3-3-3-2 2 14 14-3 3-14-14-3 3z"/>',
+  alarm:'<circle cx="16" cy="18" r="10"/><path d="M16 12v6l4 2M5 7l4-3M27 7l-4-3"/>',
+  pot:'<path d="M5 13h22v9a6 6 0 01-6 6H11a6 6 0 01-6-6z"/><path d="M3 13h26M10 9h12"/><circle cx="11" cy="20" r="1"/><circle cx="16" cy="21" r="1"/><circle cx="21" cy="20" r="1"/>',
+  plate:'<ellipse cx="16" cy="20" rx="12" ry="5"/><path d="M8 6v8M10 6v8M12 6v8M24 6v14"/>',
+  mask:'<path d="M5 12c4-3 18-3 22 0v6c-3 6-19 6-22 0z"/><path d="M5 13l-3-3M27 13l3-3M10 16h12M10 19h12"/>',
+  houses:'<path d="M2 18l7-6 7 6v10H2zM16 14l7-6 7 6v14H16z"/>',
+  compass:'<circle cx="16" cy="16" r="12"/><path d="M20 12l-3 8-5 1 3-8z"/>',
+  hand:'<path d="M3 17l6-5 6 2 4-2 10 5-6 5-6 3-6-2-8-3z"/><path d="M15 14l-3 4 3 2 6-3"/>',
+  shield:'<path d="M16 3l11 4v8c0 7-5 12-11 14C10 27 5 22 5 15V7z"/><path d="M11 16l4 4 7-8"/>',
+  radio:'<rect x="4" y="12" width="24" height="15" rx="2"/><circle cx="11" cy="20" r="4"/><path d="M19 17h6M19 21h6M8 12l14-8"/>',
+  bars:'<rect x="4" y="5" width="24" height="22"/><path d="M10 5v22M16 5v22M22 5v22"/>',
+  star:'<path d="M16 3l3.8 8.2 9 .9-6.7 6 1.9 8.9L16 22.5 8 27l1.9-8.9-6.7-6 9-.9z"/>',
+  crown:'<path d="M4 25h24M5 22l-1-13 7 6 5-9 5 9 7-6-1 13z"/>',
+  candle:'<path d="M12 14h8v14h-8z"/><path d="M16 4c2 3 3 5 0 8-3-3-2-5 0-8z"/>',
+  hands:'<path d="M3 20l5-6h6l4 4M29 20l-5-6h-6l-4 4"/><path d="M8 26l6-6M24 26l-6-6"/>',
+  church:'<path d="M16 3v6M13 6h6M8 14l8-5 8 5v14H8z"/><path d="M14 28v-6h4v6"/>',
+  lantern:'<path d="M12 8h8l2 4v12l-2 4h-8l-2-4V12z"/><path d="M14 4h4v4M16 15c2 2 2 4 0 6-2-2-2-4 0-6z"/>',
+  sun:'<circle cx="16" cy="16" r="6"/><path d="M16 2v5M16 25v5M2 16h5M25 16h5M6 6l3 3M23 23l3 3M6 26l3-3M23 9l3-3"/>',
+  coal:'<path d="M4 26l5-10 6 3 5-9 8 16z"/>',
+};
+const TECH_PIC={t_heater:'flame',t_radius1:'radius',t_insul:'insul',t_power1:'boiler',t_radius2:'radius',t_power2:'core',t_farm2:'mushroom',t_filter:'filter',t_hydro:'sprout',t_well:'drill',
+  t_gather:'cart',t_saw:'saw',t_scrap:'wagon',t_coal:'pick',t_tools:'gear',t_barracks:'house',t_house:'houses',t_hospital:'cross',t_pharm:'pill',t_research:'book',
+  t_draisine:'draisine',t_teams:'team',t_outpost:'flag',t_coldmat:'snow',t_heatpipes:'pipes',t_cook2:'kettle',t_seedbank:'seed',t_drills:'bolt',t_prefab:'blocks',
+  t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route'};
+const LAW_PIC={child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',water_ration:'dropminus',cemetery:'grave',pit:'pit',radical:'knife',
+  overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
+  recycling:'recycle',expedition:'compass',barter:'hand',o_patrol:'shield',o_radio:'radio',o_prison:'bars',o_martial:'star',o_new:'crown',
+  f_hall:'candle',f_mutual:'hands',f_shrine:'church',f_wardens:'lantern',f_new:'sun'};
+const pic=(k,col)=>`<svg class="pic" viewBox="0 0 32 32" aria-hidden="true" style="color:${col||'var(--amber)'}"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PIC[k]||PIC.gear}</g></svg>`;
+
+/* ---------------------------- СУТОЧНЫЙ БАЛАНС: что даёт каждое здание и чего не хватает ---------------------------- */
+function bMult(s,b,k){
+  let m=1;
+  if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
+  if(b.type==='condenser'&&has(s,'t_filter'))m*=1.5;
+  if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=(has(s,'t_tools')?1.2:1)*(has(s,'recycling')?1.1:1);
+  if(b.type==='coalmine'&&has(s,'t_drills'))m*=1.25;
+  return m;
+}
+function bEff(s,b){const d=B[b.type];const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;return eff*lvlMul(b);}
+const workHoursPerDay=s=>has(s,'ext_shift')?14:10;
+const rationMult=s=>has(s,'additives')?3:has(s,'soup')?2.5:2;
+const foodPerPerson=s=>D_(s).cons*(has(s,'communal')?.85:has(s,'private')?1.1:1);
+const waterPerPerson=s=>D_(s).cons*(has(s,'water_ration')?.7:1);
+function dayRates(s){
+  const H=workHoursPerDay(s),out={coal:0,wood:0,steel:0,raw:0,food:0,water:0,meds:0,cores:0,rp:0},per={};let kcap=0;
+  for(const b of s.bld){const d=B[b.type];if(b.build||!d.job)continue;const o={};per[b.id]=o;
+    const wf=b.on?workforce(b.a):0;if(wf<=0){o.idle=1;continue;}
+    const eff=bEff(s,b),h=b.emerg>0?24:H;
+    if(d.prod)for(const k in d.prod){const m=d.prod[k]*wf*eff*h*bMult(s,b,k);o[k]=m;out[k]+=m;}
+    if(d.kitchen){const c=7.5*wf*eff*h*(has(s,'t_cook2')?1.5:1);o.kcap=c;kcap+=c;}
+    if(d.rp){const r=d.rp*wf*eff*h*(has(s,'t_research')?1.25:1);o.rp=r;out.rp+=r;}}
+  for(const t of s.grid)if(t.pile){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));}
+  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:2}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t]+=g;}
+  const cooked=Math.min(kcap,out.raw+s.res.raw);out.food+=cooked*rationMult(s);out.rawCooked=cooked;
+  const n=popTotal(s);
+  const fuel=s.gen.on?[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D_(s).cons:0;
+  const heaters=s.bld.filter(b=>b.type==='heater'&&!b.build&&b.on).length;
+  const need={food:n*foodPerPerson(s),water:n*waterPerPerson(s),coal:(fuel+heaters)*24,raw:cooked};
+  return{out,need,per,kcap,fuelH:fuel+heaters};
+}
+// жильцы по домам (самые тёплые заполняются первыми)
+function occupancy(s){
+  const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({b,cap:capOf(s,b),lv:lvlOf(heatAt(s,b.x,b.y))})).sort((a,b)=>b.lv-a.lv);
+  let left=popTotal(s);const m={};for(const h of homes){const k=Math.min(left,h.cap);m[h.b.id]=k;left-=k;}return m;
+}
+// подпись над зданием: сколько даёт и на сколько людей хватает
+function bLabel(s,b,R,occ){
+  const d=B[b.type];if(b.build)return{t:`Стройка: ${b.build} ч`,k:'mute'};
+  if(d.house)return{t:`Жильцов ${occ[b.id]||0}/${capOf(s,b)}`,k:(occ[b.id]||0)>=capOf(s,b)?'ok':'mute'};
+  if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
+  if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
+  if(d.teams)return{t:`Отрядов ${teamSlots(s)}`,k:'ok'};
+  const o=R.per[b.id];if(!o)return null;if(o.idle)return{t:'Нет работников',k:'bad'};
+  if(o.raw!=null){const ppl=o.raw*rationMult(s)/foodPerPerson(s);return{t:`+${Math.round(o.raw)} еды/день · кормит ${Math.floor(ppl)} чел.`,k:'ok'};}
+  if(o.water!=null)return{t:`+${Math.round(o.water)} воды/день · поит ${Math.floor(o.water/waterPerPerson(s))} чел.`,k:'ok'};
+  if(o.kcap!=null)return{t:`Готовит до ${Math.round(o.kcap*rationMult(s))} пайков/день`,k:'ok'};
+  if(o.coal!=null)return{t:`+${Math.round(o.coal)} угля/день · ${Math.round(o.coal/Math.max(1,R.fuelH))} ч генератора`,k:'ok'};
+  if(o.rp!=null)return{t:`+${Math.round(o.rp)} очков науки/день`,k:'ok'};
+  for(const k of ['wood','steel','meds','cores'])if(o[k]!=null)return{t:`+${o[k]<1?o[k].toFixed(1):Math.round(o[k])} ${RES[k].n.toLowerCase()}/день`,k:'ok'};
+  return null;
+}
+// панель «Нужды»: что в дефиците и что строить
+function needsHTML(s){
+  const R=dayRates(s),n=popTotal(s),H=workHoursPerDay(s);
+  const row=(icon,name,state,main,hint)=>`<div class="need ${state}">${icon}<div><div class="nm">${name}<b>${main}</b></div>${hint?`<div class="nh">${hint}</div>`:''}</div></div>`;
+  const out=[];
+  // еда
+  const fNeed=R.need.food,fProd=R.out.food,fGap=fNeed-fProd;
+  const farmDay=.4*5*H*(has(s,'t_farm2')?1.5:1)*rationMult(s);
+  out.push(row(ico('food'),'Еда',fGap>0?(s.res.food<fNeed?'bad':'warn'):'ok',`${Math.round(fProd)} / ${Math.round(fNeed)} в день`,
+    fGap>0?`Не хватает ${Math.round(fGap)} пайков в день. Запаса на ${(s.res.food/Math.max(1,fNeed)).toFixed(1)} дн. Нужно ещё ≈ ${Math.ceil(fGap/farmDay)} грибн. ферм${R.kcap*rationMult(s)<fNeed?' и кухня':''}.`:`Хватает. Запас ${Math.floor(s.res.food)} пайков.`));
+  // вода
+  const wNeed=R.need.water,wProd=R.out.water,wGap=wNeed-wProd,condDay=1.6*3*H*(has(s,'t_filter')?1.5:1);
+  out.push(row(ico('water'),'Вода',wGap>0?(s.res.water<wNeed?'bad':'warn'):'ok',`${Math.round(wProd)} / ${Math.round(wNeed)} в день`,
+    wGap>0?`Не хватает ${Math.round(wGap)} в день. Запаса на ${(s.res.water/Math.max(1,wNeed)).toFixed(1)} дн. Нужно ещё ≈ ${Math.ceil(wGap/condDay)} конденсатор(а).`:`Хватает. Запас ${Math.floor(s.res.water)}.`));
+  // уголь
+  const cH=R.fuelH,left=cH?s.res.coal/cH:Infinity;
+  out.push(row(ico('coal'),'Уголь',left<24?'bad':R.out.coal<R.need.coal?'warn':'ok',`${cH?cH.toFixed(1)+' в час':'генератор стоит'}`,
+    cH?`Хватит на ${left===Infinity?'∞':Math.floor(left)} ч. Добыча ${Math.round(R.out.coal)}/день при расходе ${Math.round(R.need.coal)}/день.${R.out.coal<R.need.coal?' Поставьте людей на угольные завалы или постройте забой.':''}`:'Запустите генератор, иначе люди замёрзнут.'));
+  // жильё
+  const cap=housing(s),hl=Math.max(0,n-cap);
+  out.push(row(ico('house2','#cfe3f2'),'Жильё',hl?'bad':'ok',`${Math.min(n,cap)} / ${n} под крышей`,hl?`Без крыши ${hl} чел. Нужно ещё ≈ ${Math.ceil(hl/10)} палаток (по 10 мест).`:`Свободных мест: ${cap-n}.`));
+  // здоровье
+  const ill=s.ill.w+s.ill.e+s.ill.c,crit=s.crit.w+s.crit.e+s.crit.c,bc=bedCount(s),beds=bc.beds+bc.hbeds;
+  out.push(row(ico('meds'),'Здоровье',ill+crit>beds?'bad':ill+crit?'warn':'ok',`${ill+crit} больных · ${beds} коек`,
+    ill+crit>beds?`Не хватает ${ill+crit-beds} коек${crit?`, тяжёлых ${crit} (нужны медикаменты или лазарет)`:''}.`:crit?`Тяжёлых ${crit}.`:''));
+  // работники
+  out.push(row(ico('steel','#cfe3f2'),'Люди',free(s,'w')+free(s,'e')>0?'warn':'ok',`${n}: рабочих ${s.pop.w}, инженеров ${s.pop.e}, детей ${s.pop.c}`,
+    `Без дела: рабочих ${free(s,'w')}, инженеров ${free(s,'e')}.`));
+  return out.join('');
+}
+ICON.house2='<path d="M2 8L8 3l6 5v6H2z" fill="currentColor"/>';
+
+/* ---------------------------- СОЮЗ СТАНЦИЙ: у каждого своя станция, можно пересылать ресурсы ---------------------------- */
+const ally={on:false,unsub:[],peers:{},status:'',lastPub:0};
+async function allyConnect(s){
+  allyStop();if(!s||!s.ally)return;
+  const db=await coopDb();if(!db){ally.status='Союз недоступен в этом просмотре';return;}
+  const {code,me}=s.ally;ally.on=true;ally.status='на связи';
+  ally.unsub.push(db.collection('alliance/'+code+'/players').onSnapshot(snap=>{const now=Date.now();const P={};
+    snap.docs.forEach(d=>{const x=d.data();if(d.id!==me&&x&&now-x.t<120000)P[d.id]=x;});ally.peers=P;ui.dirty=true;},()=>{ally.status='нет доступа';}));
+  ally.unsub.push(db.collection('alliance/'+code+'/gifts').onSnapshot(snap=>{
+    for(const ch of snap.docChanges()){if(ch.type!=='added')continue;const g=ch.doc.data();if(!g||g.to!==me||ally.seen?.has(ch.doc.id))continue;
+      (ally.seen=ally.seen||new Set()).add(ch.doc.id);
+      const n=Math.max(0,Math.min(5000,Math.floor(+g.n||0)));if(RES[g.r]&&n&&S){S.res[g.r]+=n;toast(S,`${String(g.fromName||'Союзник').slice(0,30)} прислал(а): ${n} ${RES[g.r].n.toLowerCase()}`,'good');log(S,`Получено от союзника: ${n} ${RES[g.r].n.toLowerCase()}.`,'good');ui.dirty=true;}
+      db.doc('alliance/'+code+'/gifts/'+ch.doc.id).delete().catch(()=>{});}
+  },()=>{}));
+}
+function allyStop(){for(const u of ally.unsub)try{u();}catch(e){}ally.unsub=[];ally.on=false;ally.peers={};}
+function allyPublish(){
+  if(!ally.on||!S||!S.ally||!coop.db)return;const now=Date.now();if(now-ally.lastPub<10000)return;ally.lastPub=now;
+  const r={};for(const k of RES_ORDER)r[k]=Math.floor(S.res[k]);
+  coop.db.doc('alliance/'+S.ally.code+'/players/'+S.ally.me).set({name:S.ally.name,day:S.day,pop:popTotal(S),hope:Math.round(S.hope),res:r,t:now}).catch(()=>{ally.status='ошибка связи';});
+}
+function allySend(to,r,n){
+  if(!S||!S.ally||!coop.db||!RES[r])return;n=Math.floor(n);if(n<=0||S.res[r]<n)return;
+  S.res[r]-=n;const peer=ally.peers[to];
+  coop.db.collection('alliance/'+S.ally.code+'/gifts').add({to,from:S.ally.me,fromName:S.ally.name,r,n,t:Date.now()})
+    .then(()=>{toast(S,`Отправлено ${peer?peer.name:'союзнику'}: ${n} ${RES[r].n.toLowerCase()}`,'good');})
+    .catch(()=>{S.res[r]+=n;toast(S,'Не удалось отправить, ресурсы вернулись','bad');});
+  ui.dirty=true;
+}
+function allyHTML(s){
+  if(!s.ally)return`<p class="lead">Союз станций: у каждого игрока своя станция, но вы можете пересылать друг другу ресурсы. Создайте союз и передайте код другу — он вводит его у себя в игре.</p>
+    <div class="menurow"><input type="text" id="allyname" maxlength="24" placeholder="Название станции" aria-label="Название станции" style="width:200px;text-transform:none" value="Театральная-${(s.seed%90)+10}">
+    <button class="btn primary" data-act="allynew">Создать союз</button><input type="text" id="allycode" maxlength="5" placeholder="КОД" aria-label="Код союза"><button class="btn" data-act="allyjoin">Вступить</button></div>
+    <p class="hint">${esc(ally.status)} Другу нужен доступ к этой странице с правом редактирования.</p>`;
+  const peers=Object.entries(ally.peers);
+  return`<p class="lead">Союз <b class="num">${esc(s.ally.code)}</b> · ваша станция «${esc(s.ally.name)}» · ${esc(ally.status)}. Код союза передайте другу.</p>
+   ${peers.length?peers.map(([id,p])=>`<div class="ally panel"><div class="title" style="font-size:16px">${esc(String(p.name).slice(0,30))}</div>
+     <div class="hint">День ${+p.day||0} · жителей ${+p.pop||0} · надежда ${+p.hope||0}</div>
+     <div class="hint">${RES_ORDER.map(k=>`${RES[k].n}: ${Math.floor(+(p.res||{})[k]||0)}`).join(' · ')}</div>
+     <div class="menurow"><select id="ar-${esc(id)}" aria-label="Ресурс">${RES_ORDER.map(k=>`<option value="${k}">${RES[k].n} (у вас ${Math.floor(s.res[k])})</option>`).join('')}</select>
+       ${[10,50,100].map(n=>`<button class="btn" data-allysend="${esc(id)}" data-n="${n}">Отправить ${n}</button>`).join('')}</div></div>`).join('')
+     :'<p class="hint">Пока никого. Когда друг вступит в союз и зайдёт в игру, его станция появится здесь.</p>'}
+   <div class="menurow"><button class="btn danger" data-act="allyleave">Выйти из союза</button></div>`;
 }
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -1883,6 +2150,8 @@ const HOPE_ICO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c1 4 6
 const DISC_ICO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V5a1.5 1.5 0 013 0v4-6a1.5 1.5 0 013 0v6-5a1.5 1.5 0 013 0v6-3a1.5 1.5 0 013 0v7c0 4-3 7-7 7h-1c-3 0-5-2-6-4l-2-4a1.5 1.5 0 012.5-1.5L7 13z" fill="#f06a4a"/></svg>';
 function renderTop(){
   const s=S;
+  const nd=$('needs');nd.hidden=!!ui.needsHidden;
+  setHTML(nd,`<div class="needhead"><span class="title" style="font-size:13px;color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
   setHTML($('res'),RES_ORDER.map(k=>{const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
   const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;if(d>LAST_DAY&&!s.endless)return'';return`<span>д${d}: ${WEATHER[Math.min(d,LAST_DAY)-1]+D_(s).temp}°</span>`;}).join('');
   setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div><div class="fc">${fc}</div></div>`);
@@ -1903,7 +2172,7 @@ function renderTop(){
 function renderBar(){
   const s=S;
   setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
-    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button>`);
+    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button><button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
   const cards=$('cards');
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
@@ -1943,6 +2212,7 @@ function renderInfo(){
     h=`<h3>${d.n}</h3><div class="sub">${d.d||''}</div>
     <div class="row"><span>Состояние</span><span>${b.build?`строится, ${b.build} ч`:b.on?'работает':'отключено'}</span></div>
     <div class="row"><span>Температура</span><span class="lvl${lv}">${LVL_N[lv]} (${Math.round(deg)}°)</span></div>`;
+    {const L=bLabel(s,b,dayRates(s),occupancy(s));if(L)h+=`<div class="row"><span>Даёт</span><span style="color:${L.k==='bad'?'var(--bad)':'var(--frost)'}">${esc(L.t)}</span></div>`;}
     if(d.house)h+=`<div class="row"><span>Мест</span><span>${capOf(s,b)}</span></div>`;
     if(d.job&&!b.build){const eff=HEAT_EFF[lv];h+=`<div class="row"><span>Эффективность</span><span>${Math.round(eff*100*(d.needHeat&&lv<d.needHeat?.4:1))}%</span></div>`+workCtrl(b.id,b.a,d.jobs,d.job,'');}
     if(d.beds)h+=`<div class="row"><span>Коек</span><span>${Math.floor(d.beds*lvlMul(b))}${d.heal?' · лечит тяжёлых':''}</span></div>`;
@@ -1970,25 +2240,31 @@ function renderOverlay(){
     el.hidden=false;el.className='overlay';
     const cats=[...new Set(TECH.map(t=>t.cat))];
     const ws=s.bld.filter(b=>b.type==='workshop'&&!b.build&&workforce(b.a)>0).length;
-    const cur=s.research?TECHBY[s.research]:null;
+    const cur=s.research?TECHBY[s.research]:null;const rpDay=dayRates(s).out.rp;
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Мастерская</h2>
-    <p class="lead">${cur?`Идёт исследование: <b>${cur.n}</b> — ${Math.floor(s.rp)} / ${cur.rp} очков.`:'Выберите исследование.'} Работающих мастерских: ${ws}. ${ws?'':'Постройте мастерскую и поставьте туда инженеров.'}</p>
+    <p class="lead">Здесь инженеры придумывают новое. Мастерские дают очки науки: сейчас ${Math.round(rpDay)} в день (${ws} мастерских с инженерами). ${ws?'':'<b>Постройте мастерскую (вкладка «Наука») и поставьте туда инженеров.</b>'} ${cur?`Идёт: <b>${cur.n}</b> — ${Math.floor(s.rp)} / ${cur.rp} очков${rpDay>0?`, осталось ≈ ${Math.ceil((cur.rp-s.rp)/rpDay*24)} ч`:''}.`:'Выберите одно исследование: ресурсы списываются сразу, очки копятся.'}</p>
     ${cur?`<div class="prog" style="margin-bottom:12px"><i style="width:${Math.min(100,s.rp/cur.rp*100)}%"></i></div>`:''}
     <div class="grid3">${cats.map(c=>`<div class="col"><h4>${c}</h4>${TECH.filter(t=>t.cat===c).map(t=>{const done=has(s,t.id);const reqOk=!t.req||t.req.every(r=>has(s,r));const can=!done&&!s.research&&reqOk&&canAfford(s,t.cost);
-      return`<button class="tech ${done?'done':''} ${s.research===t.id?'active':''}" data-research="${t.id}" ${can?'':'disabled'}><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}${!reqOk?` · нужно: ${t.req.map(r=>TECHBY[r].n).join(', ')}`:''}</span></button>`;}).join('')}</div>`).join('')}</div></div>`);
+      const st=done?'Изучено':s.research===t.id?'Идёт исследование':!reqOk?'Сначала: '+t.req.map(r=>TECHBY[r].n).join(', '):s.research?'Мастерская занята':!canAfford(s,t.cost)?'Не хватает ресурсов':rpDay>0?`≈ ${Math.ceil(t.rp/rpDay*24)} ч`:'Нет мастерских';
+      return`<button class="tech withpic ${done?'done':''} ${s.research===t.id?'active':''}" data-research="${t.id}" ${can?'':'disabled'}>${pic(TECH_PIC[t.id],done?'#7fc48a':null)}<span class="tx"><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}</span><span class="st">${st}</span></span></button>`;}).join('')}</div>`).join('')}</div></div>`);
     return;
   }
   if(ui.open==='laws'){
     el.hidden=false;el.className='overlay';
     const purposeOpen=s.day>=5||s.flags.purposeOpen;
     const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);
-      return`<button class="tech ${sig?'done':''}" data-law="${L.id}" ${ok?'':'disabled'}><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</button>`;};
+      return`<button class="tech withpic ${sig?'done':''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id],sig?'#7fc48a':L.cat==='order'?'#9fb3c4':L.cat==='faith'?'#e8c25a':null)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
     <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются.</p>
     <div class="grid3"><div class="col"><h4>Выживание</h4>${LAWS.filter(l=>l.cat==='adapt').slice(0,11).map(lawBtn).join('')}</div>
     <div class="col"><h4>&nbsp;</h4>${LAWS.filter(l=>l.cat==='adapt').slice(11).map(lawBtn).join('')}</div>
     <div class="col"><h4>Путь: Порядок</h4>${purposeOpen?(s.path==='faith'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='order').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div>
     <div class="col"><h4>Путь: Братство</h4>${purposeOpen?(s.path==='order'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='faith').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div></div></div>`);
+    return;
+  }
+  if(ui.open==='ally'){
+    el.hidden=false;el.className='overlay';
+    setHTML(el,`<div class="sheet panel" style="width:min(720px,100%)"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Союз станций</h2>${allyHTML(s)}</div>`);
     return;
   }
   if(ui.open==='log'){
@@ -2044,6 +2320,7 @@ function renderMenu(){
   <div class="title" style="color:var(--frost-dim);font-size:12px;margin-top:18px">Кооператив</div>
   <p class="hint">Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.</p>
   <div class="menurow"><button class="btn" data-act="host">Создать кооператив</button><input type="text" id="joincode" maxlength="6" placeholder="КОД" aria-label="Код кооператива"><button class="btn" data-act="join">Подключиться</button><span class="hint" id="coopmsg">${esc(coop.status)}</span></div>
+  <p class="hint">Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.</p>
   <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.</p>
   </div>`;
 }
@@ -2101,6 +2378,7 @@ async function coopJoin(code){
 /* ---------------------------- ЦИКЛ ---------------------------- */
 let last=performance.now(),uiT=0,rateT=0;
 function startGame(fromCoop){
+  if(S&&S.ally&&coop.role==='solo'&&!ally.on)allyConnect(S);
   ui.mode='game';ui.sel=null;ui.cat=null;ui.open=null;$('overlay').hidden=true;
   if(S&&!fromCoop)syncTeams(S);
   if(S)prevRes={...S.res};
@@ -2115,6 +2393,7 @@ function loop(t){
       let n=0;while(S.acc>=1&&n<6){S.acc-=1;hourTick(S);syncTeams(S);n++;ui.dirty=true;}
     }
     if(coop.role==='host')coopPush();
+    allyPublish();
     stepParticles();
     if(ui.open==='map'){$('mapwrap').hidden=false;renderMap(t);}
     else{$('mapwrap').hidden=true;draw(t);}
@@ -2196,6 +2475,7 @@ document.addEventListener('click',e=>{
   else if(ds.build){ui.buildType=ds.build;ui.sel=null;}
   else if(ds.open){ui.open=ui.open===ds.open?null:ds.open;ui.cat=null;if(ds.open==='map'&&S.teams.length&&!ui.team)ui.team=S.teams[0].id;}
   else if(ds.work!=null){const n=+ds.n;if(ds.work==='p')dispatch({t:'work',x:+ds.x,y:+ds.y,n});else dispatch({t:'work',id:+ds.work,n});}
+  else if(ds.allysend){const sel=document.getElementById('ar-'+ds.allysend);if(sel)allySend(ds.allysend,sel.value,+ds.n);}
   else if(ds.toggle)dispatch({t:'toggle',id:+ds.toggle});
   else if(ds.upgrade)dispatch({t:'upgrade',id:+ds.upgrade});
   else if(ds.insulate)dispatch({t:'insulate',id:+ds.insulate});
@@ -2216,6 +2496,12 @@ document.addEventListener('click',e=>{
     else if(a==='closemap')ui.open=null;
     else if(a==='unsel')ui.sel=null;
     else if(a==='heat')ui.heatView=!ui.heatView;
+    else if(a==='labels')ui.labels=ui.labels===false;
+    else if(a==='needs')ui.needsHidden=!ui.needsHidden;
+    else if(a==='allynew'||a==='allyjoin'){if(!S)return;const code=a==='allynew'?Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[ri(0,31)]).join(''):String($('allycode').value||'').trim().toUpperCase();
+      if(!/^[A-Z0-9]{5}$/.test(code)){ally.status='Введите код из 5 символов.';ui.dirty=true;$('overlay')._h=null;return;}
+      S.ally={code,me:'s'+Math.random().toString(36).slice(2,9),name:String($('allyname').value||'Станция').slice(0,24)};autosave(S);allyConnect(S);$('overlay')._h=null;}
+    else if(a==='allyleave'){if(S){S.ally=null;allyStop();autosave(S);}$('overlay')._h=null;}
     else if(a==='full')toggleFull();
     else if(a==='menu'){if(S&&coop.role!=='guest')autosave(S);ui.mode='menu';renderMenu();return;}
     else if(a==='new'){coopStop();ui.survivor=$('survivor').checked;S=newGame(ui.diff,ui.survivor);cam.x=0;cam.y=0;startGame();}
