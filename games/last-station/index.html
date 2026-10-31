@@ -1665,11 +1665,11 @@ function init3D(){
     rust:new T.MeshStandardMaterial({color:0x5a3e2c,roughness:.7,metalness:.4}),
     rail:new T.MeshStandardMaterial({color:0x6d6a66,roughness:.35,metalness:.85}),
     wood:new T.MeshStandardMaterial({color:0x5e4632,roughness:.95}),
-    win:new T.MeshBasicMaterial({color:0xffc070,toneMapped:false}),
+    win:new T.MeshBasicMaterial({color:new T.Color(2.2,1.4,.6),toneMapped:false}),
     winOff:new T.MeshStandardMaterial({color:0x14181c,roughness:.6}),
     wall:new T.MeshStandardMaterial({map:R3.tx.wall,color:0x6a6e70,roughness:.85,side:T.DoubleSide}),
     marble:new T.MeshStandardMaterial({color:0x8a8478,roughness:.6}),
-    core:new T.MeshBasicMaterial({color:0xff8a2a,toneMapped:false}),
+    core:new T.MeshBasicMaterial({color:new T.Color(2.6,1.1,.3),toneMapped:false}),
     coal:new T.MeshStandardMaterial({color:0x1d1c1b,roughness:.8}),
     crate:new T.MeshStandardMaterial({color:0x7a5634,roughness:.9}),
     steel:new T.MeshStandardMaterial({color:0x56626b,roughness:.6,metalness:.5}),
@@ -1811,7 +1811,7 @@ function init3D(){
   R3.snow=new T.Points(sg,new T.PointsMaterial({map:R3.tx.flake,color:0xdbe9f6,size:.075,transparent:true,opacity:.5,depthWrite:false}));sc.add(R3.snow);
   // пар
   for(let i=0;i<70;i++){const sp=new T.Sprite(new T.SpriteMaterial({map:R3.tx.smoke,color:0xb8bcc2,transparent:true,opacity:0,depthWrite:false}));sp.visible=false;sc.add(sp);R3.steam.push({sp,life:0});}
-  R3.ok=true;resize3D();
+  R3.ok=true;initPost();resize3D();
   return true;
 }
 function buildStation3D(){
@@ -2047,7 +2047,7 @@ function makeGenerator(){
   for(let i=0;i<11;i++){const a=i/11*Math.PI*2;const st=mesh(new T.DodecahedronGeometry(.11+((i*37)%5)*.012,0),KM.stone());st.position.set(Math.cos(a)*.5,.06,Math.sin(a)*.5);st.rotation.set(i,i*2,0);st.scale.y=.7;bf.add(st);}
   const ash=mesh(new T.CircleGeometry(.42,20),kmat('x',{color:0x1a1512,roughness:1}),false);ash.rotation.x=-Math.PI/2;ash.position.y=.02;bf.add(ash);
   for(let i=0;i<5;i++){const a=i/5*Math.PI*2;const lg=mesh(new T.CylinderGeometry(.045,.055,.7,7),KM.beam());lg.position.set(Math.cos(a)*.14,.16,Math.sin(a)*.14);lg.rotation.set(0,-a,1.15);lg.rotation.order='YXZ';lg.rotation.set(1.05,-a+Math.PI/2,0);bf.add(lg);}
-  for(let i=0;i<4;i++){const c=new T.Mesh(new T.ConeGeometry(.16-i*.025,.55+i*.08,8,1,true),new T.MeshBasicMaterial({color:i?0xff8a2a:0xffd070,transparent:true,opacity:.85-i*.12,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false,side:T.DoubleSide}));
+  for(let i=0;i<4;i++){const c=new T.Mesh(new T.ConeGeometry(.16-i*.025,.55+i*.08,8,1,true),new T.MeshBasicMaterial({color:i?new T.Color(2.4,.9,.25):new T.Color(3,2,.9),transparent:true,opacity:.85-i*.12,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false,side:T.DoubleSide}));
     c.position.set(Math.cos(i*2)*.07*(i?1:0),.3+i*.04,Math.sin(i*2)*.07*(i?1:0));bf.add(c);R3.flames.push(c);}
   // печь: ур. 1 — топка с куполом, ур. 2 — мостки и клапаны, ур. 3 — высокая труба и магистрали
   const s1=new T.Group(),s2=new T.Group(),s3=new T.Group();root.add(s1,s2,s3);R3.st=[s1,s2,s3];
@@ -2332,7 +2332,46 @@ function makePile(r,amt,rich){
   if(rich)g.scale.setScalar(1.25);
   g.userData={amt};return g;
 }
-function resize3D(){if(!R3.ok)return;if(!R3.camInit&&VW>0){R3.camInit=1;if(VW<VH)cam3.d=27;}R3.rd.setSize(VW,VH,false);R3.cam.aspect=VW/VH;R3.cam.updateProjectionMatrix();}
+// ---------- постобработка: свечение (bloom), цветокоррекция холод/тепло, виньетка ----------
+const POST={on:true,ok:false,ft:16,slow:0};
+function initPost(){
+  try{const T=THREE,rd=R3.rd,gl2=rd.capabilities.isWebGL2;
+    const opt={minFilter:T.LinearFilter,magFilter:T.LinearFilter,format:T.RGBAFormat,type:(gl2||rd.extensions.has('OES_texture_half_float'))?T.HalfFloatType:T.UnsignedByteType};
+    POST.rt=gl2&&T.WebGLMultisampleRenderTarget?new T.WebGLMultisampleRenderTarget(4,4,opt):new T.WebGLRenderTarget(4,4,opt);
+    POST.a=new T.WebGLRenderTarget(4,4,opt);POST.b=new T.WebGLRenderTarget(4,4,opt);
+    POST.cam=new T.OrthographicCamera(-1,1,1,-1,0,1);POST.sc=new T.Scene();
+    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute([-1,-1,0,3,-1,0,-1,3,0],3));geo.setAttribute('uv',new T.Float32BufferAttribute([0,0,2,0,0,2],2));
+    POST.q=new T.Mesh(geo);POST.q.frustumCulled=false;POST.sc.add(POST.q);
+    const vs='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.);}';
+    POST.bright=new T.ShaderMaterial({uniforms:{t:{value:null}},vertexShader:vs,fragmentShader:'uniform sampler2D t;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv).rgb;float l=max(c.r,max(c.g,c.b));gl_FragColor=vec4(c*smoothstep(.9,1.8,l),1.);}',depthTest:false,depthWrite:false});
+    POST.blur=new T.ShaderMaterial({uniforms:{t:{value:null},d:{value:new T.Vector2()}},vertexShader:vs,fragmentShader:'uniform sampler2D t;uniform vec2 d;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv).rgb*.227;c+=(texture2D(t,vUv+d*1.38).rgb+texture2D(t,vUv-d*1.38).rgb)*.316;c+=(texture2D(t,vUv+d*3.23).rgb+texture2D(t,vUv-d*3.23).rgb)*.07;gl_FragColor=vec4(c,1.);}',depthTest:false,depthWrite:false});
+    POST.comp=new T.ShaderMaterial({uniforms:{t:{value:null},bl:{value:null},k:{value:.9},cold:{value:0}},vertexShader:vs,fragmentShader:`uniform sampler2D t,bl;uniform float k,cold;varying vec2 vUv;
+      vec3 aces(vec3 x){x*=.6;return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+      void main(){vec3 c=texture2D(t,vUv).rgb+texture2D(bl,vUv).rgb*k;c=aces(c);
+        float l=dot(c,vec3(.299,.587,.114));vec3 tint=mix(vec3(.055,.10,.17),vec3(1.,.69,.44),smoothstep(.05,.75,l));c=mix(c,c*tint*1.9,.16);
+        float warm=clamp((c.r-c.b)*2.,0.,1.);c=mix(vec3(l),c,.9+warm*.15);c=mix(c,c*vec3(.92,.97,1.08),cold*.4);
+        vec2 q=vUv-.5;c*=1.-dot(q,q)*.55;c=pow(c,vec3(1./2.2));gl_FragColor=vec4(c,1.);}`,depthTest:false,depthWrite:false});
+    POST.ok=true;
+  }catch(e){POST.ok=false;}
+}
+function postSize(){if(!POST.ok)return;const pr=R3.rd.getPixelRatio(),w=Math.max(4,VW*pr|0),h=Math.max(4,VH*pr|0);POST.rt.setSize(w,h);POST.a.setSize(w>>2,h>>2);POST.b.setSize(w>>2,h>>2);}
+function postRender(sc,cam,cold){
+  const rd=R3.rd,T=THREE;
+  if(!POST.ok||!POST.on){rd.render(sc,cam);return;}
+  rd.toneMapping=T.NoToneMapping;rd.outputEncoding=T.LinearEncoding;
+  rd.setRenderTarget(POST.rt);rd.clear();rd.render(sc,cam);
+  POST.q.material=POST.bright;POST.bright.uniforms.t.value=POST.rt.texture;rd.setRenderTarget(POST.a);rd.render(POST.sc,POST.cam);
+  for(let i=0;i<2;i++){POST.q.material=POST.blur;POST.blur.uniforms.t.value=POST.a.texture;POST.blur.uniforms.d.value.set(1/POST.a.width,0);rd.setRenderTarget(POST.b);rd.render(POST.sc,POST.cam);
+    POST.blur.uniforms.t.value=POST.b.texture;POST.blur.uniforms.d.value.set(0,1/POST.a.height);rd.setRenderTarget(POST.a);rd.render(POST.sc,POST.cam);}
+  POST.q.material=POST.comp;POST.comp.uniforms.t.value=POST.rt.texture;POST.comp.uniforms.bl.value=POST.a.texture;POST.comp.uniforms.cold.value=cold||0;
+  rd.setRenderTarget(null);rd.render(POST.sc,POST.cam);
+  rd.toneMapping=T.ACESFilmicToneMapping;rd.outputEncoding=T.sRGBEncoding;
+}
+function postWatch(dt){// слабое устройство: снижаем разрешение, затем выключаем свечение
+  if(!(dt>0&&dt<500))return;POST.ft=POST.ft*.95+dt*.05;
+  if(POST.ft>34){POST.slow++;if(POST.slow>90){POST.slow=0;POST.ft=20;const pr=R3.rd.getPixelRatio();if(pr>1.01){R3.rd.setPixelRatio(Math.max(1,pr-.25));resize3D();}else if(POST.on)POST.on=false;}}else POST.slow=0;
+}
+function resize3D(){if(!R3.ok)return;if(!R3.camInit&&VW>0){R3.camInit=1;if(VW<VH)cam3.d=27;}R3.rd.setSize(VW,VH,false);R3.cam.aspect=VW/VH;R3.cam.updateProjectionMatrix();postSize();}
 function camUpdate(){
   const c=R3.cam,p=cam3;p.d=clamp(p.d,5,30);p.pitch=clamp(p.pitch,.45,1.35);
   p.tx=clamp(p.tx,-GW/2-7,GW/2+7);p.tz=clamp(p.tz,-GH/2-1,GH/2+1);
@@ -2379,7 +2418,7 @@ function render3D(t){
   const on=s.gen.on,lvl=s.gen.lvl,fl=.92+Math.sin(t/90)*.04+Math.sin(t/37)*.03;
   R3.gl.intensity=on?(3+lvl*1.3+(s.gen.over?1.8:0))*fl:0;R3.gl.distance=(genRadius(s)+2)*1.9;{const sk=stoveLvl(s);R3.gl.position.y=sk>=3?3.9:sk?2.75:1.2;}
   R3.gl.color.setHex(s.gen.over?0xff7a2a:0xff9a48);
-  for(const w of R3.coreParts)w.material.color.setHex(on?(s.gen.over?0xff5a1a:0xff9a3a):0x221a14);
+  for(const w of R3.coreParts){if(on)w.material.color.setRGB(s.gen.over?3:2.6,s.gen.over?.8:1.2,.3);else w.material.color.setHex(0x221a14);}
   {const sk=stoveLvl(s);R3.bf.visible=!sk;R3.st.forEach((g,i)=>g.visible=sk>i);
     R3.flames.forEach((f,i)=>{f.visible=on&&!sk;const k=1+.25*Math.sin(t/(70+i*23)+i*1.7)+.12*Math.sin(t/31+i);f.scale.set(1,k,1);f.rotation.y=t/400*(i%2?1:-1);});}
   R3.genGlow.material.opacity=on?(.45+lvl*.12)*fl:0;R3.genGlow.scale.setScalar(2.4+lvl*.5);
@@ -2444,7 +2483,8 @@ function render3D(t){
   for(const q of R3.steam){if(!q.life)continue;q.life-=.008;q.sp.position.y+=q.vy;q.sp.position.x+=q.vx;const k=q.sp.scale.x+.006;q.sp.scale.set(k,k,1);
     q.sp.material.opacity=Math.max(0,q.life*.45);if(q.life<=0){q.life=0;q.sp.visible=false;}}
   towerFire3D(s,s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:Math.min(.05,(t-(R3.lastT||t))/1000)*Math.min(3,s.speed));R3.lastT=t;
-  R3.rd.render(sc,R3.cam);
+  {const now=performance.now();postWatch(now-(POST.lt||now));POST.lt=now;}
+  postRender(sc,R3.cam,clamp((-ambient(S)-5)/45,0,1));
 }
 const PROJ=[];
 function towerFire3D(s,dtR){
