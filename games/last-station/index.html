@@ -30,7 +30,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .hud>*{pointer-events:auto}
 .panel{--brass:#b08a4e;background:radial-gradient(120% 140% at 50% 0%,rgba(255,255,255,.05),transparent 60%),linear-gradient(180deg,#232a31,#151a1f);border:1px solid #06080a;box-shadow:0 8px 24px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06),inset 0 0 0 1px rgba(120,100,70,.18);border-radius:2px}
 .panel::before{content:"";position:absolute;inset:3px;border:1px solid rgba(176,138,78,.22);pointer-events:none}
-.panel::after{content:"";position:absolute;inset:-2px;pointer-events:none;background:
+.panel::after{content:"";position:absolute;inset:0;pointer-events:none;background:
  linear-gradient(var(--brass),var(--brass)) left top/12px 2px no-repeat,linear-gradient(var(--brass),var(--brass)) left top/2px 12px no-repeat,
  linear-gradient(var(--brass),var(--brass)) right top/12px 2px no-repeat,linear-gradient(var(--brass),var(--brass)) right top/2px 12px no-repeat,
  linear-gradient(var(--brass),var(--brass)) left bottom/12px 2px no-repeat,linear-gradient(var(--brass),var(--brass)) left bottom/2px 12px no-repeat,
@@ -119,6 +119,14 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .tech.withpic .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
 .tech .st{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
 .ally{padding:12px;margin:8px 0}
+.scales{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:4px 0 16px}
+.scale .sh{display:flex;justify-content:space-between;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.scale .sb{display:flex;gap:3px;margin:5px 0 3px;align-items:center}
+.scale .sb i{flex:1;height:9px;background:#0d1217;box-shadow:inset 0 0 0 1px #2a333c}
+.scale .sb b{width:16px;height:16px;transform:rotate(45deg);border:2px solid;margin-left:5px}
+.laws5{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.tech.cap{box-shadow:inset 0 0 0 1px var(--capc),0 0 14px -4px var(--capc);background:linear-gradient(180deg,#2a2024,#181418)}
+.tech.cap .n{color:var(--capc)}
 select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding:6px;border-radius:2px;font:inherit}
 #toasts{left:max(10px,env(safe-area-inset-left,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));top:auto;flex-direction:column-reverse;display:flex;flex-direction:column;gap:4px;width:300px;max-width:calc(100vw - 20px)}
 .toast{padding:7px 10px;font-size:12.5px;border-left:3px solid var(--amber);background:rgba(20,26,33,.92);animation:tin .25s ease-out}
@@ -133,7 +141,7 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 .sheet .lead{color:var(--frost-dim);margin:0 0 14px;max-width:70ch}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
 .tech{padding:9px 10px;border:1px solid #0a0d10;border-left:3px solid #4a5560;background:linear-gradient(180deg,#232a31,#181d22);border-radius:1px;display:flex;flex-direction:column;gap:4px;text-align:left}
-.tech.done{border-left-color:#7fc48a;background:linear-gradient(180deg,#1c2a20,#141d17)}
+.tech.done{background:linear-gradient(180deg,#1c2a20,#141d17);box-shadow:inset 0 0 0 1px rgba(127,196,138,.35)}
 .tech.active{border-left-color:var(--amber);box-shadow:inset 0 0 0 1px rgba(242,163,58,.4)}
 .tech[disabled]{opacity:.5}
 .tech .n{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
@@ -143,7 +151,10 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 .col{display:flex;flex-direction:column;gap:6px;min-width:0}
 .prog{height:6px;background:#0d1217;border:1px solid var(--rim)}
 .prog i{display:block;height:100%;background:var(--amber)}
-.event .sheet{width:min(620px,100%)}
+.event .sheet{width:min(620px,100%);overflow:visible;max-height:none}
+.event{overflow:auto}
+#needs,#cards,#bar,#info{overflow-x:hidden}
+#cards,#bar{overflow-x:auto;scrollbar-width:thin}
 .event p{white-space:pre-line;max-width:65ch}
 .choices{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .choices button{text-align:left;padding:10px 12px;background:var(--steel);border:1px solid var(--rim);border-radius:2px}
@@ -364,6 +375,18 @@ const LAWS=[
   {id:'f_wardens',cat:'faith',n:'Хранители',d:'Добровольцы следят за порядком: −недовольство каждый день.',req:'f_shrine',fx:{disc:-5}},
   {id:'f_new',cat:'faith',n:'Подземное братство',d:'Финал пути. Надежда не падает ниже 40.',req:'f_wardens',fx:{hope:25}},
 ];
+LAWS.push(
+  {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Лютый закон. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
+  {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Лютый закон. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
+  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Лютый закон. Все производства +40%, наука +20%. Недовольство растёт каждый день.',fx:{disc:5}});
+const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',water_ration:'harsh',pit:'harsh',radical:'harsh',mandatory:'harsh',emergency:'harsh',crowding:'harsh',arena:'harsh',
+  child_shelter:'care',soup:'care',cemetery:'care',overcrowd:'care',private:'care',quarantine:'care',apprentice:'care',moonshine:'care',
+  recycling:'ind',expedition:'ind',barter:'ind',communal:'ind'};
+for(const L of LAWS)if(!L.br)L.br=LAW_BR[L.id]||L.cat;
+const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care:{n:'Человечность',c:'#7fc48a',need:5,cap:'cap_care'},ind:{n:'Промышленность',c:'#c08d5c',need:3,cap:'cap_ind'},
+  order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'}};
+const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
+const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.4;if(d.rp)m*=1.2;}return m;};
 const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -488,7 +511,11 @@ const EN=[
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
 ['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
 ['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
-['Язык','Language'],['Язык / Language','Language'],
+['Язык','Language'],['Суровость','Severity'],['Человечность','Humanity'],['Промышленность','Industry'],['Порядок','Order'],['Братство','Brotherhood'],
+['Откроется, когда шкала «','Unlocks when the scale «'],['» заполнится','» is full'],['Каждый закон наполняет шкалу своей ветки; полная шкала открывает её лютый закон.','Each law fills its branch scale; a full scale unlocks that branch’s extreme law.'],
+['Закон выживания','Law of Survival'],['Лютый закон. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).','Extreme law. Everyone works 30% more. Untreated critical patients die 1.5× more often. Hope −15, discontent −10 (fear).'],
+['Каждая жизнь','Every Life'],['Лютый закон. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.','Extreme law. Deaths hurt hope half as much, the sick recover faster, hope +15. Work 10% slower.'],
+['Индустриальный рывок','Industrial Leap'],['Лютый закон. Все производства +40%, наука +20%. Недовольство растёт каждый день.','Extreme law. All production +40%, research +20%. Discontent grows every day.'],['Событие ждёт решения','Event awaits a decision'],['Событие!','Event!'],['Закрыть — решить позже','Close — decide later'],['Закрыть','Close'],['Язык / Language','Language'],
 // союз
 ['Союз станций','Station alliance'],['Союз станций: у каждого игрока своя станция, но вы можете пересылать друг другу ресурсы. Создайте союз и передайте код другу — он вводит его у себя в игре.','Station alliance: each player runs their own station, but you can send each other resources. Create an alliance and give the code to a friend — they enter it in their game.'],
 ['Название станции','Station name'],['Создать союз','Create alliance'],['Вступить','Join'],['Другу нужен доступ к этой странице с правом редактирования.','Your friend needs edit access to this page.'],
@@ -649,7 +676,7 @@ function trDOM(root){
 }
 const stName=id=>LANG==='en'?tr(id):id;
 function setLang(l){
-  LANG=l;store('ls_lang',l);document.documentElement.lang=l;labelCache=null;
+  LANG=l;if(R3.ok&&R3.signs)for(const g of R3.signs){g.m.material.map.dispose();g.m.material.map=g.f();g.m.material.needsUpdate=true;}for(const g of R3.bmap.values())g.userData.lv=-1;store('ls_lang',l);document.documentElement.lang=l;labelCache=null;
   document.querySelectorAll('*').forEach(el=>{if(el._h!==undefined)el._h=null;});ui.dirty=true;
   if(ui.mode==='menu')renderMenu();
 }
@@ -824,7 +851,8 @@ function kill(s,n,pool){
     s.pop[t]--;k++;
   }
   s.today.deaths+=k;s.deaths+=k;
-  const per=has(s,'cemetery')&&s.bld.some(b=>b.type==='cemetery'&&!b.build)?.6:has(s,'pit')?1.2:1.8;
+  const careK=has(s,'cap_care')?.5:1;
+  const per=careK*(has(s,'cemetery')&&s.bld.some(b=>b.type==='cemetery'&&!b.build)?.6:has(s,'pit')?1.2:1.8);
   s.hope-=k*per;
   rebalance(s);return k;
 }
@@ -865,7 +893,7 @@ function hourTick(s){
       const wf=workforce(b.a);if(wf<=0)continue;
       const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];
       if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;
-      eff*=lvlMul(b);
+      eff*=lvlMul(b)*capMul(s,b);
       if(d.prod)for(const k in d.prod){
         let m=d.prod[k]*wf*eff;
         if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
@@ -953,14 +981,14 @@ function morning(s){
   const D=D_(s);
   // лечение
   let {beds,hbeds}=bedCount(s);
-  const rec=(has(s,'radical')?.75:has(s,'overcrowd')?.4:.5)+(has(s,'t_antibio')?.15:0);
+  const rec=(has(s,'radical')?.75:has(s,'overcrowd')?.4:.5)+(has(s,'t_antibio')?.15:0)+(has(s,'cap_care')?.2:0);
   // тяжёлые в лазарет
   for(const t of ['w','e','c']){
     let n=s.crit[t];
     for(let i=0;i<n;i++){
       if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
       else if(beds>0&&s.res.meds>=1){beds--;s.res.meds--;if(rnd()<.75){s.crit[t]--;s.ill[t]++;}}
-      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
+      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)*(has(s,'cap_harsh')?1.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
     }
   }
   let treat=beds+hbeds;
@@ -1004,6 +1032,7 @@ function newDay(s){
   if(has(s,'f_mutual'))dh+=1;
   if(has(s,'f_wardens'))dd-=2;
   if(has(s,'mandatory'))dd+=2;
+  if(has(s,'cap_ind'))dd+=2;
   if(has(s,'quarantine'))dd+=1;
   if(has(s,'communal'))dd+=1;
   if(has(s,'private'))dh+=1;
@@ -1247,6 +1276,7 @@ function canPlace(s,type,x,y){
 function canSign(s,id){
   const L=LAWBY[id];if(has(s,id))return false;if(s.lawCd>0)return false;
   if(L.ex&&has(s,L.ex))return false;if(L.req&&!has(s,L.req))return false;
+  if(L.cap&&brCount(s,L.br)<BR[L.br].need)return false;
   if(L.cat!=='adapt'){if(s.day<5&&!s.flags.purposeOpen)return false;if(s.path&&s.path!==L.cat)return false;}
   return true;
 }
@@ -1442,7 +1472,7 @@ function drawWalkers(s){
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   for(const w of walkers){
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.15||w.w++>400){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.8;w.ty=tg.y+(Math.random()-.5)*.8+.5;w.w=0;}
-    const sp=s.paused||(s.queue.length&&!s.survivor)?0:.0012*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0024*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     const p=iso(w.x,w.y);cx.fillStyle='#11161b';cx.fillRect(p.x-1.5,p.y-7,3,7);cx.fillStyle='#b9c2c9';cx.fillRect(p.x-1.5,p.y-9,3,3);
   }
 }
@@ -1508,14 +1538,26 @@ function init3D(){
   R3.tiles=new T.InstancedMesh(tg,R3.mat.tile,GW*GH);R3.tiles.receiveShadow=true;
   const m=new T.Matrix4();
   for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const tr=y===0||y===GH-1;m.makeTranslation(wx(x),tr?-.62:-.07,wz(y));R3.tiles.setMatrixAt(y*GW+x,m);R3.tiles.setColorAt(y*GW+x,new T.Color(tr?0x2e2b28:0x77746f));}
-  sc.add(R3.tiles);
+  sc.add(R3.tiles);R3.tiles.visible=false;
+  // грязный снег вместо плиток: одна поверхность с наледью, сугробами и проталинами у генератора
+  const snowTex=ctex(256,256,(c,w,h)=>{c.fillStyle='#b9b6ae';c.fillRect(0,0,w,h);
+    for(let i=0;i<2600;i++){const v=150+Math.random()*80|0;c.fillStyle=`rgba(${v},${v-4},${v-12},.35)`;c.fillRect(Math.random()*w,Math.random()*h,2,2);}
+    for(let i=0;i<70;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.18})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*16,2+Math.random()*7,Math.random()*3,0,7);c.fill();}
+    for(let i=0;i<30;i++){const x=Math.random()*w,y=Math.random()*h,a=Math.random()*6;c.fillStyle='rgba(70,62,52,.22)';for(let k=0;k<4;k++){c.beginPath();c.ellipse(x+Math.cos(a)*k*9+(k%2?3:-3),y+Math.sin(a)*k*9,2.2,3.6,a,0,7);c.fill();}}});
+  snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(9,4);R3.snowTex=snowTex;
+  const SW=GW+12,SD=GH-2,gx=SW*4,gz=SD*4;
+  const gG=new T.PlaneGeometry(SW,SD,gx,gz);gG.rotateX(-Math.PI/2);gG.translate(-.5,0,wz((GH-1)/2));
+  gG.setAttribute('color',new T.BufferAttribute(new Float32Array(gG.attributes.position.count*3),3));
+  R3.snowG=gG;R3.snowSeed=Array.from({length:gG.attributes.position.count},()=>Math.random());
+  R3.ground=new T.Mesh(gG,new T.MeshStandardMaterial({map:snowTex,bumpMap:snowTex,bumpScale:.02,vertexColors:true,roughness:.95,metalness:0}));
+  R3.ground.receiveShadow=true;sc.add(R3.ground);
   // генератор
   R3.gen=makeGenerator();sc.add(R3.gen);
   // кольцо тепла и подсветка пола
   R3.ring=new T.Mesh(new T.RingGeometry(.985,1,128),new T.MeshBasicMaterial({color:0xd8822e,transparent:true,opacity:.4,depthWrite:false}));
-  R3.ring.rotation.x=-Math.PI/2;R3.ring.position.y=.02;sc.add(R3.ring);
+  R3.ring.rotation.x=-Math.PI/2;R3.ring.position.y=.085;sc.add(R3.ring);
   R3.floorGlow=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:R3.tx.glow,color:0xff8a3a,transparent:true,opacity:.35,depthWrite:false,blending:T.AdditiveBlending}));
-  R3.floorGlow.rotation.x=-Math.PI/2;R3.floorGlow.position.y=.025;sc.add(R3.floorGlow);
+  R3.floorGlow.rotation.x=-Math.PI/2;R3.floorGlow.position.y=.088;sc.add(R3.floorGlow);
   // курсор
   const hg=new T.BufferGeometry().setFromPoints([new T.Vector3(-.5,0,-.5),new T.Vector3(.5,0,-.5),new T.Vector3(.5,0,.5),new T.Vector3(-.5,0,.5),new T.Vector3(-.5,0,-.5)]);
   R3.hover=new T.Line(hg,new T.LineBasicMaterial({color:0xcfe3f2,transparent:true,opacity:.7}));R3.hover.position.y=.03;sc.add(R3.hover);
@@ -1526,13 +1568,18 @@ function init3D(){
     for(let i=0;i<120;i++){c.fillStyle=`rgba(${40+Math.random()*30|0},${30+Math.random()*20|0},20,${Math.random()*.35})`;c.fillRect(Math.random()*w,Math.random()*h,3,3);}
     c.fillStyle='#5a4a3a';c.fillRect(10,30,12,10);c.fillStyle='#4a5040';c.fillRect(40,12,10,9);});
   const parts=[
-    ['legs',(()=>{const g=new T.CylinderGeometry(.03,.034,.13,6);g.translate(0,.065,0);return g;})(),new T.MeshStandardMaterial({color:0x34322f,roughness:1})],
+    ['legL',(()=>{const g=new T.CylinderGeometry(.017,.014,.13,6);g.translate(0,-.065,0);return g;})(),new T.MeshStandardMaterial({color:0x34322f,roughness:1})],
+    ['legR',(()=>{const g=new T.CylinderGeometry(.017,.014,.13,6);g.translate(0,-.065,0);return g;})(),new T.MeshStandardMaterial({color:0x34322f,roughness:1})],
+    ['bootL',(()=>{const g=new T.BoxGeometry(.03,.02,.05);g.translate(0,-.13,.01);return g;})(),new T.MeshStandardMaterial({color:0x1a1714,roughness:.9})],
+    ['bootR',(()=>{const g=new T.BoxGeometry(.03,.02,.05);g.translate(0,-.13,.01);return g;})(),new T.MeshStandardMaterial({color:0x1a1714,roughness:.9})],
     ['torso',(()=>{const g=new T.CylinderGeometry(.042,.055,.16,8);g.translate(0,.2,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
-    ['arms',(()=>{const g=new T.BoxGeometry(.13,.035,.035);g.translate(0,.25,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
+    ['armL',(()=>{const g=new T.CylinderGeometry(.014,.012,.13,6);g.translate(0,-.065,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
+    ['armR',(()=>{const g=new T.CylinderGeometry(.014,.012,.13,6);g.translate(0,-.065,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
     ['head',(()=>{const g=new T.SphereGeometry(.034,8,6);g.translate(0,.315,0);return g;})(),new T.MeshStandardMaterial({color:0xa48a72,roughness:.9})],
     ['cap',(()=>{const g=new T.CylinderGeometry(.036,.036,.03,8);g.translate(0,.345,0);return g;})(),new T.MeshStandardMaterial({map:stripes,roughness:1})],
   ];
-  R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso';sc.add(m);return m;});
+  R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso';m.userData.part=n;sc.add(m);return m;});
+  R3.pp=Object.fromEntries(R3.ppl.map(m=>[m.userData.part,m]));
   // иней в воздухе из вентшахт
   const N=1100,pos=new Float32Array(N*3);
   for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*26;pos[i*3+1]=Math.random()*9;pos[i*3+2]=-7+Math.random()*15;}
@@ -1554,7 +1601,7 @@ function buildStation3D(){
     for(let i=0;i<sl.count;i++){mm.makeTranslation(-L/2+.5+i*.5,-.62,z);sl.setMatrixAt(i,mm);}sc.add(sl);
     // край платформы
     const edge=new T.Mesh(new T.BoxGeometry(L,.6,.08),R3.mat.marble);edge.position.set(.5,-.4,z+(row===0?.52:-.52));sc.add(edge);
-    const strip=new T.Mesh(new T.BoxGeometry(L,.02,.12),new T.MeshStandardMaterial({color:0x9a8448,roughness:.7}));strip.position.set(.5,.005,z+(row===0?.44:-.44));sc.add(strip);
+    const strip=new T.Mesh(new T.BoxGeometry(L,.02,.12),new T.MeshStandardMaterial({color:0x9a8448,roughness:.7}));strip.position.set(.5,.02,z+(row===0?.44:-.44));sc.add(strip);
   }
   // пол за пределами сетки (торцы платформы)
   for(const sx of [-1,1])buildEscalators(sx);
@@ -1575,21 +1622,23 @@ function buildStation3D(){
     (R3.lamps=R3.lamps||[]).push({lamp,halo});
   }
   // вывеска станции и плакаты общины
-  const sign=new T.Mesh(new T.PlaneGeometry(5.2,.55),new T.MeshStandardMaterial({map:ctex(1024,110,(c,w,h)=>{c.fillStyle='#d9d2c0';c.fillRect(0,0,w,h);c.strokeStyle='#3a2f24';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
-    c.fillStyle='#1d2a5a';c.font='bold 72px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('Т Е А Т Р А Л Ь Н А Я',w/2,h/2+4);}),roughness:.7}));
-  sign.position.set(.5,3.45,wz(0)+.02);sign.rotation.x=.45;sc.add(sign);
-  const POST=[['ДЕРЖИСЬ','#8a2a1e'],['ТЕПЛО — ЭТО ЖИЗНЬ','#7a4a1a'],['НАВЕРХ НЕ ВЫХОДИТЬ','#2a3a5a'],['ВОДА ПО НОРМЕ','#2a4a3a'],['ВМЕСТЕ ВЫЖИВЕМ','#6a2a2a'],['БЕРЕГИ УГОЛЬ','#3a3a3a']];
-  for(let k=0;k<POST.length;k++){const [txt,bg]=POST[k];const ps=new T.Mesh(new T.PlaneGeometry(.75,1),new T.MeshStandardMaterial({roughness:.9,map:ctex(150,200,(c,w,h)=>{c.fillStyle='#cfc4a8';c.fillRect(0,0,w,h);c.fillStyle=bg;c.fillRect(8,8,w-16,h-16);
+  R3.signs=R3.signs||[];
+  const mkSign=()=>ctex(1024,110,(c,w,h)=>{c.fillStyle='#d9d2c0';c.fillRect(0,0,w,h);c.strokeStyle='#3a2f24';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
+    c.fillStyle='#1d2a5a';c.font='bold 72px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?'T E A T R A L N A Y A':'Т Е А Т Р А Л Ь Н А Я',w/2,h/2+4);});
+  const sign=new T.Mesh(new T.PlaneGeometry(5.2,.55),new T.MeshStandardMaterial({map:mkSign(),roughness:.7}));
+  sign.position.set(.5,3.45,wz(0)+.02);sign.rotation.x=.45;sc.add(sign);R3.signs.push({m:sign,f:mkSign});
+  const POST=[['ДЕРЖИСЬ','HOLD ON','#8a2a1e'],['ТЕПЛО — ЭТО ЖИЗНЬ','HEAT IS LIFE','#7a4a1a'],['НАВЕРХ НЕ ВЫХОДИТЬ','DO NOT GO UP','#2a3a5a'],['ВОДА ПО НОРМЕ','WATER BY RATION','#2a4a3a'],['ВМЕСТЕ ВЫЖИВЕМ','TOGETHER WE SURVIVE','#6a2a2a'],['БЕРЕГИ УГОЛЬ','SAVE COAL','#3a3a3a']];
+  for(let k=0;k<POST.length;k++){const [ru,en,bg]=POST[k];const mk=()=>{const txt=LANG==='en'?en:ru;return ctex(150,200,(c,w,h)=>{c.fillStyle='#cfc4a8';c.fillRect(0,0,w,h);c.fillStyle=bg;c.fillRect(8,8,w-16,h-16);
       c.fillStyle='#e8dcc0';c.beginPath();c.arc(w/2,70,30,0,7);c.fill();c.fillStyle=bg;c.beginPath();c.arc(w/2,70,18,0,7);c.fill();
       c.fillStyle='#e8dcc0';c.font='bold 20px Oswald, Arial Narrow, sans-serif';c.textAlign='center';const ws=txt.split(' ');let y=130;for(let i=0;i<ws.length;i+=2){c.fillText(ws.slice(i,i+2).join(' '),w/2,y);y+=24;}
-      for(let i=0;i<40;i++){c.fillStyle=`rgba(60,40,20,${Math.random()*.25})`;c.fillRect(Math.random()*w,Math.random()*h,4,4);}})}));
-    ps.position.set(-7.5+k*3.1,1.35,wz(0)-.82);ps.rotation.z=(k%2?.03:-.04);sc.add(ps);}
+      for(let i=0;i<40;i++){c.fillStyle=`rgba(60,40,20,${Math.random()*.25})`;c.fillRect(Math.random()*w,Math.random()*h,4,4);}});};
+    const ps=new T.Mesh(new T.PlaneGeometry(.75,1),new T.MeshStandardMaterial({roughness:.9,map:mk()}));
+    ps.position.set(-7.5+k*3.1,1.35,wz(0)-.82);ps.rotation.z=(k%2?.03:-.04);sc.add(ps);R3.signs.push({m:ps,f:mk});}
   // торцевые стены с порталами тоннелей
   for(const s of [-1,1]){
     const x=.5+s*L/2;
-    const w=new T.Mesh(new T.PlaneGeometry(GH+6,12),R3.mat.wall);w.rotation.y=-s*Math.PI/2;w.position.set(x,4,wz(GH/2));sc.add(w);
-    for(const row of [0,GH-1]){const hole=new T.Mesh(new T.CircleGeometry(.95,24,0,Math.PI),new T.MeshBasicMaterial({color:0x020304}));hole.rotation.y=-s*Math.PI/2;hole.position.set(x-s*.02,-.72,wz(row));sc.add(hole);
-      const sq=new T.Mesh(new T.PlaneGeometry(1.9,.0+.1),new T.MeshBasicMaterial({color:0x020304}));sq.rotation.y=-s*Math.PI/2;sq.position.set(x-s*.02,-.7,wz(row));sc.add(sq);}
+    // торцевую стену не ставим: там эскалаторы; пути уходят в темноту тоннелей
+    void x;
   }
   // тёмная бездна под краем разреза
   const pit=new T.Mesh(new T.PlaneGeometry(80,80),new T.MeshBasicMaterial({color:0x040506}));pit.rotation.x=-Math.PI/2;pit.position.y=-.8;sc.add(pit);
@@ -1699,8 +1748,21 @@ function buildEscalators(sx){
   const vault=mesh(new T.CylinderGeometry(2.2,2.2,run,24,1,true,0,Math.PI),kmat('stone',{color:0x8a8478,side:T.DoubleSide}),false);
   vault.rotation.z=Math.PI/2+sx*ang;vault.position.set(sx*len/2,rise/2+.1,0);vault.rotation.order='ZYX';g.add(vault);vault.material.side=T.BackSide;
   const arch=mesh(new T.TorusGeometry(2.25,.12,8,24,Math.PI),bronze);arch.rotation.y=Math.PI/2;arch.position.set(0,.1,0);g.add(arch);
-  const sign=new T.Mesh(new T.PlaneGeometry(2.6,.36),new T.MeshBasicMaterial({toneMapped:false,map:ctex(512,72,(c,w,h)=>{c.fillStyle='#1d2a5a';c.fillRect(0,0,w,h);c.fillStyle='#e8e2d0';c.font='bold 40px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(sx<0?'ВЫХОД В ГОРОД':'ПЕРЕХОД',w/2,h/2+2);})}));
-  sign.rotation.y=sx<0?Math.PI/2:-Math.PI/2;sign.position.set(-sx*.02,2.6,0);g.add(sign);
+  const mkE=()=>ctex(512,72,(c,w,h)=>{c.fillStyle='#1d2a5a';c.fillRect(0,0,w,h);c.fillStyle='#e8e2d0';c.font='bold 40px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?(sx<0?'EXIT TO THE CITY':'TRANSFER'):(sx<0?'ВЫХОД В ГОРОД':'ПЕРЕХОД'),w/2,h/2+2);});
+  const sign=new T.Mesh(new T.PlaneGeometry(2.6,.36),new T.MeshBasicMaterial({toneMapped:false,map:mkE()}));
+  sign.rotation.y=sx<0?Math.PI/2:-Math.PI/2;sign.position.set(-sx*.02,2.6,0);g.add(sign);(R3.signs=R3.signs||[]).push({m:sign,f:mkE});
+  // стены шахты эскалаторов, пол под ними и верхний вестибюль — без пустот
+  const tileW=kmat('x',{color:0x8f8a80,roughness:.7});const dark=kmat('stone',{color:0x4a4844});
+  for(const z of [-1.85]){const wall=mesh(new T.BoxGeometry(run+.6,3.4,.14),tileW);wall.position.set(sx*len/2,rise/2+1.4,z);wall.rotation.z=sx*ang;g.add(wall);
+    const sk=mesh(new T.BoxGeometry(run+.6,.3,.16),kmat('x',{color:0x3a2a1c}));sk.position.set(sx*len/2,rise/2+.05,z);sk.rotation.z=sx*ang;g.add(sk);}
+  const snowTop=kmat('canvas',{color:0xd6d2ca,roughness:1});
+  for(const z of [-3.6,3.6]){const blk=mesh(new T.BoxGeometry(len+1.5,1.2,3.4),dark,false);blk.position.set(sx*(len/2+.2),-.2,z);g.add(blk);const cap=mesh(new T.BoxGeometry(len+1.5,.08,3.4),snowTop,false);cap.position.set(sx*(len/2+.2),.44,z);g.add(cap);}
+  const under=mesh(new T.BoxGeometry(run,.06,3.6),dark,false);under.position.set(sx*len/2,rise/2-.12,0);under.rotation.z=sx*ang;g.add(under);
+  const land=mesh(new T.BoxGeometry(3,.14,4),kmat('stone',{color:0x6a6862}));land.position.set(sx*(len+1.5),rise,0);g.add(land);
+  const back=mesh(new T.BoxGeometry(.2,3,4),tileW);back.position.set(sx*(len+3),rise+1.5,0);g.add(back);
+  for(const z of [-1.1,0,1.1]){const dr=new T.Mesh(new T.PlaneGeometry(.7,1.4),new T.MeshBasicMaterial({color:0x9fc4e0,toneMapped:false,transparent:true,opacity:.55}));dr.position.set(sx*(len+3)-sx*.11,rise+.75,z);dr.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(dr);
+    const fr=mesh(new T.BoxGeometry(.04,1.5,.8),kmat('x',{color:0x2a2420}),false);fr.position.set(sx*(len+3)-sx*.1,rise+.75,z);g.add(fr);}
+  const drift=mesh(new T.SphereGeometry(1.4,14,8,0,Math.PI*2,0,Math.PI/2),kmat('x',{color:0xdfe6ec,roughness:1}),false);drift.scale.set(1,.25,1.3);drift.position.set(sx*(len+2.4),rise+.05,0);g.add(drift);
   // турникеты внизу
   for(let i=0;i<4;i++){kbox(g,.18,.32,.08,kmat('x',{color:0x7a7a7a,metalness:.6,roughness:.4}),-sx*.6,0,-1.2+i*.8);}
 }
@@ -1970,7 +2032,14 @@ function render3D(t){
     for(let y=1;y<GH-1;y++)for(let x=0;x<GW;x++){const lv=lvlOf(heatAt(s,x,y));
       if(ui.heatView)c.setHex(HEATC[lv]);else{base.setHex(((x+y)%2)?0x5e5c58:0x575551);c.copy(base).lerp(fr,FROST[lv]*(.35+cold*.55));}
       R3.tiles.setColorAt(y*GW+x,c);}
-    R3.tiles.instanceColor.needsUpdate=true;}
+    R3.tiles.instanceColor.needsUpdate=true;R3.tiles.visible=!!ui.heatView;
+    const P=R3.snowG.attributes.position,C=R3.snowG.attributes.color,wet=new T.Color(0x3c3a37),snow=new T.Color(0xd2cfc6),mud=new T.Color(0x6a5e50),cc=new T.Color();
+    for(let i=0;i<P.count;i++){const X=P.getX(i),Z=P.getZ(i);const tx=clamp(Math.round(X+GX),0,GW-1),ty=clamp(Math.round(Z+GY),1,GH-2);
+      const outside=X+GX< -.5||X+GX>GW-.5;const lv=outside?lvlOf(ambient(s)):lvlOf(heatAt(s,tx,ty));
+      const amt=clamp(.25+FROST[lv]*(.4+cold*.6)+(outside?.2:0),0,1),n=R3.snowSeed[i];
+      cc.copy(wet).lerp(mud,clamp(amt*1.6,0,1)*.6).lerp(snow,clamp((amt-.3)/.7,0,1)*(.75+n*.25));if(n<.12)cc.lerp(mud,.35);
+      C.setXYZ(i,cc.r,cc.g,cc.b);P.setY(i,amt>.35?(amt-.35)*.09*(.4+n*.9):0);}
+    P.needsUpdate=true;C.needsUpdate=true;R3.snowG.computeVertexNormals();}
   // освещение: время суток
   const night=s.hour<6||s.hour>=21?1:s.hour<8||s.hour>=19?.5:0;
   R3.hemi.intensity=.24-night*.1;R3.dl.intensity=.22-night*.12;
@@ -2018,7 +2087,7 @@ function render3D(t){
   for(const [i,g] of R3.pmap)if(!ps.has(i)){sc.remove(g);R3.pmap.delete(i);}
   // курсор и выделение
   const hv=ui.hover&&ui.hover.x>=0&&ui.hover.y>=0&&ui.hover.x<GW&&ui.hover.y<GH;
-  R3.hover.visible=!!hv;if(hv)R3.hover.position.set(wx(ui.hover.x),.03,wz(ui.hover.y));
+  R3.hover.visible=!!hv;if(hv)R3.hover.position.set(wx(ui.hover.x),.09,wz(ui.hover.y));
   if(R3.ghost&&(R3.ghost.userData.type!==ui.buildType||!ui.buildType||!hv)){sc.remove(R3.ghost);R3.ghost=null;}
   if(ui.buildType&&hv){
     if(!R3.ghost){R3.ghost=makeBuilding(ui.buildType);R3.ghost.userData.type=ui.buildType;R3.ghost.userData.scaffold.visible=false;sc.add(R3.ghost);}
@@ -2027,7 +2096,7 @@ function render3D(t){
     R3.ghost.position.set(wx(ui.hover.x),0,wz(ui.hover.y));
   }
   let sel=null;if(ui.sel){if(ui.sel.k==='gen')sel={x:GX,y:GY};else if(ui.sel.k==='p')sel=ui.sel;else{const b=bById(s,ui.sel.id);if(b)sel=b;}}
-  R3.selRing.visible=!!sel;if(sel){R3.selRing.position.set(wx(sel.x),.035,wz(sel.y));R3.selRing.scale.setScalar(ui.sel.k==='gen'?1.5:1);}
+  R3.selRing.visible=!!sel;if(sel){R3.selRing.position.set(wx(sel.x),.09,wz(sel.y));R3.selRing.scale.setScalar(ui.sel.k==='gen'?1.5:1);}
   // жители
   drawWalkers3D(s);
   // иней в воздухе
@@ -2047,15 +2116,20 @@ function drawWalkers3D(s){
   const working=workHour(s);
   const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
     :s.bld.filter(b=>B[b.type].house&&!b.build);
-  const m=new THREE.Matrix4();
+  const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.12||w.w++>500){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=0;}
-    const sp=s.paused||(s.queue.length&&!s.survivor)?0:.0009*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
-    const bob=sp?Math.abs(Math.sin(performance.now()/120+i))*.012:0;w.ang=Math.atan2(dx,dy);
-    m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));for(const im of R3.ppl)im.setMatrixAt(i,m);
+    const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):(w.ang||0);
+    const sw=moving?Math.sin(w.ph)*.55:0,bob=moving?Math.abs(Math.cos(w.ph))*.008:0;
+    m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));
+    for(const n of ['torso','head','cap'])R3.pp[n].setMatrixAt(i,m);
+    const lim=(n,x,y,a)=>{lm.makeTranslation(x,y,0);rm.makeRotationX(a);lm.multiply(rm);tm.multiplyMatrices(m,lm);R3.pp[n].setMatrixAt(i,tm);};
+    lim('legL',-.02,.13,sw);lim('bootL',-.02,.13,sw);lim('legR',.02,.13,-sw);lim('bootR',.02,.13,-sw);
+    lim('armL',-.055,.27,-sw*.8);lim('armR',.055,.27,sw*.8);
   }
   for(const im of R3.ppl)im.instanceMatrix.needsUpdate=true;
 }
@@ -2162,16 +2236,27 @@ const PIC={
   lantern:'<path d="M12 8h8l2 4v12l-2 4h-8l-2-4V12z"/><path d="M14 4h4v4M16 15c2 2 2 4 0 6-2-2-2-4 0-6z"/>',
   sun:'<circle cx="16" cy="16" r="6"/><path d="M16 2v5M16 25v5M2 16h5M25 16h5M6 6l3 3M23 23l3 3M6 26l3-3M23 9l3-3"/>',
   coal:'<path d="M4 26l5-10 6 3 5-9 8 16z"/>',
+  skullx:'<path d="M16 4a9 9 0 00-9 9c0 4 2 6 3 7v4h12v-4c1-1 3-3 3-7a9 9 0 00-9-9z"/><circle cx="12" cy="14" r="2"/><circle cx="20" cy="14" r="2"/><path d="M13 24v4M16 24v4M19 24v4"/>',
+  heart:'<path d="M16 27S4 19 4 11a6 6 0 0112-1 6 6 0 0112 1c0 8-12 16-12 16z"/>',
 };
 const TECH_PIC={t_heater:'flame',t_radius1:'radius',t_insul:'insul',t_power1:'boiler',t_radius2:'radius',t_power2:'core',t_farm2:'mushroom',t_filter:'filter',t_hydro:'sprout',t_well:'drill',
   t_gather:'cart',t_saw:'saw',t_scrap:'wagon',t_coal:'pick',t_tools:'gear',t_barracks:'house',t_house:'houses',t_hospital:'cross',t_pharm:'pill',t_research:'book',
   t_draisine:'draisine',t_teams:'team',t_outpost:'flag',t_coldmat:'snow',t_heatpipes:'pipes',t_cook2:'kettle',t_seedbank:'seed',t_drills:'bolt',t_prefab:'blocks',
   t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route'};
-const LAW_PIC={child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',water_ration:'dropminus',cemetery:'grave',pit:'pit',radical:'knife',
+const LAW_PIC={cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',water_ration:'dropminus',cemetery:'grave',pit:'pit',radical:'knife',
   overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
   recycling:'recycle',expedition:'compass',barter:'hand',o_patrol:'shield',o_radio:'radio',o_prison:'bars',o_martial:'star',o_new:'crown',
   f_hall:'candle',f_mutual:'hands',f_shrine:'church',f_wardens:'lantern',f_new:'sun'};
-const pic=(k,col)=>`<svg class="pic" viewBox="0 0 32 32" aria-hidden="true" style="color:${col||'var(--amber)'}"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PIC[k]||PIC.gear}</g></svg>`;
+const PIC_COL={flame:'#f2a33a',pipes:'#f2a33a',insul:'#f2a33a',boiler:'#f2a33a',radius:'#f2a33a',core:'#ffcf5a',snow:'#8fd0f5',
+  mushroom:'#9bc86a',sprout:'#9bc86a',kettle:'#9bc86a',seed:'#9bc86a',bowl:'#9bc86a',sawdust:'#9bc86a',pot:'#9bc86a',plate:'#9bc86a',
+  drop:'#6fb6e0',filter:'#6fb6e0',drill:'#6fb6e0',dropminus:'#6fb6e0',
+  cart:'#c08d5c',saw:'#c08d5c',wagon:'#c08d5c',pick:'#c08d5c',gear:'#c08d5c',bolt:'#c08d5c',blocks:'#c08d5c',recycle:'#c08d5c',hammer:'#c08d5c',coal:'#c08d5c',clock:'#c08d5c',alarm:'#e06450',
+  cross:'#ef8a7a',pill:'#ef8a7a',flask:'#ef8a7a',leg:'#ef8a7a',beds:'#ef8a7a',knife:'#ef8a7a',mask:'#ef8a7a',
+  house:'#cfe3f2',houses:'#cfe3f2',child:'#cfe3f2',school:'#b08aff',book:'#b08aff',
+  draisine:'#e8c25a',team:'#e8c25a',flag:'#e8c25a',route:'#e8c25a',compass:'#e8c25a',hand:'#e8c25a',
+  grave:'#9fb3c4',pit:'#9fb3c4',fist:'#e06450',bottle:'#c08d5c',shield:'#9fb3c4',radio:'#9fb3c4',bars:'#9fb3c4',star:'#9fb3c4',crown:'#9fb3c4',
+  candle:'#e8c25a',hands:'#e8c25a',church:'#e8c25a',lantern:'#e8c25a',sun:'#e8c25a'};
+const pic=(k,col)=>`<svg class="pic" viewBox="0 0 32 32" aria-hidden="true" style="color:${col||PIC_COL[k]||'var(--amber)'}"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PIC[k]||PIC.gear}</g></svg>`;
 
 /* ---------------------------- СУТОЧНЫЙ БАЛАНС: что даёт каждое здание и чего не хватает ---------------------------- */
 function bMult(s,b,k){
@@ -2182,7 +2267,7 @@ function bMult(s,b,k){
   if(b.type==='coalmine'&&has(s,'t_drills'))m*=1.25;
   return m;
 }
-function bEff(s,b){const d=B[b.type];const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;return eff*lvlMul(b);}
+function bEff(s,b){const d=B[b.type];const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;return eff*lvlMul(b)*capMul(s,b);}
 const workHoursPerDay=s=>has(s,'ext_shift')?14:10;
 const rationMult=s=>has(s,'additives')?3:has(s,'soup')?2.5:2;
 const foodPerPerson=s=>D_(s).cons*(has(s,'communal')?.85:has(s,'private')?1.1:1);
@@ -2390,7 +2475,7 @@ function renderTop(){
 function renderBar(){
   const s=S;
   setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
-    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button><button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
+    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?'<button class="major on" data-act="evopen" title="Событие ждёт решения">Событие!</button>':''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
   const cards=$('cards');
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
@@ -2448,10 +2533,11 @@ function renderInfo(){
 function renderOverlay(){
   const s=S,el=$('overlay');
   // события в приоритете
-  if(s&&s.queue.length&&ui.mode==='game'){
+  const evk=s&&s.queue[0]?s.queue[0].id+JSON.stringify(s.queue[0].p||{}):'';if(evk!==ui.evKey){ui.evKey=evk;ui.evMin=false;}
+  if(s&&s.queue.length&&ui.mode==='game'&&!ui.evMin){
     const e=s.queue[0];const E=EV[e.id];const p=e.p||{};
     el.hidden=false;el.className='overlay event';
-    setHTML(el,`<div class="sheet panel" role="dialog" aria-modal="true"><h2>${esc(E.t)}</h2><p>${esc(E.x(s,p))}</p><div class="choices">${E.c.map((c,i)=>{const ok=!c.ok||c.ok(s,p);const hh=typeof c.h==='function'?c.h(s,p):c.h;return`<button data-choose="${i}" ${ok?'':'disabled'}>${esc(c.t)}${hh?`<small>${esc(hh)}</small>`:''}</button>`;}).join('')}</div>${coop.role==='guest'?'<p class="hint">Решение отправится хосту.</p>':''}</div>`);
+    setHTML(el,`<div class="sheet panel" role="dialog" aria-modal="true"><button class="closex" data-act="evmin" aria-label="Закрыть" title="Закрыть — решить позже">×</button><h2>${esc(E.t)}</h2><p>${esc(E.x(s,p))}</p><div class="choices">${E.c.map((c,i)=>{const ok=!c.ok||c.ok(s,p);const hh=typeof c.h==='function'?c.h(s,p):c.h;return`<button data-choose="${i}" ${ok?'':'disabled'}>${esc(c.t)}${hh?`<small>${esc(hh)}</small>`:''}</button>`;}).join('')}</div>${coop.role==='guest'?'<p class="hint">Решение отправится хосту.</p>':''}</div>`);
     return;
   }
   if(ui.open==='tech'){
@@ -2464,20 +2550,23 @@ function renderOverlay(){
     ${cur?`<div class="prog" style="margin-bottom:12px"><i style="width:${Math.min(100,s.rp/cur.rp*100)}%"></i></div>`:''}
     <div class="grid3">${cats.map(c=>`<div class="col"><h4>${c}</h4>${TECH.filter(t=>t.cat===c).map(t=>{const done=has(s,t.id);const reqOk=!t.req||t.req.every(r=>has(s,r));const can=!done&&!s.research&&reqOk&&canAfford(s,t.cost);
       const st=done?'Изучено':s.research===t.id?'Идёт исследование':!reqOk?'Сначала: '+t.req.map(r=>TECHBY[r].n).join(', '):s.research?'Мастерская занята':!canAfford(s,t.cost)?'Не хватает ресурсов':rpDay>0?`≈ ${Math.ceil(t.rp/rpDay*24)} ч`:'Нет мастерских';
-      return`<button class="tech withpic ${done?'done':''} ${s.research===t.id?'active':''}" data-research="${t.id}" ${can?'':'disabled'}>${pic(TECH_PIC[t.id],done?'#7fc48a':null)}<span class="tx"><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}</span><span class="st">${st}</span></span></button>`;}).join('')}</div>`).join('')}</div></div>`);
+      return`<button class="tech withpic ${done?'done':''} ${s.research===t.id?'active':''}" style="border-left-color:${PIC_COL[TECH_PIC[t.id]]||'#4a5560'}" data-research="${t.id}" ${can?'':'disabled'}>${pic(TECH_PIC[t.id])}<span class="tx"><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}</span><span class="st">${st}</span></span></button>`;}).join('')}</div>`).join('')}</div></div>`);
     return;
   }
   if(ui.open==='laws'){
     el.hidden=false;el.className='overlay';
     const purposeOpen=s.day>=5||s.flags.purposeOpen;
-    const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);
-      return`<button class="tech withpic ${sig?'done':''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id],sig?'#7fc48a':L.cat==='order'?'#9fb3c4':L.cat==='faith'?'#e8c25a':null)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
+    const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);const col=BR[L.br]?BR[L.br].c:'#4a5560';
+      const lock=L.cap&&!sig&&brCount(s,L.br)<BR[L.br].need?`Откроется, когда шкала «${BR[L.br].n}» заполнится`:'';
+      return`<button class="tech withpic ${sig?'done':''} ${L.cap?'cap':''}" style="border-left-color:${col};${L.cap?`--capc:${col}`:''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id]||'star',col)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${lock?`<span class="c">${lock}</span>`:blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
+    const scale=k=>{const b=BR[k],n=Math.min(b.need,brCount(s,k));return`<div class="scale"><div class="sh"><span style="color:${b.c}">${b.n}</span><span class="num">${n}/${b.need}</span></div><div class="sb">${Array.from({length:b.need},(_,i)=>`<i style="${i<n?`background:${b.c}`:''}"></i>`).join('')}<b style="border-color:${b.c};${has(s,b.cap)?`background:${b.c}`:''}" title="${LAWBY[b.cap].n}"></b></div><div class="hint">→ ${LAWBY[b.cap].n}</div></div>`;};
+    const col=k=>{const list=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap),cap=LAWBY[BR[k].cap];
+      const locked=(k==='order'||k==='faith')&&!purposeOpen?'<span class="hint">Откроется на 5-й день.</span>':(k==='order'&&s.path==='faith')||(k==='faith'&&s.path==='order')?'<span class="hint">Выбран другой путь.</span>':'';
+      return`<div class="col"><h4 style="color:${BR[k].c}">${BR[k].n}</h4>${locked||list.map(lawBtn).join('')+lawBtn(cap)}</div>`;};
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
-    <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются.</p>
-    <div class="grid3"><div class="col"><h4>Выживание</h4>${LAWS.filter(l=>l.cat==='adapt').slice(0,11).map(lawBtn).join('')}</div>
-    <div class="col"><h4>&nbsp;</h4>${LAWS.filter(l=>l.cat==='adapt').slice(11).map(lawBtn).join('')}</div>
-    <div class="col"><h4>Путь: Порядок</h4>${purposeOpen?(s.path==='faith'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='order').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div>
-    <div class="col"><h4>Путь: Братство</h4>${purposeOpen?(s.path==='order'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='faith').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div></div></div>`);
+    <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются. Каждый закон наполняет шкалу своей ветки; полная шкала открывает её лютый закон.</p>
+    <div class="scales">${Object.keys(BR).map(scale).join('')}</div>
+    <div class="grid3 laws5">${Object.keys(BR).map(col).join('')}</div></div>`);
     return;
   }
   if(ui.open==='ally'){
@@ -2607,7 +2696,7 @@ function startGame(fromCoop){
 function loop(t){
   const dt=Math.min(.1,(t-last)/1000);last=t;
   if(ui.mode==='game'&&S){
-    const modal=S.queue.length>0;
+    const modal=S.queue.length>0&&!ui.evMin;
     if(coop.role!=='guest'&&!S.over&&!S.paused&&!(modal&&!S.survivor)){
       S.acc+=dt*S.speed/5; // 1 игровой час ≈ 5 с на ×1
       let n=0;while(S.acc>=1&&n<6){S.acc-=1;hourTick(S);syncTeams(S);n++;ui.dirty=true;}
@@ -2718,6 +2807,8 @@ document.addEventListener('click',e=>{
     else if(a==='unsel')ui.sel=null;
     else if(a==='heat')ui.heatView=!ui.heatView;
     else if(a==='labels')ui.labels=ui.labels===false;
+    else if(a==='evmin')ui.evMin=true;
+    else if(a==='evopen')ui.evMin=false;
     else if(a==='needs')ui.needsHidden=!ui.needsHidden;
     else if(a==='allynew'||a==='allyjoin'){if(!S)return;const code=a==='allynew'?Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[ri(0,31)]).join(''):String($('allycode').value||'').trim().toUpperCase();
       if(!/^[A-Z0-9]{5}$/.test(code)){ally.status='Введите код из 5 символов.';ui.dirty=true;$('overlay')._h=null;return;}
