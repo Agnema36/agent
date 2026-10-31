@@ -87,6 +87,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #bar button.on{border-color:var(--amber);color:var(--amber)}
 #bar .sep{width:1px;background:var(--rim);margin:0 4px}
 #bar button.major{color:var(--amber)}
+#bar button.major.on[data-alarm]{background:#8a2d22;color:#fff;border-color:#e06450}
 #bar button.alert{border-color:#e06450!important;box-shadow:inset 0 0 0 1px #e06450,0 0 10px -2px #e06450}
 @media (prefers-reduced-motion:no-preference){#bar button.alert{animation:alertp 1.6s ease-in-out infinite}}
 @keyframes alertp{50%{box-shadow:inset 0 0 0 1px #e06450,0 0 16px 0 #e06450}}
@@ -311,9 +312,9 @@ const B={
   pharmacy:{n:'Аптека',cat:'med',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
   depot:{n:'Дрезинное депо',cat:'scout',cost:{wood:15,steel:10},time:4,teams:1,h:.9,col:'#61584a',d:'Отряд разведчиков для экспедиций по тоннелям.'},
   coreworks:{n:'Цех энергоблоков',cat:'res',cost:{wood:40,steel:60},time:10,job:'e',jobs:5,prod:{cores:.01},h:1.1,col:'#6a5a4a',tech:'t_coreworks',d:'Инженеры собирают энергоблоки. Медленно.'},
-  archer:{n:'Башня лучников',cat:'defense',cost:{wood:30,steel:5},time:3,job:'w',jobs:2,h:1.4,col:'#5a4a3a',d:'Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.'},
-  catapult:{n:'Камнемётная башня',cat:'defense',cost:{stone:35,wood:5},time:3,job:'w',jobs:2,h:1.1,col:'#6a6660',d:'Танк с таунтом: мутанты рядом переключаются на неё, кнопка «Таунт» зовёт всех. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.'},
-  steamgun:{n:'Паровая пушка',cat:'defense',cost:{steel:40,stone:30,coal:30},time:6,job:'e',jobs:2,h:1.2,col:'#4a3a30',req10:1,d:'Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.'},
+  archer:{n:'Башня лучников',cat:'defense',cost:{wood:30,steel:5},time:3,h:1.4,max3:1,col:'#5a4a3a',d:'Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями. Стрелки приходят по тревоге.'},
+  catapult:{n:'Камнемётная башня',cat:'defense',cost:{stone:35,wood:5},time:3,h:1.1,max3:1,col:'#6a6660',d:'Танк с таунтом: мутанты рядом переключаются на неё, кнопка «Таунт» зовёт всех. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.'},
+  steamgun:{n:'Паровая пушка',cat:'defense',cost:{steel:40,stone:30,coal:30},time:6,h:1.2,max3:1,col:'#4a3a30',req10:1,d:'Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.'},
   raidhut:{n:'Казарма налётчиков',cat:'defense',cost:{wood:30,steel:20},time:6,job:'w',jobs:3,h:.6,col:'#4a4038',d:'Только в союзе и только у баррикад слева внизу. Готовит налётчиков для набега на союзника.'},
   heater:{n:'Тепловой узел',cat:'heat',cost:{steel:10},time:3,heat:10,radius:2,fuel:1,h:.7,col:'#6a4a3a',tech:'t_heater',d:'+10° в радиусе 2. Сжигает 1 уголь/ч.'},
   cemetery:{n:'Кладбище',cat:'special',cost:{wood:10},time:2,h:.3,col:'#45494d',law:'cemetery',d:'Достойные похороны. Смерти меньше бьют по надежде.'},
@@ -537,7 +538,9 @@ const EN=[
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
 ['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
 ['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
-['Язык','Language'],['Улучшение:','Upgrading:'],['с','s'],['Таунт:','Taunt:'],['мутанты идут на','mutants are heading to'],['Аура таунта','Taunt aura'],['перезарядка','cooldown'],['все мутанты бьют эту башню 1 ч','all mutants attack this tower for 1 h'],['Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель','“Until the first death” mode: the game ends as soon as the first resident dies'],['Режим «До первой смерти»: на станции погиб человек. Игра окончена.','“Until the first death” mode: a resident has died. Game over.'],['Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.','Damage: crossbows and bows, radius 4, single target. Place next to stone-thrower towers.'],
+['Язык','Language'],['Тревога','Alarm'],['Отбой','Stand down'],['Клавиша A','Key A'],['Максимум 3 башни этого типа','Maximum 3 towers of this type'],['Стрелки приходят по тревоге.','Gunners arrive on alarm.'],
+['ТРЕВОГА: стрелки на башнях.','ALARM: gunners are on the towers.'],['Когда пойдут мутанты — жмите «Тревога», чтобы рабочие заняли башни.','When mutants come, press “Alarm” so workers man the towers.'],['Ждёт тревоги · прочность','Awaiting alarm · durability'],
+['Стрелки','Gunners'],['по тревоге','on alarm'],['Отбой тревоги','Stand down'],['Объявить тревогу','Sound the alarm'],['Объявлена тревога: рабочие заняли башни.','Alarm sounded: workers manned the towers.'],['Отбой тревоги: люди вернулись к работе.','Stand down: people returned to work.'],['Улучшение:','Upgrading:'],['с','s'],['Таунт:','Taunt:'],['мутанты идут на','mutants are heading to'],['Аура таунта','Taunt aura'],['перезарядка','cooldown'],['все мутанты бьют эту башню 1 ч','all mutants attack this tower for 1 h'],['Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель','“Until the first death” mode: the game ends as soon as the first resident dies'],['Режим «До первой смерти»: на станции погиб человек. Игра окончена.','“Until the first death” mode: a resident has died. Game over.'],['Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.','Damage: crossbows and bows, radius 4, single target. Place next to stone-thrower towers.'],
 ['Танк с таунтом: мутанты рядом переключаются на неё, кнопка «Таунт» зовёт всех. Прочность 120, восстановление 20/ч за уровень. Немного бьёт по группе.','Tank with taunt: nearby mutants switch to it, the Taunt button calls them all. Durability 120, repairs 20/h per level. Light area damage.'],['Сильнейшая башня: жжёт 2 угля/ч в бою, радиус 4,5, бьёт по площади.','The strongest tower: burns 2 coal/h in combat, radius 4.5, area damage.'],
 ['Из тоннеля идут мутанты:','Mutants are coming from the tunnel:'],['мутантов.','mutants.'],['К ночи из тоннеля придут мутанты:','By night mutants will come from the tunnel:'],['Мутанты сломали:','Mutants destroyed:'],['мутантов','mutants'],
 ['Ночью в 22:00 из тоннеля справа придут','At 22:00 tonight from the right tunnel come'],['мутантов (по','mutants ('],['Танки: восстановление','Tanks: repair'],['из нужных','of needed'],['— нужны камнемётные башни или их уровни','— need stone-thrower towers or their levels'],['Урон:','Damage:'],['из ≈','of ≈'],['— нужны башни лучников','— need archer towers'],['Камень','Stone'],['камень','stone'],['Башня лучников','Archer tower'],['Арбалеты и луки. Радиус 4, по одной цели. Здоровье 100.','Crossbows and bows. Radius 4, single target. Health 100.'],
@@ -859,7 +862,7 @@ function jobsOf(s){
   for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile)L.push({o:t.pile,job:'w',max:t.pile.max||5,safe:!t.pile.clear,pile:1});}
   return L;
 }
-function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];return n;}
+function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];if(t==='w')for(const b of s.bld)n+=b.crew||0;return n;}
 function free(s,t){return healthy(s,t)-assigned(s,t);}
 function addWorker(s,j){
   const a=j.o.a,tot=a.w+a.e+a.c;if(tot>=j.max)return false;
@@ -1155,7 +1158,6 @@ function storyEvents(s){
   if(d===20)s.queue.push({id:'storm_warn'});
   if(d===25)s.queue.push({id:'storm'});
   if(d===22||d===12||d===18)newPromise(s);
-  if(d>2&&rnd()<.45&&d!==5&&d!==25)s.queue.push({id:pick(['fight','theft','sick_child','lamps','rats','song'])});
 }
 const pick=a=>a[Math.floor(rnd()*a.length)];
 const PROMISES=[
@@ -1345,7 +1347,7 @@ function upgradeStep(s,dt){for(const b of s.bld){if(!(b.upT>0))continue;b.upT-=d
 function canUpgrade(b){const d=B[b.type];return !!(d.prod||d.kitchen||d.rp||d.beds||d.house||d.heat||['archer','catapult','steamgun','raidhut','drafting','patrol','guardhouse','hall','shrine','radio','nursery','arena','still','cemetery'].includes(b.type));}
 function canAfford(s,cost){for(const k in cost)if((s.res[k]||0)<cost[k])return false;return true;}
 function pay(s,cost){for(const k in cost)s.res[k]-=cost[k];}
-function buildAvail(s,type){const d=B[type];if(type==='raidhut'&&!s.ally)return false;if(d.req10&&!(s.bld.some(b=>b.type==='archer'&&(b.lvl||0)>=10)&&s.bld.some(b=>b.type==='catapult'&&(b.lvl||0)>=10)))return false;if(d.tech&&!has(s,d.tech))return false;if(d.law&&!has(s,d.law))return false;return true;}
+function buildAvail(s,type){const d=B[type];if(d.max3&&s.bld.filter(b=>b.type===type).length>=3)return false;if(type==='raidhut'&&!s.ally)return false;if(d.req10&&!(s.bld.some(b=>b.type==='archer'&&(b.lvl||0)>=10)&&s.bld.some(b=>b.type==='catapult'&&(b.lvl||0)>=10)))return false;if(d.tech&&!has(s,d.tech))return false;if(d.law&&!has(s,d.law))return false;return true;}
 function canPlace(s,type,x,y){
   if(x<0||y<0||x>=GW||y>=GH)return false;const t=tile(s,x,y);
   if(type==='raidhut'&&!RAID_ZONE(x,y))return false;
@@ -1379,6 +1381,7 @@ function act(s,a){
       for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
     case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||b.upT>0||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='lvl';break;}
     case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=upCost(s,b,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
+    case 'alarm':{if(a.on)alarmOn(s);else alarmOff(s);break;}
     case 'taunt':{const b=bById(s,a.id);if(!b||b.type!=='catapult'||b.build||b.tauntCd>0)return;b.tauntCd=6;b.tauntOn=1;for(const z of s.zombies||[]){z.taunt=b.id;z.tauntT=1;z.att=null;}toast(s,`Таунт: мутанты идут на «${B[b.type].n}»`,'');break;}
     case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
@@ -1549,7 +1552,7 @@ function drawWalkers(s){
   while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
   walkers.length=want;
   const working=workHour(s)&&!s.paused;
-  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
+  const targets=s.alarm?s.bld.filter(b=>TOWER[b.type]&&!b.build):working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   for(const w of walkers){
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.15||w.w++>400){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.8;w.ty=tg.y+(Math.random()-.5)*.8+.5;w.w=0;}
@@ -2315,14 +2318,14 @@ function drawWalkers3D(s){
   while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
   walkers.length=want;
   const working=workHour(s);
-  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
+  const targets=s.alarm?s.bld.filter(b=>TOWER[b.type]&&!b.build):working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
     if(Math.hypot(w.tx-w.x,w.ty-w.y)<.12||w.w++>500){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=0;}
-    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed*(s.alarm?2.5:1);if(s.alarm!==w.al){w.al=s.alarm;w.w=999;}const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
     const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):(w.ang||0);
     const sw=moving?Math.sin(w.ph)*.55:0,bob=moving?Math.abs(Math.cos(w.ph))*.008:0;
@@ -2510,7 +2513,7 @@ function bLabel(s,b,R,occ){
   if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
   if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
   if(d.teams)return{t:`Отрядов ${teamSlots(s)}`,k:'ok'};
-  if(TOWER[b.type]){const st=towerStats(s,b);return st.dps>0?{t:`${Math.round(st.dps)} урона/ч · радиус ${st.range.toFixed(1)} · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:b.hp!=null&&b.hp<st.hpMax*.4?'bad':'ok'}:{t:'Нет стрелков',k:'bad'};}
+  if(TOWER[b.type]){const st=towerStats(s,b);return !s.alarm?{t:`Ждёт тревоги · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:'mute'}:st.dps>0?{t:`${Math.round(st.dps)} урона/ч · радиус ${st.range.toFixed(1)} · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:b.hp!=null&&b.hp<st.hpMax*.4?'bad':'ok'}:{t:'Нет стрелков',k:'bad'};}
   if(b.type==='raidhut')return{t:`Налётчиков ${Math.floor(s.raiders||0)}/${raiderCap(s)}`,k:'ok'};
   if(b.type==='drafting')return{t:`Наука +${Math.round((draftMul(s)-1)*100)}% всем мастерским`,k:'ok'};
   const o=R.per[b.id];if(!o)return null;if(o.idle)return{t:'Нет работников',k:'bad'};
@@ -2610,7 +2613,8 @@ function allyHTML(s){
 const ZW={easy:.6,normal:1,hard:1.3,extreme:1.6,extremeplus:1.8,hardcore:2.2};
 const TOWER={archer:{range:4,dps:30,hp:100,regen:10,single:1},catapult:{range:3,dps:4,hp:120,regen:20,splash:.6,tank:1},steamgun:{range:4.5,dps:220,hp:200,regen:15,splash:1.1,coal:2}};
 const Z_DMG=5;
-function towerStats(s,b){const T=TOWER[b.type],d=B[b.type];const wf=Math.min(1,workforce(b.a)/d.jobs);return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*lvlMul(b)*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
+const ZDMG={easy:.7,normal:1,hard:1.25,extreme:1.5,extremeplus:1.75,hardcore:2};
+function towerStats(s,b,full){const T=TOWER[b.type];const wf=full?1:Math.min(1,(b.crew||0)/5);return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*lvlMul(b)*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
 function waveSize(s,day){return Math.max(3,Math.round((10+2*(day-1))*(ZW[s.diff]||1)));}
 const waveHp=day=>40+8*(day-1);
 function scheduleWave(s){
@@ -2618,6 +2622,27 @@ function scheduleWave(s){
   s.zombies=s.zombies||[];
   const n=waveSize(s,s.day);s.wave={left:n,cd:0,hp:waveHp(s.day),kills:0,loot:{},breach:0};
   toast(s,`Из тоннеля идут мутанты: ${n}`,'bad');log(s,`Ночная волна: ${n} мутантов.`,'bad');
+}
+function alarmOn(s){
+  if(s.alarm)return;s.alarm=1;s.alarmTaken=[];
+  const towers=s.bld.filter(b=>TOWER[b.type]&&!b.build);
+  for(const t of towers){t.crew=0;let need=5;
+    const fr=Math.min(need,Math.max(0,free(s,'w')));t.crew+=fr;need-=fr;
+    if(need>0){const J=jobsOf(s).filter(j=>j.o.a.w>0).map(j=>{let x,y;if(j.pile){const i=s.grid.findIndex(g=>g.pile===j.o);x=i%GW;y=Math.floor(i/GW);}else{x=j.o.x;y=j.o.y;}return{j,d:Math.hypot(x-t.x,y-t.y),key:j.pile?'p'+s.grid.findIndex(g=>g.pile===j.o):'b'+j.o.id};}).sort((a,c)=>a.d-c.d);
+      for(const q of J){if(need<=0)break;const k=Math.min(need,q.j.o.a.w);q.j.o.a.w-=k;t.crew+=k;need-=k;s.alarmTaken.push({key:q.key,n:k});}}}
+  log(s,'Объявлена тревога: рабочие заняли башни.','bad');
+}
+function alarmOff(s){
+  if(!s.alarm)return;s.alarm=0;for(const b of s.bld)b.crew=0;
+  for(const q of s.alarmTaken||[]){let o=null;if(q.key[0]==='b'){const b=bById(s,+q.key.slice(1));if(b)o={a:b.a,max:B[b.type].jobs};}else{const t=s.grid[+q.key.slice(1)];if(t&&t.pile)o={a:t.pile.a,max:t.pile.max||5};}
+    if(o){const room=o.max-(o.a.w+o.a.e+o.a.c);o.a.w+=Math.max(0,Math.min(q.n,room,free(s,'w')));}}
+  s.alarmTaken=[];rebalance(s);log(s,'Отбой тревоги: люди вернулись к работе.','good');
+}
+function alarmSound(){
+  try{const A=window.AudioContext||window.webkitAudioContext;if(A){const ac=alarmSound.ac||(alarmSound.ac=new A());const o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';g.gain.value=.0001;o.connect(g);g.connect(ac.destination);
+      const t0=ac.currentTime;g.gain.exponentialRampToValueAtTime(.12,t0+.1);for(let i=0;i<4;i++){o.frequency.setValueAtTime(420,t0+i*1.2);o.frequency.linearRampToValueAtTime(880,t0+i*1.2+.6);o.frequency.linearRampToValueAtTime(420,t0+i*1.2+1.2);}
+      g.gain.exponentialRampToValueAtTime(.0001,t0+4.9);o.start(t0);o.stop(t0+5);}}catch(e){}
+  try{if(window.speechSynthesis){const u=new SpeechSynthesisUtterance(LANG==='en'?'Attention! Alarm! Everyone to the defence towers!':'Внимание! Тревога! Всем к оборонительным башням!');u.lang=LANG==='en'?'en-US':'ru-RU';u.rate=.95;setTimeout(()=>speechSynthesis.speak(u),1200);}}catch(e){}
 }
 function tauntR(s,b){return 3+.3*(b.lvl||0);}
 function waveTarget(s,z){
@@ -2642,7 +2667,7 @@ function combatStep(s,dt){
     if(z.tauntT>0)z.tauntT-=dt;
     let tx,ty,tg=null;if(z.x>GW-1.5&&!z.on){tx=GW-1.6;ty=GH-1;}else{z.on=1;tg=waveTarget(s,z);tx=tg.x;ty=tg.y;}
     const dx=tx-z.x,dy=ty-z.y,d=Math.hypot(dx,dy)||1;const st=z.sp*dt;
-    if(z.on&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*dt;z.att=tg.id;
+    if(z.on&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*(ZDMG[s.diff]||1)*dt;z.att=tg.id;
         if(tg.hp<=0){tile(s,tg.x,tg.y).b=0;s.bld=s.bld.filter(x=>x!==tg);toast(s,`Мутанты сломали: ${B[tg.type].n}`,'bad');log(s,`Разрушено: ${B[tg.type].n}.`,'bad');computeHeat(s);}continue;}
       z.breach=1;continue;}
     z.x+=dx/d*Math.min(st,d);z.y+=dy/d*Math.min(st,d);z.ph+=st*6;z.ang=Math.atan2(dx,dy);
@@ -2662,7 +2687,7 @@ function combatStep(s,dt){
   }
   s.zombies=Z.filter(z=>!z.dead);
   for(const b of s.bld)if(TOWER[b.type]&&b.hp!=null){const st=towerStats(s,b);b.hp=Math.min(st.hpMax,b.hp+st.regen*dt);if(b.hp>=st.hpMax&&!s.zombies.length)b.hp=null;}
-  if(w&&w.left<=0&&!s.zombies.length){
+  if(w&&w.left<=0&&!s.zombies.length){alarmOff(s);
     const lt=Object.entries(w.loot).map(([k,n])=>`${n} ${RES[k].n.toLowerCase()}`).join(', ');
     toast(s,`Волна отбита: убито ${w.kills}${w.breach?`, прорвались ${w.breach}`:''}${lt?`. Трофеи: ${lt}`:''}`,w.breach?'bad':'good');
     log(s,`Волна отбита. Убито ${w.kills}, прорвались ${w.breach}.`,w.breach?'bad':'good');
@@ -2670,19 +2695,19 @@ function combatStep(s,dt){
   }
 }
 function defenseHTML(s){
-  const towers=s.bld.filter(b=>TOWER[b.type]&&!b.build);const dps=towers.reduce((a,b)=>a+towerStats(s,b).dps,0);
+  const towers=s.bld.filter(b=>TOWER[b.type]&&!b.build);const dps=towers.reduce((a,b)=>a+towerStats(s,b,true).dps,0);
   const dN=s.hour>=22?s.day+1:s.day,next=waveSize(s,dN),hp=waveHp(dN);
-  const need=next*hp/12,tankNeed=next*Z_DMG,tankHave=towers.filter(b=>TOWER[b.type].tank).reduce((a,b)=>a+towerStats(s,b).regen,0);
+  const need=next*hp/12,tankNeed=Math.round(next*Z_DMG*(ZDMG[s.diff]||1)),tankHave=towers.filter(b=>TOWER[b.type].tank).reduce((a,b)=>a+towerStats(s,b).regen,0);
   const st=s.wave||(s.zombies&&s.zombies.length)?'bad':dps<need||tankHave<tankNeed?'warn':'ok';
   const main=s.wave||(s.zombies&&s.zombies.length)?`атака: ${(s.zombies||[]).length+(s.wave?s.wave.left:0)} мутантов`:`${towers.length} башен · ${Math.round(dps)} урона/ч`;
-  const hint=`Ночью в 22:00 из тоннеля справа придут ${next} мутантов (по ${hp} здоровья). Танки: восстановление ${Math.round(tankHave)} из нужных ${tankNeed}/ч${tankHave<tankNeed?' — нужны камнемётные башни или их уровни':''}. Урон: ${Math.round(dps)} из ≈ ${Math.ceil(need)}/ч${dps<need?' — нужны башни лучников':''}.`;
+  const hint=`${s.alarm?'ТРЕВОГА: стрелки на башнях. ':towers.length?'Когда пойдут мутанты — жмите «Тревога», чтобы рабочие заняли башни. ':''}Ночью в 22:00 из тоннеля справа придут ${next} мутантов (по ${hp} здоровья). Танки: восстановление ${Math.round(tankHave)} из нужных ${tankNeed}/ч${tankHave<tankNeed?' — нужны камнемётные башни или их уровни':''}. Урон: ${Math.round(dps)} из ≈ ${Math.ceil(need)}/ч${dps<need?' — нужны башни лучников':''}.`;
   return`<div class="need ${st}">${pic('shield',st==='ok'?'#7fc48a':st==='warn'?'#e8c25a':'#e06450')}<div><div class="nm">Оборона<b>${main}</b></div><div class="nh">${hint}</div></div></div>`;
 }
 
 /* ---------------------------- НАЛЁТЫ НА СОЮЗНИКА (только в союзе станций) ---------------------------- */
 const RAID_ZONE=(x,y)=>x<=2&&y>=GH-4&&y<=GH-2;
 function raiderCap(s){return s.bld.filter(b=>b.type==='raidhut'&&!b.build).reduce((a,b)=>a+Math.round(8*lvlMul(b)),0);}
-function raidDefense(s){return s.bld.filter(b=>TOWER[b.type]&&!b.build).reduce((a,b)=>a+towerStats(s,b).dps/16,0);}
+function raidDefense(s){return s.bld.filter(b=>TOWER[b.type]&&!b.build).reduce((a,b)=>a+towerStats(s,b,true).dps/16,0);}
 function allyRaid(to){
   if(!S||!S.ally||!coop.db)return;const n=Math.floor(S.raiders||0);if(n<1)return;S.raiders=0;
   coop.db.collection('alliance/'+S.ally.code+'/raids').add({to,from:S.ally.me,fromName:S.ally.name,n,t:Date.now()})
@@ -2813,13 +2838,13 @@ function barP(s,k){
 function renderBar(){
   const s=S;
   setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
-    `<span class="sep"></span><button class="major pbar ${canAct(s,'tech')?'alert':''}" style="--p:${barP(s,'tech')}%" data-open="tech">Мастерская</button><button class="major pbar ${canAct(s,'laws')?'alert':''}" style="--p:${barP(s,'laws')}%" data-open="laws">Устав</button><button class="major pbar ${canAct(s,'map')?'alert':''}" style="--p:${barP(s,'map')}%" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?`<button class="major alert" data-act="evopen" title="Событие ждёт решения">Событие!${s.queue.length>1?' ('+s.queue.length+')':''}</button>`:''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
+    `<span class="sep"></span>${s.bld.some(b=>TOWER[b.type]&&!b.build)?`<button class="major ${s.alarm?'on':'alert'}" data-alarm="${s.alarm?0:1}" title="Клавиша A">${s.alarm?'Отбой':'Тревога'}</button>`:''}<button class="major pbar ${canAct(s,'tech')?'alert':''}" style="--p:${barP(s,'tech')}%" data-open="tech">Мастерская</button><button class="major pbar ${canAct(s,'laws')?'alert':''}" style="--p:${barP(s,'laws')}%" data-open="laws">Устав</button><button class="major pbar ${canAct(s,'map')?'alert':''}" style="--p:${barP(s,'map')}%" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?`<button class="major alert" data-act="evopen" title="Событие ждёт решения">Событие!${s.queue.length>1?' ('+s.queue.length+')':''}</button>`:''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
   const cards=$('cards');
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
   const list=Object.entries(B).filter(([k,d])=>d.cat===ui.cat);
   setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),bc=buildCost(s,k),af=canAfford(s,bc);
-    const lock=!av?(d.req10?'Нужны башня лучников и камнемётная башня 10-го уровня':k==='raidhut'?'Только в союзе станций':d.tech&&!has(s,d.tech)?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
+    const lock=!av?(d.max3&&s.bld.filter(b=>b.type===k).length>=3?'Максимум 3 башни этого типа':d.req10?'Нужны башня лучников и камнемётная башня 10-го уровня':k==='raidhut'?'Только в союзе станций':d.tech&&!has(s,d.tech)?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
     return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${Object.entries(bc).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')} · ${Math.ceil(d.time*(has(s,'t_prefab')?.6:1))} ч</span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
 }
 function workCtrl(id,a,max,job,xy,safe){
@@ -2872,6 +2897,7 @@ function renderInfo(){
       h+=T?`<div class="row"><span>Изучается</span><span>${T.n}</span></div><div class="row"><span>Прогресс</span><span>${Math.floor(s.rp)} / ${T.rp} (${Math.floor(s.rp/T.rp*100)}%)${rd>0?` · ≈ ${Math.ceil((T.rp-s.rp)/rd*24)} ч`:''}</span></div><div class="prog" style="margin:6px 0"><i style="width:${Math.min(100,s.rp/T.rp*100)}%"></i></div>`
         :`<p class="hint">Ничего не изучается.</p>`;
       h+=`<div class="row"><span>Ускорение бюро</span><span>+${Math.round((draftMul(s)-1)*100)}%</span></div><div class="ctrl"><button class="btn primary" data-open="tech">Открыть исследования</button></div>`;}
+    if(TOWER[b.type]&&!b.build)h+=`<div class="row"><span>Стрелки</span><span>${s.alarm?`${b.crew||0} / 5`:'по тревоге'}</span></div><div class="ctrl"><button class="btn ${s.alarm?'':'danger'}" data-alarm="${s.alarm?0:1}">${s.alarm?'Отбой тревоги':'Объявить тревогу'}</button></div>`;
     if(b.type==='catapult'&&!b.build)h+=`<div class="row"><span>Аура таунта</span><span>радиус ${tauntR(s,b).toFixed(1)}</span></div><div class="ctrl"><button class="btn primary" data-taunt="${b.id}" ${b.tauntCd>0?'disabled':''}>${b.tauntCd>0?`Таунт: перезарядка ${Math.ceil(b.tauntCd)} ч`:'Таунт: все мутанты бьют эту башню 1 ч'}</button></div>`;
     if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
     h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём ${has(s,'t_recycle')?'всё':'50%'})</button></div>`;
@@ -3129,6 +3155,7 @@ addEventListener('keydown',e=>{
   if(e.key===' '){e.preventDefault();dispatch({t:'speed',v:S.paused?(S.speed||1):0});}
   if(e.key==='1'||e.key==='2'||e.key==='3'){const v=+e.key;if(!(S.survivor&&v>2))dispatch({t:'speed',v});}
   if(e.key==='h'||e.key==='H'||e.key==='р'||e.key==='Р'){ui.heatView=!ui.heatView;ui.dirty=true;}
+  if((e.key==='a'||e.key==='A'||e.key==='ф'||e.key==='Ф')&&S.bld.some(b=>TOWER[b.type]&&!b.build)){const on=!S.alarm;dispatch({t:'alarm',on});if(on)alarmSound();}
   if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ui.open=ui.open==='map'?null:'map';ui.dirty=true;}
   if(e.key==='q'||e.key==='Q'||e.key==='й'||e.key==='Й')cam3.yaw+=.15;
   if(e.key==='e'||e.key==='E'||e.key==='у'||e.key==='У')cam3.yaw-=.15;
@@ -3148,6 +3175,7 @@ document.addEventListener('click',e=>{
   else if(ds.toggle)dispatch({t:'toggle',id:+ds.toggle});
   else if(ds.upgrade)dispatch({t:'upgrade',id:+ds.upgrade});
   else if(ds.taunt)dispatch({t:'taunt',id:+ds.taunt});
+  else if(ds.alarm!=null){const on=ds.alarm==='1';dispatch({t:'alarm',on});if(on)alarmSound();}
   else if(ds.insulate)dispatch({t:'insulate',id:+ds.insulate});
   else if(ds.emerg)dispatch({t:'emerg',id:+ds.emerg});
   else if(ds.demolish){dispatch({t:'demolish',id:+ds.demolish});ui.sel=null;}
