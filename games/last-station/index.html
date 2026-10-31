@@ -1,0 +1,1546 @@
+<title>Последняя станция</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=PT+Sans:wght@400;700&family=PT+Mono&display=swap">
+<style>
+/* Layout: full-bleed canvas colony view; HUD floats on top (resources top, hope/discontent bottom-centre, build bar bottom, info panel right). Single dark look: frostbitten steel + sodium-lamp amber. */
+:root{
+  --ink:#0b0e12;         /* deep tunnel black */
+  --steel:#1a2129;       /* panel body */
+  --steel-2:#232c36;     /* raised panel */
+  --rim:#3b4856;         /* panel edge */
+  --frost:#cfe3f2;       /* main text, frost white */
+  --frost-dim:#8ea3b5;   /* secondary text */
+  --amber:#f2a33a;       /* lamp light, accent */
+  --amber-dim:#9a6522;
+  --ok:#7fc48a; --warn:#e8c25a; --bad:#e06450; --cold:#6fb6e0;
+  --display:'Oswald','Arial Narrow',Impact,sans-serif;
+  --body:'PT Sans','Trebuchet MS',Arial,sans-serif;
+  --mono:'PT Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--frost);font:14px/1.4 var(--body)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#game{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+.hud{position:fixed;z-index:5;pointer-events:none}
+.hud>*{pointer-events:auto}
+.panel{background:linear-gradient(180deg,var(--steel-2),var(--steel));border:1px solid var(--rim);box-shadow:0 6px 20px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);border-radius:3px}
+.title{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* top bar */
+#top{top:env(safe-area-inset-top,0px);left:0;right:0;display:flex;gap:8px;padding:8px max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));align-items:flex-start;flex-wrap:wrap}
+#res{display:flex;flex-wrap:wrap;gap:2px;padding:4px 6px;max-width:100%}
+.res{display:flex;align-items:center;gap:5px;padding:3px 7px;min-width:72px;border-right:1px solid rgba(255,255,255,.06)}
+.res:last-child{border-right:0}
+.res svg{width:16px;height:16px;flex:none}
+.res .v{font-family:var(--mono);font-size:13px}
+.res .d{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+.res .d.neg{color:var(--bad)} .res .d.pos{color:var(--ok)}
+#clock{margin-left:auto;display:flex;align-items:center;gap:10px;padding:5px 10px}
+#clock .day{font-family:var(--display);font-size:18px;letter-spacing:.06em}
+#temp{display:flex;align-items:center;gap:8px;padding:5px 10px}
+#temp .deg{font-family:var(--display);font-size:22px;color:var(--cold)}
+#temp .fc{display:flex;gap:6px;font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+.speed{display:flex;gap:2px}
+.speed button{width:30px;height:26px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--mono);font-size:12px}
+.speed button.on{background:var(--amber);color:#1b1206;border-color:var(--amber)}
+.iconbtn{height:30px;padding:0 10px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.iconbtn:hover{border-color:var(--amber)}
+
+/* bottom */
+#bottom{left:0;right:0;bottom:0;padding:0 max(10px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:center;gap:6px}
+#meters{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;padding:6px 14px;align-items:center;max-width:100%}
+.meter{display:flex;align-items:center;gap:8px}
+.meter .bar{width:150px;height:10px;background:#0d1217;border:1px solid var(--rim);position:relative;overflow:hidden}
+.meter .fill{position:absolute;inset:0 auto 0 0}
+.meter.hope .fill{background:linear-gradient(90deg,#3f7fa8,#8fd0f5)}
+.meter.disc .fill{background:linear-gradient(90deg,#8a2d22,#f06a4a)}
+.meter .lbl{font-family:var(--display);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--frost-dim)}
+#popline{font-family:var(--mono);font-size:12px;color:var(--frost-dim);display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+#popline b{color:var(--frost);font-weight:400}
+#bar{display:flex;gap:4px;padding:5px;max-width:100%;overflow-x:auto}
+#bar button{min-width:84px;height:38px;padding:0 10px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;white-space:nowrap}
+#bar button:hover{border-color:var(--amber)}
+#bar button.on{border-color:var(--amber);color:var(--amber)}
+#bar .sep{width:1px;background:var(--rim);margin:0 4px}
+#bar button.major{color:var(--amber)}
+#cards{display:flex;gap:6px;padding:6px;max-width:100%;overflow-x:auto}
+.card{width:150px;flex:none;padding:7px 8px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;text-align:left;display:flex;flex-direction:column;gap:3px}
+.card:hover:not([disabled]){border-color:var(--amber)}
+.card[disabled]{opacity:.45;cursor:not-allowed}
+.card .n{font-family:var(--display);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.card .c{font-family:var(--mono);font-size:11px;color:var(--amber)}
+.card .t{font-size:11px;color:var(--frost-dim);line-height:1.3}
+
+/* side info */
+#info{right:max(10px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));width:290px;max-width:calc(100vw - 20px);max-height:calc(100% - 230px);overflow-y:auto;padding:12px}
+#info h3{margin:0 0 4px;font-family:var(--display);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:17px}
+#info .sub{color:var(--frost-dim);font-size:12px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-size:13px}
+.row span:last-child{font-family:var(--mono);text-align:right}
+.ctrl{display:flex;gap:6px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.btn{padding:5px 10px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-size:12px;font-family:var(--display);letter-spacing:.06em;text-transform:uppercase}
+.btn:hover:not([disabled]){border-color:var(--amber)}
+.btn.primary{background:var(--amber);color:#1b1206;border-color:var(--amber)}
+.btn.danger{border-color:#6a2a22;color:#f3a090}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:16px}
+.closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:18px}
+.lvl0{color:#b8d8ff}.lvl1{color:#8ec0ea}.lvl2{color:#9fb3c4}.lvl3{color:#e8c25a}.lvl4{color:#f2a33a}
+
+/* toasts / log */
+#toasts{left:max(10px,env(safe-area-inset-left,0px));top:calc(64px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:4px;width:300px;max-width:calc(100vw - 20px)}
+.toast{padding:7px 10px;font-size:12.5px;border-left:3px solid var(--amber);background:rgba(20,26,33,.92);animation:tin .25s ease-out}
+.toast.bad{border-left-color:var(--bad)}.toast.good{border-left-color:var(--ok)}.toast.cold{border-left-color:var(--cold)}
+@keyframes tin{from{transform:translateX(-12px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.toast{animation:none}}
+
+/* overlays */
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(5,7,10,.78);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.sheet{position:relative;width:min(1100px,100%);max-height:100%;overflow:auto;padding:18px 20px}
+.sheet h2{margin:0 0 4px;font-family:var(--display);font-weight:500;font-size:26px;letter-spacing:.08em;text-transform:uppercase;text-wrap:balance}
+.sheet .lead{color:var(--frost-dim);margin:0 0 14px;max-width:70ch}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.tech{padding:9px 10px;border:1px solid var(--rim);background:var(--steel);border-radius:2px;display:flex;flex-direction:column;gap:4px;text-align:left}
+.tech.done{border-color:#355b3d;background:#16231a}
+.tech.active{border-color:var(--amber)}
+.tech[disabled]{opacity:.5}
+.tech .n{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
+.tech .d{font-size:12px;color:var(--frost-dim)}
+.tech .c{font-family:var(--mono);font-size:11px;color:var(--amber)}
+.col h4{margin:0 0 6px;font-family:var(--display);font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-size:13px}
+.col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.prog{height:6px;background:#0d1217;border:1px solid var(--rim)}
+.prog i{display:block;height:100%;background:var(--amber)}
+.event .sheet{width:min(620px,100%)}
+.event p{white-space:pre-line;max-width:65ch}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.choices button{text-align:left;padding:10px 12px;background:var(--steel);border:1px solid var(--rim);border-radius:2px}
+.choices button:hover:not([disabled]){border-color:var(--amber)}
+.choices button small{display:block;color:var(--frost-dim);margin-top:2px}
+
+/* map */
+#mapwrap{position:fixed;inset:0;z-index:15;background:#06090c}
+#mapc{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#mapside{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));width:300px;max-width:calc(100vw - 20px);max-height:calc(100% - 20px);overflow:auto;padding:12px}
+#maptop{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));padding:10px 12px;width:min(560px,calc(100vw - 340px))}
+.team{padding:6px 8px;border:1px solid var(--rim);margin:4px 0;border-radius:2px;background:var(--steel);text-align:left;width:100%}
+.team.sel{border-color:var(--amber)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--frost-dim);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:4px;vertical-align:middle;margin-right:4px}
+
+/* menu */
+#menu .sheet{width:min(760px,100%)}
+.logo{font-family:var(--display);font-size:clamp(34px,7vw,64px);line-height:1;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--frost);text-shadow:0 0 30px rgba(242,163,58,.25)}
+.logo span{color:var(--amber)}
+.diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
+.diff{padding:10px;border:1px solid var(--rim);background:var(--steel);text-align:left;border-radius:2px}
+.diff.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.diff b{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.diff small{color:var(--frost-dim)}
+.menurow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+input[type=text]{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding:7px 9px;border-radius:2px;font-family:var(--mono);text-transform:uppercase;width:120px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:13px}
+.coopbadge{padding:4px 8px;font-family:var(--mono);font-size:11px;color:var(--amber)}
+.hint{font-size:12px;color:var(--frost-dim)}
+body.inmenu .hud{display:none!important}
+@media (max-width:640px){
+  #info{top:auto;bottom:150px;right:8px;left:8px;width:auto;max-height:40%}
+  #toasts{display:none}
+  .meter .bar{width:70px}
+  .meter .lbl{font-size:11px}
+  #mapside{top:auto;bottom:10px;left:10px;right:10px;width:auto;max-height:45%}
+  #maptop{max-width:calc(100vw - 20px)}
+}
+</style>
+
+<canvas id="game" aria-label="Станция"></canvas>
+
+<div id="top" class="hud">
+  <div id="res" class="panel"></div>
+  <div id="temp" class="panel" title="Температура на станции"></div>
+  <div id="clock" class="panel"></div>
+</div>
+<div id="toasts" class="hud"></div>
+<div id="info" class="hud panel" hidden></div>
+<div id="bottom" class="hud">
+  <div id="cards" class="panel" hidden></div>
+  <div id="meters" class="panel"></div>
+  <div id="bar" class="panel"></div>
+</div>
+<div id="overlay" class="overlay" hidden></div>
+<div id="mapwrap" hidden>
+  <canvas id="mapc" aria-label="Карта метро"></canvas>
+  <div id="maptop" class="panel"></div>
+  <div id="mapside" class="panel"></div>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+   ПОСЛЕДНЯЯ СТАНЦИЯ — градостроительный выживач в московском метро
+   ===================================================================== */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const rnd=()=>Math.random();
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function seeded(seed){let t=seed>>>0;return()=>{t+=0x6D2B79F5;let r=Math.imul(t^t>>>15,1|t);r^=r+Math.imul(r^r>>>7,61|r);return((r^r>>>14)>>>0)/4294967296;};}
+const $=id=>document.getElementById(id);
+function setHTML(el,h){if(el._h!==h){el._h=h;el.innerHTML=h;}}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>{n=Math.floor(n+1e-6);return n>=10000?(n/1000).toFixed(1)+'k':String(n);};
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v);}catch(e){return null;}}
+
+/* ---------------------------- ДАННЫЕ ---------------------------- */
+const RES={
+  coal:{n:'Уголь',c:'#c9c2b8'},wood:{n:'Дерево',c:'#c08d5c'},steel:{n:'Металл',c:'#9fb3c4'},
+  raw:{n:'Сырая еда',c:'#a9b86a'},food:{n:'Пайки',c:'#e8b85c'},water:{n:'Вода',c:'#6fb6e0'},
+  meds:{n:'Медикаменты',c:'#ef8a7a'},cores:{n:'Энергоблоки',c:'#ffb347'}
+};
+const RES_ORDER=['coal','wood','steel','raw','food','water','meds','cores'];
+const ICON={
+  coal:'<path d="M3 13l3-6 4 2 3-5 2 9z" fill="currentColor"/>',
+  wood:'<rect x="2" y="5" width="12" height="3" rx="1.5" fill="currentColor"/><rect x="3" y="9" width="11" height="3" rx="1.5" fill="currentColor" opacity=".8"/>',
+  steel:'<path d="M2 11h12v3H2zM4 7h8v3H4zM6 3h4v3H6z" fill="currentColor"/>',
+  raw:'<path d="M8 2c-2 3-5 4-5 8a5 5 0 0010 0c0-4-3-5-5-8z" fill="currentColor"/>',
+  food:'<rect x="2" y="6" width="12" height="7" rx="1" fill="currentColor"/><path d="M4 6V4h8v2" stroke="currentColor" fill="none" stroke-width="1.5"/>',
+  water:'<path d="M8 1.5C6 5 3.5 7.5 3.5 10.5a4.5 4.5 0 009 0C12.5 7.5 10 5 8 1.5z" fill="currentColor"/>',
+  meds:'<rect x="2" y="2" width="12" height="12" rx="2" fill="currentColor"/><path d="M8 4.5v7M4.5 8h7" stroke="#1a2129" stroke-width="2"/>',
+  cores:'<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="2.2" fill="currentColor"/>'
+};
+const ico=(k,col)=>`<svg viewBox="0 0 16 16" style="color:${col||RES[k].c}" aria-hidden="true">${ICON[k]}</svg>`;
+
+const DIFF={
+  easy:{n:'Лёгкий',d:'Мягкий холод, щедрые запасы. Для первой партии.',start:1.5,cons:.8,temp:8,disc:.6,sick:.6,danger:.6,law:12},
+  normal:{n:'Нормальный',d:'Как задумано. Каждое решение чего-то стоит.',start:1,cons:1,temp:0,disc:1,sick:1,danger:1,law:18},
+  hard:{n:'Сложный',d:'Меньше запасов, злее холод, люди нетерпеливее.',start:.8,cons:1.15,temp:-6,disc:1.3,sick:1.3,danger:1.3,law:20},
+  extreme:{n:'Экстремальный',d:'Для тех, кто уже пережил «Сложный».',start:.6,cons:1.3,temp:-12,disc:1.6,sick:1.6,danger:1.6,law:24}
+};
+// температура на станции по дням сценария (до поправки сложности)
+const WEATHER=[-8,-8,-10,-12,-12,-14,-22,-15,-15,-16,-18,-20,-20,-28,-30,-20,-18,-20,-22,-24,-25,-26,-30,-34,-44,-48,-50,-46,-34,-28];
+const LAST_DAY=30;
+
+/* здания: job 'w' — рабочие (могут инженеры и, по закону, дети), 'e' — только инженеры */
+const B={
+  gen:{n:'Генератор',h:2.2,col:'#5d4a3a'},
+  tent:{n:'Палатки',cat:'house',cost:{wood:10},time:2,house:10,ins:0,h:.55,col:'#6e604e',d:'10 мест. Почти не держит тепло.'},
+  barracks:{n:'Барак',cat:'house',cost:{wood:20,steel:5},time:4,house:10,ins:10,h:.8,col:'#5c6670',tech:'t_barracks',d:'10 мест. Утеплённые стены: +10°.'},
+  house:{n:'Жилой блок',cat:'house',cost:{wood:25,steel:15},time:6,house:12,ins:20,h:1.1,col:'#6a6f78',tech:'t_house',d:'12 мест. Хорошая изоляция: +20°.'},
+  farm:{n:'Грибная ферма',cat:'food',cost:{wood:15},time:3,job:'w',jobs:5,prod:{raw:.4},safe:1,h:.6,col:'#566246',d:'Грибы растут в темноте. Сырая еда.'},
+  kitchen:{n:'Кухня',cat:'food',cost:{wood:20},time:3,job:'w',jobs:2,kitchen:1,safe:1,h:.75,col:'#7a5a3e',d:'Превращает сырую еду в пайки (1 → 2).'},
+  hydro:{n:'Гидропоника',cat:'food',cost:{wood:30,steel:15},time:6,job:'w',jobs:5,prod:{raw:1},h:.9,col:'#4d6a55',tech:'t_hydro',needHeat:3,d:'Много еды, но только в тепле (≥ прохладно).'},
+  condenser:{n:'Конденсатор',cat:'food',cost:{wood:10,steel:10},time:4,job:'w',jobs:3,prod:{water:1.6},safe:1,h:.8,col:'#4f6b80',d:'Собирает влагу из тоннелей. Вода.'},
+  well:{n:'Артезианская скважина',cat:'food',cost:{wood:30,steel:25},time:8,job:'w',jobs:5,prod:{water:3},h:1.3,col:'#3f5f78',tech:'t_well',d:'Чистая вода с глубины.'},
+  sawmill:{n:'Разбор шпал',cat:'res',cost:{wood:10,steel:10},time:5,job:'w',jobs:5,prod:{wood:.8},h:.8,col:'#7b6248',tech:'t_saw',d:'Дерево из шпал и креплений.'},
+  scrapyard:{n:'Разборка составов',cat:'res',cost:{wood:30},time:6,job:'w',jobs:10,prod:{steel:.4},h:.9,col:'#5d6a74',tech:'t_scrap',d:'Металл из брошенных вагонов.'},
+  coalmine:{n:'Угольный забой',cat:'res',cost:{wood:30,steel:15},time:8,job:'w',jobs:10,prod:{coal:1},h:1.2,col:'#4a4744',tech:'t_coal',d:'Пласт под путями. Много угля.'},
+  workshop:{n:'Мастерская',cat:'tech',cost:{wood:20},time:4,job:'e',jobs:5,rp:1,h:.9,col:'#6f5a3a',d:'Инженеры ведут исследования.'},
+  medpost:{n:'Медпункт',cat:'med',cost:{wood:15,steel:5},time:3,job:'e',jobs:2,beds:5,h:.7,col:'#7c6262',d:'5 коек. Тяжёлым нужны медикаменты.'},
+  hospital:{n:'Лазарет',cat:'med',cost:{wood:30,steel:20},time:8,job:'e',jobs:5,beds:10,heal:1,h:1.1,col:'#836868',tech:'t_hospital',d:'10 коек. Лечит тяжёлых без лекарств.'},
+  pharmacy:{n:'Аптека',cat:'med',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
+  depot:{n:'Дрезинное депо',cat:'scout',cost:{wood:15,steel:10},time:4,teams:1,h:.9,col:'#61584a',d:'Отряд разведчиков для экспедиций по тоннелям.'},
+  heater:{n:'Тепловой узел',cat:'heat',cost:{steel:10},time:3,heat:10,radius:2,fuel:1,h:.7,col:'#6a4a3a',tech:'t_heater',d:'+10° в радиусе 2. Сжигает 1 уголь/ч.'},
+  cemetery:{n:'Кладбище',cat:'special',cost:{wood:10},time:2,h:.3,col:'#45494d',law:'cemetery',d:'Достойные похороны. Смерти меньше бьют по надежде.'},
+  arena:{n:'Бойцовская арена',cat:'special',cost:{wood:20},time:3,h:.5,col:'#6b4b3b',law:'arena',d:'Снимает недовольство. Иногда травмы.'},
+  still:{n:'Самогонный цех',cat:'special',cost:{wood:15,steel:5},time:3,h:.7,col:'#6b5636',law:'moonshine',d:'Снимает недовольство. Здоровья не добавляет.'},
+  nursery:{n:'Детский приют',cat:'special',cost:{wood:20},time:3,h:.7,col:'#6f6250',law:'child_shelter',d:'Дети в тепле и безопасности. +надежда.'},
+  patrol:{n:'Пост патруля',cat:'purpose',cost:{wood:15,steel:5},time:3,job:'w',jobs:5,h:.7,col:'#4d5560',law:'o_patrol',d:'Патрули гасят недовольство.'},
+  radio:{n:'Радиоточка',cat:'purpose',cost:{steel:15},time:3,h:.9,col:'#545a62',law:'o_radio',d:'Сводки и речи по громкоговорителям.'},
+  guardhouse:{n:'Гауптвахта',cat:'purpose',cost:{wood:20,steel:15},time:5,job:'w',jobs:3,h:.9,col:'#474e57',law:'o_prison',d:'Смутьяны под замком.'},
+  hall:{n:'Дом собраний',cat:'purpose',cost:{wood:20},time:4,h:.8,col:'#6f5d48',law:'f_hall',d:'Вечерние собрания. +надежда.'},
+  shrine:{n:'Часовня',cat:'purpose',cost:{wood:25,steel:5},time:4,h:1.2,col:'#75604a',law:'f_shrine',d:'Свечи на платформе. +надежда.'},
+};
+const CATS=[['heat','Отопление'],['house','Жильё'],['food','Еда и вода'],['res','Ресурсы'],['med','Медицина'],['tech','Наука'],['scout','Разведка'],['special','Особые'],['purpose','Путь']];
+
+const TECH=[
+  {id:'t_heater',cat:'Тепло',n:'Тепловые узлы',rp:30,cost:{wood:10},d:'Здание: +10° вокруг себя.'},
+  {id:'t_radius1',cat:'Тепло',n:'Магистральные трубы',rp:40,cost:{steel:15},d:'Радиус генератора +2.'},
+  {id:'t_insul',cat:'Тепло',n:'Утепление',rp:50,cost:{wood:30},d:'Все здания +10°.'},
+  {id:'t_power1',cat:'Тепло',n:'Форсированные котлы',rp:60,cost:{steel:20},d:'Генератор: уровень 3.'},
+  {id:'t_radius2',cat:'Тепло',n:'Тепловые коллекторы',rp:80,cost:{steel:30},req:['t_radius1'],d:'Радиус генератора ещё +2.'},
+  {id:'t_power2',cat:'Тепло',n:'Энергоблок в котле',rp:120,cost:{steel:40,cores:1},req:['t_power1'],d:'Генератор: уровень 4.'},
+  {id:'t_farm2',cat:'Еда и вода',n:'Субстрат для грибов',rp:40,cost:{wood:20},d:'Грибные фермы +50%.'},
+  {id:'t_filter',cat:'Еда и вода',n:'Фильтры тонкой очистки',rp:40,cost:{steel:15},d:'Конденсаторы +50%.'},
+  {id:'t_hydro',cat:'Еда и вода',n:'Гидропоника',rp:70,cost:{wood:30,steel:20},d:'Здание: много еды в тепле.'},
+  {id:'t_well',cat:'Еда и вода',n:'Бурение скважин',rp:70,cost:{steel:30},d:'Здание: артезианская скважина.'},
+  {id:'t_gather',cat:'Ресурсы',n:'Тачки и носилки',rp:25,cost:{wood:15},d:'Сбор с завалов +25%.'},
+  {id:'t_saw',cat:'Ресурсы',n:'Разбор шпал',rp:35,cost:{wood:10},d:'Здание: дерево.'},
+  {id:'t_scrap',cat:'Ресурсы',n:'Резка вагонов',rp:50,cost:{wood:20},d:'Здание: металл.'},
+  {id:'t_coal',cat:'Ресурсы',n:'Угольный пласт',rp:60,cost:{wood:30,steel:10},d:'Здание: угольный забой.'},
+  {id:'t_tools',cat:'Ресурсы',n:'Пневмоинструмент',rp:90,cost:{steel:30},req:['t_scrap'],d:'Добывающие здания +20%.'},
+  {id:'t_barracks',cat:'Жильё и медицина',n:'Бараки',rp:30,cost:{wood:20},d:'Тёплое жильё.'},
+  {id:'t_house',cat:'Жильё и медицина',n:'Жилые блоки',rp:70,cost:{wood:40,steel:20},req:['t_barracks'],d:'Лучшее жильё.'},
+  {id:'t_hospital',cat:'Жильё и медицина',n:'Лазарет',rp:60,cost:{wood:20,steel:15},d:'Лечит тяжелобольных.'},
+  {id:'t_pharm',cat:'Жильё и медицина',n:'Аптека',rp:70,cost:{steel:20},req:['t_hospital'],d:'Производство лекарств.'},
+  {id:'t_research',cat:'Разведка и наука',n:'Чертёжные столы',rp:40,cost:{wood:25},d:'Исследования +25%.'},
+  {id:'t_draisine',cat:'Разведка и наука',n:'Мотодрезины',rp:50,cost:{steel:20},d:'Отряды быстрее в 1,6 раза.'},
+  {id:'t_teams',cat:'Разведка и наука',n:'Второй отряд',rp:60,cost:{wood:20,steel:10},d:'+1 отряд на каждое депо.'},
+  {id:'t_outpost',cat:'Разведка и наука',n:'Аванпосты',rp:80,cost:{wood:30,steel:20},d:'Станции могут слать ресурсы.'},
+];
+const TECHBY=Object.fromEntries(TECH.map(t=>[t.id,t]));
+
+const LAWS=[
+  {id:'child_labor',cat:'adapt',n:'Детский труд',d:'Дети работают на безопасных местах (вполсилы).',ex:'child_shelter',fx:{disc:5}},
+  {id:'child_shelter',cat:'adapt',n:'Детские приюты',d:'Здание «Детский приют». Дети меньше болеют. +надежда.',ex:'child_labor',fx:{hope:5}},
+  {id:'ext_shift',cat:'adapt',n:'Удлинённая смена',d:'Работа до 22:00 вместо 18:00. Недовольство растёт каждый день.',fx:{disc:4}},
+  {id:'soup',cat:'adapt',n:'Похлёбка',d:'Кухни дают на 25% больше пайков.',ex:'additives',fx:{disc:2}},
+  {id:'additives',cat:'adapt',n:'Опилки в пайках',d:'Кухни дают на 50% больше пайков, но люди чаще болеют.',ex:'soup',fx:{disc:4}},
+  {id:'water_ration',cat:'adapt',n:'Нормы воды',d:'Каждый пьёт на 30% меньше. Недовольство растёт.',fx:{disc:4}},
+  {id:'cemetery',cat:'adapt',n:'Кладбище',d:'Здание «Кладбище». Смерти бьют по надежде слабее.',ex:'pit',fx:{hope:3}},
+  {id:'pit',cat:'adapt',n:'Тоннель мёртвых',d:'Тела уносят в заброшенный перегон. Без затрат, но людям тяжело.',ex:'cemetery',fx:{hope:-5}},
+  {id:'radical',cat:'adapt',n:'Радикальное лечение',d:'Больные выздоравливают быстрее, ценой жёстких мер.',ex:'overcrowd',fx:{hope:-3}},
+  {id:'overcrowd',cat:'adapt',n:'Переполненные медпункты',d:'Коек в 1,5 раза больше, лечение медленнее.',ex:'radical',fx:{}},
+  {id:'arena',cat:'adapt',n:'Бойцовская арена',d:'Здание. Снимает недовольство, но бывают травмы.',fx:{}},
+  {id:'moonshine',cat:'adapt',n:'Самогон',d:'Здание «Самогонный цех». Снимает недовольство.',fx:{}},
+  {id:'o_patrol',cat:'order',n:'Патрули',d:'Пост патруля: −недовольство.',fx:{disc:-3}},
+  {id:'o_radio',cat:'order',n:'Агитация',d:'Радиоточка: +надежда, −недовольство.',req:'o_patrol',fx:{}},
+  {id:'o_prison',cat:'order',n:'Гауптвахта',d:'Смутьяны под замком: −недовольство.',req:'o_radio',fx:{disc:-3}},
+  {id:'o_martial',cat:'order',n:'Военное положение',d:'Недовольство −10 сразу и меньше каждый день. Надежда понемногу падает.',req:'o_prison',fx:{disc:-10,hope:-4}},
+  {id:'o_new',cat:'order',n:'Новый порядок',d:'Финал пути. Недовольство падает и растёт вдвое медленнее.',req:'o_martial',fx:{disc:-25}},
+  {id:'f_hall',cat:'faith',n:'Вечерние собрания',d:'Дом собраний: +надежда.',fx:{hope:3}},
+  {id:'f_mutual',cat:'faith',n:'Взаимовыручка',d:'Голод и жажда убивают вдвое реже. +надежда.',req:'f_hall',fx:{hope:4}},
+  {id:'f_shrine',cat:'faith',n:'Часовня',d:'Здание: ещё больше надежды.',req:'f_mutual',fx:{}},
+  {id:'f_wardens',cat:'faith',n:'Хранители',d:'Добровольцы следят за порядком: −недовольство каждый день.',req:'f_shrine',fx:{disc:-5}},
+  {id:'f_new',cat:'faith',n:'Подземное братство',d:'Финал пути. Надежда не падает ниже 40.',req:'f_wardens',fx:{hope:25}},
+];
+const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
+
+/* ---------------------------- КАРТА МЕТРО ---------------------------- */
+const LINES=[
+  {id:'1',n:'Сокольническая',c:'#e4322b',st:['Бульвар Рокоссовского@870,250','Черкизовская','Преображенская площадь','Сокольники','Красносельская','Комсомольская@720,420','Красные Ворота@685,450','Чистые пруды@640,485','Лубянка@610,520','Охотный Ряд@565,560','Библиотека им. Ленина@525,610','Кропоткинская@480,655','Парк культуры@440,700','Фрунзенская','Спортивная','Воробьёвы горы','Университет','Проспект Вернадского','Юго-Западная@230,960']},
+  {id:'2',n:'Замоскворецкая',c:'#3aa548',st:['Речной вокзал@420,90','Водный стадион','Войковская','Сокол','Аэропорт','Динамо','Белорусская@500,400','Маяковская@515,450','Тверская@575,505','Театральная@615,570','Новокузнецкая@640,668','Павелецкая@670,735','Автозаводская','Технопарк','Коломенская','Каширская@700,890','Кантемировская','Царицыно','Орехово','Домодедовская','Красногвардейская@770,1120']},
+  {id:'3',n:'Арбатско-Покровская',c:'#2b58b8',st:['Пятницкое шоссе@110,330','Митино','Волоколамская','Мякинино','Строгино','Крылатское','Молодёжная','Кунцевская@250,570','Славянский бульвар','Парк Победы@330,625','Киевская@400,635','Смоленская@445,630','Арбатская@490,615','Площадь Революции@600,612','Курская@735,560','Бауманская','Электрозаводская','Семёновская','Партизанская','Измайловская','Первомайская','Щёлковская@1010,460']},
+  {id:'5',n:'Кольцевая',c:'#8a5a2b',ring:1,st:['Комсомольская@720,420','Проспект Мира@625,395','Новослободская@570,398','Белорусская@500,400','Краснопресненская@430,475','Киевская@400,635','Парк культуры@440,700','Октябрьская@530,760','Добрынинская@600,775','Павелецкая@670,735','Таганская@745,685','Курская@735,560']},
+  {id:'6',n:'Калужско-Рижская',c:'#ef8a1f',st:['Медведково@650,110','Бабушкинская','Свиблово','Ботанический сад','ВДНХ','Алексеевская','Рижская','Проспект Мира@625,395','Сухаревская@630,440','Тургеневская@662,505','Китай-город@680,590','Третьяковская@665,650','Октябрьская@530,760','Шаболовская','Ленинский проспект','Академическая','Профсоюзная','Новые Черёмушки','Калужская','Беляево','Коньково','Тёплый Стан','Ясенево','Новоясеневская@470,1140']},
+  {id:'7',n:'Таганско-Краснопресненская',c:'#8e4ea0',st:['Планерная@230,230','Сходненская','Тушинская','Спартак','Щукинская','Октябрьское поле','Полежаевская','Беговая','Улица 1905 года','Баррикадная@452,468','Пушкинская@545,520','Кузнецкий мост@636,537','Китай-город@680,590','Таганская@745,685','Пролетарская@792,722','Волгоградский проспект','Текстильщики','Кузьминки','Рязанский проспект','Выхино@960,860']},
+  {id:'8',n:'Калининская',c:'#e8c21a',st:['Третьяковская@665,650','Марксистская@772,665','Площадь Ильича@818,632','Авиамоторная','Шоссе Энтузиастов','Перово','Новогиреево','Новокосино@1050,600']},
+  {id:'9',n:'Серпуховско-Тимирязевская',c:'#a3a6a8',st:['Алтуфьево@540,70','Бибирево','Отрадное','Владыкино','Петровско-Разумовская@545,230','Тимирязевская','Дмитровская','Савёловская@540,330','Менделеевская@540,382','Цветной бульвар@572,432','Чеховская@532,486','Боровицкая@540,650','Полянка@562,712','Серпуховская@590,788','Тульская','Нагатинская','Нагорная','Нахимовский проспект','Севастопольская','Чертановская','Южная','Пражская','Аннино','Бульвар Дмитрия Донского@560,1150']},
+  {id:'10',n:'Люблинско-Дмитровская',c:'#9ccd3c',st:['Селигерская@465,160','Верхние Лихоборы','Петровско-Разумовская@545,230','Фонвизинская','Бутырская','Марьина Роща@600,330','Достоевская','Трубная@602,445','Сретенский бульвар@676,470','Чкаловская@762,545','Римская@795,610','Крестьянская Застава@795,690','Дубровка','Кожуховская','Печатники','Волжская','Люблино','Братиславская','Марьино','Борисово','Шипиловская','Зябликово@830,1010']},
+  {id:'11',n:'Каховская',c:'#3fb4a3',st:['Каширская@700,890','Варшавская@640,925','Каховская@585,955']},
+  {id:'14',n:'МЦК',c:'#e98ab0',ring:1,circle:{cx:600,cy:640,rx:375,ry:345,a0:-100},st:['Окружная','Ростокино','Белокаменная','Локомотив','Измайлово','Соколиная Гора','Андроновка','Нижегородская','Новохохловская','Угрешская','ЗИЛ','Верхние Котлы','Крымская','Площадь Гагарина','Лужники','Кутузовская','Деловой центр','Шелепиха','Хорошёво','Зорге','Панфиловская','Стрешнево','Балтийская','Коптево','Лихоборы']},
+  {id:'D6',n:'Метро-2 (Д-6)',c:'#d8d2c0',secret:1,st:['Объект «Кремль»@575,600','Бункер Генштаба@470,585','Объект «Раменки»@300,830','Объект «Внуково»@90,1110']},
+];
+const SECRET_LINKS=[['Боровицкая','Объект «Кремль»'],['Университет','Объект «Раменки»']];
+const HUB='Театральная';
+
+// фракции (свой лор по мотивам постапокалиптического метро)
+const FACTIONS={
+  ring:{n:'Кольцевое товарищество',d:'Торговцы Кольцевой. С ними можно меняться.',c:'#c48a4a'},
+  commune:{n:'Красная коммуна',d:'Сокольническая. Делятся едой, требуют дисциплины.',c:'#e4322b'},
+  archive:{n:'Хранители архива',d:'Библиотека им. Ленина. Знания в обмен на помощь.',c:'#d9c9a0'},
+};
+
+function buildGraph(){
+  const nodes={},adj={},lines={};
+  const node=(name,x,y,line,secret)=>{
+    if(!nodes[name])nodes[name]={id:name,x,y,lines:[],secret:!!secret};
+    else if(x!=null&&nodes[name].x==null){nodes[name].x=x;nodes[name].y=y;}
+    if(!nodes[name].lines.includes(line))nodes[name].lines.push(line);
+    adj[name]=adj[name]||[];return nodes[name];
+  };
+  const link=(a,b,kind)=>{
+    if(a===b||adj[a].some(e=>e.to===b))return;
+    const d=Math.hypot(nodes[a].x-nodes[b].x,nodes[a].y-nodes[b].y);
+    const len=kind==='tr'?Math.max(12,d*.6):d;
+    adj[a].push({to:b,len,kind});adj[b].push({to:a,len,kind});
+  };
+  for(const L of LINES){
+    let pts;
+    if(L.circle){
+      const {cx,cy,rx,ry,a0}=L.circle;
+      pts=L.st.map((n,i)=>{const a=(a0+i*360/L.st.length)*Math.PI/180;return{n,x:cx+rx*Math.cos(a),y:cy+ry*Math.sin(a)};});
+    }else{
+      pts=L.st.map(s=>{const [n,xy]=s.split('@');if(xy){const [x,y]=xy.split(',').map(Number);return{n,x,y,f:1};}return{n};});
+      for(let i=0;i<pts.length;i++){
+        if(pts[i].f)continue;
+        let a=i-1;while(!pts[a].f)a--;let b=i+1;while(!pts[b].f)b++;
+        const t=(i-a)/(b-a);pts[i].x=pts[a].x+(pts[b].x-pts[a].x)*t;pts[i].y=pts[a].y+(pts[b].y-pts[a].y)*t;
+      }
+    }
+    lines[L.id]=pts.map(p=>p.n);
+    for(const p of pts)node(p.n,p.x,p.y,L.id,L.secret);
+    for(let i=1;i<pts.length;i++)link(pts[i-1].n,pts[i].n,'t');
+    if(L.ring)link(pts[pts.length-1].n,pts[0].n,'t');
+  }
+  // пересадки: близкие станции разных линий
+  const ids=Object.keys(nodes);
+  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){
+    const a=nodes[ids[i]],b=nodes[ids[j]];
+    if(a.secret||b.secret)continue;
+    if(a.lines.some(l=>b.lines.includes(l)))continue;
+    if(Math.hypot(a.x-b.x,a.y-b.y)<56)link(a.id,b.id,'tr');
+  }
+  link('Охотный Ряд','Театральная','tr');
+  for(const [a,b] of SECRET_LINKS)link(a,b,'secret');
+  return{nodes,adj,lines};
+}
+const G=buildGraph();
+
+/* что лежит на станциях: детерминированно по имени и зерну партии */
+const SPECIAL={
+  'Комсомольская':{t:'survivors',txt:'Под тремя вокзалами — сотни людей. Кто-то согласен идти с вами.',people:[18,28]},
+  'ВДНХ':{t:'raw',txt:'Свинарник и грибные плантации ушедшей общины.',amt:[120,180]},
+  'Ботанический сад':{t:'seeds',txt:'Ящики семян и лампы досветки из оранжерей.'},
+  'Тимирязевская':{t:'seeds',txt:'Лаборатория агроакадемии: споры, субстрат, записи опытов.'},
+  'Библиотека им. Ленина':{t:'archive',txt:'Хранители архива пускают к книгам. Инженеры возвращаются с чертежами.'},
+  'Боровицкая':{t:'metro2',txt:'За гермодверью — служебный ход вниз. Схема на стене: «Д-6».'},
+  'Таганская':{t:'bunker',txt:'Бункер гражданской обороны. Склад медикаментов почти цел.'},
+  'Электрозаводская':{t:'cores',txt:'Цех завода: среди хлама — целый энергоблок.'},
+  'Сокольники':{t:'draisine',txt:'Депо Сокольники. Две рабочие мотодрезины и запчасти.'},
+  'Университет':{t:'meds',txt:'Факультетская аптека и лаборатории.',amt:[25,40]},
+  'Парк Победы':{t:'survivors',txt:'Глубокая тёплая станция. Люди устали ждать помощи.',people:[10,18]},
+  'Киевская':{t:'trade',txt:'Рынок Кольцевого товарищества. Здесь можно меняться.'},
+  'Курская':{t:'trade',txt:'Перевалочный пост Кольцевого товарищества.'},
+  'Павелецкая':{t:'trade',txt:'Склады Кольцевого товарищества. Торгуют охотно.'},
+  'Красносельская':{t:'commune',txt:'Красная коммуна делится зерном, если вы поддержите их порядок.'},
+  'Партизанская':{t:'steel',txt:'Оружейный склад. Металла много, патронов нет.',amt:[120,180]},
+  'Объект «Кремль»':{t:'vault',txt:'Резервный склад правительства. Консервы, лекарства, энергоблоки.'},
+  'Бункер Генштаба':{t:'archive',txt:'Архив и узел связи. Инженеры уносят схемы.'},
+  'Объект «Раменки»':{t:'vault',txt:'Подземный город на десятки тысяч мест. Пусто. Запасы — нет.'},
+  'Объект «Внуково»':{t:'end',txt:'Ход к аэродрому. Наверху — лёд и тишина. Отсюда видно небо.'},
+};
+const TYPES=[['coal',14],['wood',14],['steel',12],['raw',10],['water',8],['meds',6],['mixed',12],['survivors',8],['danger',12],['empty',8],['cores',2]];
+function stationContent(s,name){
+  if(SPECIAL[name])return Object.assign({},SPECIAL[name]);
+  const r=seeded(hash(name)^s.seed);let tot=TYPES.reduce((a,t)=>a+t[1],0),x=r()*tot,t='empty';
+  for(const [k,w] of TYPES){if((x-=w)<0){t=k;break;}}
+  if(G.lines['5']&&G.lines['5'].includes(name)&&r()<.5)t='trade';
+  return{t,r:r()};
+}
+
+/* ---------------------------- СОСТОЯНИЕ ---------------------------- */
+const GW=18,GH=12,GX=9,GY=6;
+function newGame(diff,survivor){
+  const D=DIFF[diff];
+  const s={v:1,diff,survivor:!!survivor,seed:(Math.random()*1e9)|0,
+    day:1,hour:6,acc:0,speed:1,paused:false,over:null,won:false,endless:false,
+    res:{coal:250*D.start,wood:110*D.start,steel:30*D.start,raw:40*D.start,food:100*D.start,water:200*D.start,meds:6*D.start,cores:0},
+    pop:{w:45,e:15,c:20},ill:{w:0,e:0,c:0},crit:{w:0,e:0,c:0},
+    hope:55,disc:10,unfed:0,unfedStreak:0,thirsty:0,thirstStreak:0,
+    today:{deaths:0},deaths:0,
+    grid:[],bld:[],nid:1,
+    gen:{lvl:1,on:true,over:false,stress:0},
+    tech:[],research:null,rp:0,
+    laws:[],lawCd:0,path:null,
+    teams:[],groups:[],st:{},outposts:[],
+    queue:[],promise:null,flags:{},log:[],
+    leavers:0,
+  };
+  for(const k in s.res)s.res[k]=Math.round(s.res[k]);
+  // сетка: пути вдоль краёв, завалы
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const t={k:(y===0||y===GH-1)?'track':'floor',b:0,pile:null};
+    s.grid.push(t);
+  }
+  const r=seeded(s.seed);
+  const piles=[['coal',5,200],['wood',5,140],['steel',4,110]];
+  for(const [k,n,amt] of piles){
+    let placed=0,tries=0;
+    while(placed<n&&tries++<500){
+      const x=1+Math.floor(r()*(GW-2)),y=1+Math.floor(r()*(GH-2));
+      if(Math.abs(x-GX)<=2&&Math.abs(y-GY)<=2)continue;
+      const t=tile(s,x,y);if(t.k!=='floor'||t.pile)continue;
+      t.pile={r:k,amt:Math.round(amt*(.8+r()*.4)*D.start),a:{w:0,e:0,c:0}};placed++;
+    }
+  }
+  tile(s,GX,GY).b=-1; // генератор
+  // стартовые постройки
+  place(s,'tent',GX-2,GY-2,true);place(s,'tent',GX+2,GY-2,true);place(s,'tent',GX-2,GY+2,true);
+  place(s,'kitchen',GX+2,GY+2,true);
+  for(const id in G.nodes)if(!G.nodes[id].secret)s.st[id]={k:0};
+  s.st[HUB]={k:2,t:'hub'};
+  for(const e of G.adj[HUB])if(s.st[e.to])s.st[e.to].k=Math.max(1,s.st[e.to].k);
+  computeHeat(s);
+  log(s,'День 1. Наверху ничего живого. Генератор запущен, люди ждут решений.','');
+  s.queue.push({id:'intro'});
+  return s;
+}
+const tile=(s,x,y)=>s.grid[y*GW+x];
+function place(s,type,x,y,instant){
+  const t=tile(s,x,y);const d=B[type];
+  const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,build:instant?0:d.time};
+  s.bld.push(b);t.b=b.id;return b;
+}
+const bById=(s,id)=>s.bld.find(b=>b.id===id);
+const has=(s,id)=>s.tech.includes(id)||s.laws.includes(id);
+const D_=s=>DIFF[s.diff];
+const popTotal=s=>s.pop.w+s.pop.e+s.pop.c;
+const healthy=(s,t)=>s.pop[t]-s.ill[t]-s.crit[t];
+function log(s,txt,kind){s.log.unshift({d:s.day,h:s.hour,txt,k:kind||''});if(s.log.length>60)s.log.length=60;}
+
+/* ---------------------------- ТЕПЛО ---------------------------- */
+const LVL_N=['Лютый мороз','Очень холодно','Холодно','Прохладно','Комфортно'];
+const lvlOf=deg=>deg>=10?4:deg>=0?3:deg>=-10?2:deg>=-20?1:0;
+const HEAT_EFF=[.3,.55,.75,.9,1];
+function ambient(s){const i=s.endless&&s.day>LAST_DAY?18+((s.day-1)%10):Math.min(s.day,LAST_DAY)-1;return WEATHER[i]+D_(s).temp;}
+function genMax(s){return has(s,'t_power2')?4:has(s,'t_power1')?3:2;}
+function genRadius(s){return 4+(has(s,'t_radius1')?2:0)+(has(s,'t_radius2')?2:0);}
+function genHeat(s){if(!s.gen.on)return 0;return s.gen.lvl*10+(s.gen.over?10:0);}
+function computeHeat(s){
+  const amb=ambient(s),R=genRadius(s),gh=genHeat(s);
+  const heaters=s.bld.filter(b=>b.type==='heater'&&!b.build&&b.on&&b.fuelOk!==false);
+  s.heat=new Array(GW*GH);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    let d=amb;
+    if(Math.hypot(x-GX,y-GY)<=R+.3)d+=gh;
+    for(const h of heaters)if(Math.hypot(x-h.x,y-h.y)<=2.3)d+=10;
+    const t=tile(s,x,y);
+    if(t.b>0){const b=bById(s,t.b);d+=(B[b.type].ins||5)+(has(s,'t_insul')?10:0);}
+    s.heat[y*GW+x]=d;
+  }
+}
+const heatAt=(s,x,y)=>s.heat?s.heat[y*GW+x]:ambient(s);
+
+/* ---------------------------- ЛЮДИ И РАБОТА ---------------------------- */
+function jobsOf(s){
+  const L=[];
+  for(const b of s.bld){const d=B[b.type];if(d.job&&!b.build)L.push({o:b,d,job:d.job,max:d.jobs,safe:!!d.safe});}
+  for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile)L.push({o:t.pile,job:'w',max:5,safe:true,pile:1});}
+  return L;
+}
+function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];return n;}
+function free(s,t){return healthy(s,t)-assigned(s,t);}
+function addWorker(s,j){
+  const a=j.o.a,tot=a.w+a.e+a.c;if(tot>=j.max)return false;
+  if(j.job==='e'){if(free(s,'e')>0){a.e++;return true;}return false;}
+  if(free(s,'w')>0){a.w++;return true;}
+  if(has(s,'child_labor')&&j.safe&&free(s,'c')>0){a.c++;return true;}
+  if(free(s,'e')>0){a.e++;return true;}
+  return false;
+}
+function remWorker(j){const a=j.o.a;if(a.c>0)a.c--;else if(a.e>0&&j.job==='w')a.e--;else if(a.w>0)a.w--;else if(a.e>0)a.e--;}
+function rebalance(s){
+  const J=jobsOf(s).reverse();
+  for(const t of ['w','e','c']){
+    let over=assigned(s,t)-healthy(s,t);
+    for(const j of J){while(over>0&&j.o.a[t]>0){j.o.a[t]--;over--;}}
+  }
+  if(!has(s,'child_labor'))for(const j of J)j.o.a.c=0;
+}
+function workforce(a){return a.w+a.e+a.c*.5;}
+function housing(s){let n=0;for(const b of s.bld)if(B[b.type].house&&!b.build)n+=B[b.type].house;return n;}
+function bedCount(s){
+  let beds=0,hbeds=0;
+  for(const b of s.bld){const d=B[b.type];if(!d.beds||b.build||!b.on)continue;
+    const f=Math.min(1,workforce(b.a)/d.jobs);const n=Math.floor(d.beds*f*(has(s,'overcrowd')?1.5:1));
+    if(d.heal)hbeds+=n;else beds+=n;}
+  return{beds,hbeds};
+}
+function pickType(s,pool){
+  const w={w:0,e:0,c:0};let tot=0;
+  for(const t of ['w','e','c']){w[t]=pool==='crit'?s.crit[t]:pool==='ill'?s.ill[t]:pool==='healthy'?healthy(s,t):s.pop[t];tot+=w[t];}
+  if(tot<=0)return null;let x=rnd()*tot;for(const t of ['w','e','c']){if((x-=w[t])<0)return t;}return 'w';
+}
+function kill(s,n,pool){
+  let k=0;
+  for(let i=0;i<n;i++){
+    const t=pickType(s,pool||'all');if(!t)break;
+    if(pool==='crit')s.crit[t]--;else if(pool==='ill')s.ill[t]--;
+    else{const r=rnd()*s.pop[t];if(r<s.crit[t])s.crit[t]--;else if(r<s.crit[t]+s.ill[t])s.ill[t]--;}
+    s.pop[t]--;k++;
+  }
+  s.today.deaths+=k;s.deaths+=k;
+  const per=has(s,'cemetery')&&s.bld.some(b=>b.type==='cemetery'&&!b.build)?.6:has(s,'pit')?1.2:1.8;
+  s.hope-=k*per;
+  rebalance(s);return k;
+}
+function sicken(s,n){let k=0;for(let i=0;i<n;i++){const t=pickType(s,'healthy');if(!t)break;s.ill[t]++;k++;}rebalance(s);return k;}
+function addPeople(s,n,sickFrac){
+  for(let i=0;i<n;i++){const r=rnd();const t=r<.55?'w':r<.75?'e':'c';s.pop[t]++;if(rnd()<(sickFrac||0))s.ill[t]++;}
+}
+
+/* ---------------------------- ЧАС СИМУЛЯЦИИ ---------------------------- */
+function workHour(s){const end=has(s,'ext_shift')?22:18;return s.hour>=8&&s.hour<end;}
+function hourTick(s){
+  if(s.over)return;
+  const D=D_(s);
+  s.hour++;
+  if(s.hour>=24){s.hour=0;newDay(s);if(s.over)return;}
+  computeHeat(s);
+  // генератор
+  if(s.gen.on&&s.gen.lvl>0){
+    const fuel=[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D.cons;
+    if(s.res.coal>=fuel)s.res.coal-=fuel;
+    else{s.gen.on=false;s.gen.over=false;toast(s,'Уголь кончился — генератор остановился!','bad');log(s,'Генератор остановился: нет угля.','bad');}
+  }
+  if(s.gen.over&&s.gen.on){s.gen.stress+=7;if(s.gen.stress>=100)genExplode(s);}
+  else s.gen.stress=Math.max(0,s.gen.stress-4);
+  if(s.gen.stress>=80&&s.gen.over&&!s.flags.stressWarn){s.flags.stressWarn=1;toast(s,'Давление в котле на пределе!','bad');}
+  if(s.gen.stress<60)s.flags.stressWarn=0;
+  for(const b of s.bld)if(b.type==='heater'&&!b.build&&b.on){if(s.res.coal>=1){s.res.coal-=1;b.fuelOk=true;}else b.fuelOk=false;}
+  // стройка
+  for(const b of s.bld)if(b.build>0){b.build--;if(!b.build){toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
+  // работа
+  if(workHour(s)){
+    const tools=has(s,'t_tools')?1.2:1;
+    for(const b of s.bld){
+      const d=B[b.type];if(b.build||!b.on||!d.job)continue;
+      const wf=workforce(b.a);if(wf<=0)continue;
+      const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];
+      if(d.needHeat&&lv<d.needHeat)eff*=.4;
+      if(d.prod)for(const k in d.prod){
+        let m=d.prod[k]*wf*eff;
+        if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
+        if(b.type==='condenser'&&has(s,'t_filter'))m*=1.5;
+        if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=tools;
+        s.res[k]+=m;
+      }
+      if(d.kitchen){
+        const cap=Math.min(s.res.raw,7.5*wf*eff);
+        const mult=has(s,'additives')?3:has(s,'soup')?2.5:2;
+        s.res.raw-=cap;s.res.food+=cap*mult;
+      }
+      if(d.rp&&s.research){s.rp+=d.rp*wf*eff*(has(s,'t_research')?1.25:1);}
+    }
+    for(const t of s.grid)if(t.pile){
+      const wf=workforce(t.pile.a);if(wf<=0)continue;
+      const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1));
+      t.pile.amt-=g;s.res[t.pile.r]+=g;
+      if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
+    }
+    if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');s.research=null;s.rp=0;}}
+  }
+  // еда, вода
+  if(s.hour===7||s.hour===19)meal(s);
+  if(s.hour===13)drink(s);
+  if(s.hour===22)nightSickness(s);
+  if(s.hour===6)morning(s);
+  // разведка
+  moveTeams(s);
+  if(s.lawCd>0)s.lawCd--;
+  // обещания
+  if(s.promise){s.promise.left--;checkPromise(s);}
+  for(const k in s.res)if(s.res[k]<0)s.res[k]=0;
+  s.hope=clamp(s.hope,0,100);s.disc=clamp(s.disc,0,100);
+  if(has(s,'f_new'))s.hope=Math.max(40,s.hope);
+  checkEnd(s);
+}
+function onBuilt(s,b){
+  if(b.type==='depot'){syncTeams(s);}
+}
+function genExplode(s){
+  s.gen.on=false;s.gen.over=false;s.gen.stress=0;s.gen.broken=24;
+  const k=kill(s,ri(4,9),'all');
+  s.hope-=15;s.disc+=15;
+  s.queue.push({id:'explosion',p:{k}});
+  log(s,`Котёл взорвался. Погибли ${k}.`,'bad');
+}
+function meal(s){
+  const D=D_(s);const n=popTotal(s);const need=n*.5*D.cons;
+  if(s.res.food>=need){s.res.food-=need;s.unfed=0;s.unfedStreak=0;return;}
+  const fed=Math.floor(s.res.food/(.5*D.cons));s.res.food=0;s.unfed=n-fed;s.unfedStreak++;
+  toast(s,`Голод: ${s.unfed} без еды`,'bad');
+  if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08*(has(s,'f_mutual')?.5:1)),'all');if(k){log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');}}
+}
+function drink(s){
+  const D=D_(s);const n=popTotal(s);const need=n*(has(s,'water_ration')?.7:1)*D.cons;
+  if(s.res.water>=need){s.res.water-=need;s.thirsty=0;s.thirstStreak=0;return;}
+  const ok=Math.floor(s.res.water/(need/n));s.res.water=0;s.thirsty=n-ok;s.thirstStreak++;
+  toast(s,`Жажда: ${s.thirsty} без воды`,'bad');
+  if(s.thirstStreak>=2){const k=kill(s,Math.ceil(s.thirsty*.12*(has(s,'f_mutual')?.5:1)),'all');if(k){log(s,`От обезвоживания умерли ${k}.`,'bad');toast(s,`От обезвоживания умерли ${k}`,'bad');}}
+}
+function homesHeat(s){
+  // распределяем людей по домам, возвращаем {people per level, homeless}
+  const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({cap:B[b.type].house,lv:lvlOf(heatAt(s,b.x,b.y))})).sort((a,b)=>b.lv-a.lv);
+  let left=popTotal(s);const per=[0,0,0,0,0];
+  for(const h of homes){const n=Math.min(left,h.cap);per[h.lv]+=n;left-=n;}
+  return{per,homeless:left};
+}
+function nightSickness(s){
+  const D=D_(s);const {per,homeless}=homesHeat(s);
+  const P=[.12,.07,.035,.012,.003];
+  let n=0;
+  for(let l=0;l<5;l++)for(let i=0;i<per[l];i++)if(rnd()<P[l]*D.sick)n++;
+  const hl=lvlOf(ambient(s)+genHeat(s)*.5);
+  for(let i=0;i<homeless;i++)if(rnd()<P[hl]*1.8*D.sick)n++;
+  if(has(s,'additives'))n+=Math.round(popTotal(s)*.006);
+  if(s.unfed>0)n+=Math.round(s.unfed*.05);
+  if(has(s,'child_shelter')&&s.bld.some(b=>b.type==='nursery'&&!b.build))n=Math.round(n*.85);
+  if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');}
+}
+function morning(s){
+  const D=D_(s);
+  // лечение
+  let {beds,hbeds}=bedCount(s);
+  const rec=has(s,'radical')?.75:has(s,'overcrowd')?.4:.5;
+  // тяжёлые в лазарет
+  for(const t of ['w','e','c']){
+    let n=s.crit[t];
+    for(let i=0;i<n;i++){
+      if(hbeds>0){hbeds--;if(rnd()<.5){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
+      else if(beds>0&&s.res.meds>=1){beds--;s.res.meds--;if(rnd()<.75){s.crit[t]--;s.ill[t]++;}}
+      else if(rnd()<.3){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
+    }
+  }
+  let treat=beds+hbeds;
+  for(const t of ['w','e','c']){
+    const n=s.ill[t];
+    for(let i=0;i<n;i++){
+      if(treat>0){treat--;if(rnd()<rec)s.ill[t]--;}
+      else if(rnd()<.25*D.sick){s.ill[t]--;s.crit[t]++;}
+      else if(rnd()<.1)s.ill[t]--;
+    }
+  }
+  rebalance(s);
+  // аванпосты
+  for(const o of s.outposts){const g={coal:40,wood:30,steel:15,raw:25,water:30,meds:2,mixed:15}[o.t]||10;
+    if(o.t==='mixed'){s.res.coal+=g;s.res.wood+=g;}else s.res[o.t]+=g;}
+  if(s.gen.broken){s.gen.broken=Math.max(0,s.gen.broken-24);}
+}
+function newDay(s){
+  const D=D_(s);
+  const prev={...s.today};
+  // итоги дня → надежда/недовольство
+  const {per,homeless}=homesHeat(s);
+  const coldHomes=per[0]+per[1];
+  const sickNow=s.ill.w+s.ill.e+s.ill.c+s.crit.w+s.crit.e+s.crit.c;
+  const {beds,hbeds}=bedCount(s);
+  const untreated=Math.max(0,sickNow-beds-hbeds);
+  let dd=-1.5+homeless*.08+s.unfed*.1+s.thirsty*.12+coldHomes*.05+untreated*.08;
+  let dh=(s.unfed===0&&s.thirsty===0?1:-2)-(homeless>0?2:0)-(coldHomes>popTotal(s)*.3?1:0);
+  if(has(s,'ext_shift'))dd+=3;
+  if(has(s,'child_labor'))dd+=1.5;
+  if(has(s,'additives'))dd+=2;
+  if(has(s,'water_ration'))dd+=2.5;
+  const built=t=>s.bld.filter(b=>b.type===t&&!b.build);
+  if(built('arena').length){dd-=4;if(rnd()<.5)sicken(s,1);}
+  if(built('still').length){dd-=4;sicken(s,rnd()<.4?1:0);}
+  for(const b of built('patrol'))dd-=2*Math.min(1,workforce(b.a)/5);
+  if(built('radio').length){dd-=1;dh+=1;}
+  for(const b of built('guardhouse'))dd-=3*Math.min(1,workforce(b.a)/3);
+  if(has(s,'o_martial')){dd-=2;dh-=1;}
+  dh+=built('hall').length*2+built('shrine').length*3+(built('nursery').length?1:0)+(built('cemetery').length?1:0);
+  if(has(s,'f_mutual'))dh+=1;
+  if(has(s,'f_wardens'))dd-=2;
+  if(has(s,'o_new'))dd=Math.min(dd,dd*.5);
+  s.disc=clamp(s.disc+dd*D.disc,0,100);
+  s.hope=clamp(s.hope+dh,0,100);
+  s.today={deaths:0};
+  s.day++;
+  if(s.day>LAST_DAY&&!s.won&&!s.endless){s.won=true;s.queue.push({id:'victory'});return;}
+  const a=ambient(s);
+  if(s.day<=LAST_DAY){
+    const prevT=WEATHER[s.day-2]+D.temp;
+    if(a<=prevT-6)toast(s,`Похолодание: ${a}° на станции`,'cold');
+  }
+  log(s,`День ${s.day}. На станции ${a}°. Жителей: ${popTotal(s)}.`,'');
+  storyEvents(s);
+  if(s.hour===0&&s.day%1===0)autosave(s);
+}
+function checkEnd(s){
+  if(s.over)return;
+  if(popTotal(s)<=0){s.over='dead';s.queue.unshift({id:'gameover',p:{why:'dead'}});return;}
+  if(s.disc>=100){s.over='disc';s.queue.unshift({id:'gameover',p:{why:'disc'}});return;}
+  if(s.hope<=0){s.over='hope';s.queue.unshift({id:'gameover',p:{why:'hope'}});return;}
+  if(s.disc>=85&&!s.flags.ult){s.flags.ult=1;s.queue.push({id:'ultimatum'});}
+  if(s.disc<70)s.flags.ult=0;
+  if(s.hope<=15&&!s.flags.hopew){s.flags.hopew=1;s.queue.push({id:'despair'});}
+  if(s.hope>30)s.flags.hopew=0;
+}
+
+/* ---------------------------- СОБЫТИЯ ---------------------------- */
+function storyEvents(s){
+  const d=s.day;
+  if(d===2)s.queue.push({id:'cold_tents'});
+  if(d===3&&!has(s,'child_labor')&&!has(s,'child_shelter'))s.queue.push({id:'children'});
+  if(d===4)newPromise(s);
+  if(d===5)s.queue.push({id:'purpose'});
+  if(d===7)s.queue.push({id:'refugees'});
+  if(d===9)newPromise(s);
+  if(d===10)s.queue.push({id:'leavers'});
+  if(d===13&&!s.flags.metro2)s.queue.push({id:'rumor_m2'});
+  if(d===15)newPromise(s);
+  if(d===15&&s.leavers>0)s.queue.push({id:'leavers_end'});
+  if(d===20)s.queue.push({id:'storm_warn'});
+  if(d===25)s.queue.push({id:'storm'});
+  if(d===22||d===12||d===18)newPromise(s);
+  if(d>2&&rnd()<.45&&d!==5&&d!==25)s.queue.push({id:pick(['fight','theft','sick_child','lamps','rats','song'])});
+}
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const PROMISES=[
+  {k:'medpost',t:'Постройте медпункт',ok:s=>s.bld.some(b=>(b.type==='medpost'||b.type==='hospital')&&!b.build)},
+  {k:'heat',t:'Согрейте жильё: никто не спит в мороз',ok:s=>{const h=homesHeat(s);return h.per[0]+h.per[1]===0&&h.homeless===0;}},
+  {k:'food',t:'Запасите 150 пайков',ok:s=>s.res.food>=150},
+  {k:'sick',t:'Не больше 5 больных',ok:s=>s.ill.w+s.ill.e+s.ill.c+s.crit.w+s.crit.e+s.crit.c<=5},
+  {k:'homes',t:'Крыша над головой для каждого',ok:s=>housing(s)>=popTotal(s)},
+  {k:'water',t:'Запасите 200 воды',ok:s=>s.res.water>=200},
+];
+function newPromise(s){
+  if(s.promise)return;
+  const opts=PROMISES.filter(p=>!p.ok(s));if(!opts.length)return;
+  const p=pick(opts);s.queue.push({id:'promise',p:{k:p.k}});
+}
+function checkPromise(s){
+  const P=PROMISES.find(p=>p.k===s.promise.k);
+  if(P.ok(s)){s.hope+=10;s.disc-=6;toast(s,`Обещание выполнено: ${P.t}`,'good');log(s,`Обещание выполнено: ${P.t}.`,'good');s.promise=null;return;}
+  if(s.promise.left<=0){s.hope-=12;s.disc+=10;toast(s,`Обещание не выполнено: ${P.t}`,'bad');log(s,`Обещание нарушено: ${P.t}.`,'bad');s.promise=null;}
+}
+
+const EV={
+  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас угольный генератор, немного запасов и тоннели во все стороны.\n\nДержите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
+  cold_tents:{t:'Ночь в палатках',x:()=>'Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к генератору теплее.\n\nСтройте жильё в кольце тепла и исследуйте бараки.',c:[{t:'Понятно',f:()=>{}}]},
+  children:{t:'Дети без дела',x:()=>'Двадцать детей сидят у генератора. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.',c:[
+    {t:'Подписать «Детский труд»',h:'Больше рук, но людям это не нравится',ok:s=>canSign(s,'child_labor'),f:s=>signLaw(s,'child_labor',true)},
+    {t:'Подписать «Детские приюты»',h:'Дети в безопасности, +надежда',ok:s=>canSign(s,'child_shelter'),f:s=>signLaw(s,'child_shelter',true)},
+    {t:'Решу позже',f:()=>{}}]},
+  purpose:{t:'Во что нам верить?',x:()=>'Люди спрашивают, ради чего держаться. Одни хотят твёрдой руки и порядка. Другие — общей веры, что вместе выживем.\n\nВ Уставе открыт выбор пути. Первый подписанный закон определит его навсегда.',c:[{t:'Открыть Устав',f:()=>{ui.open='laws';}},{t:'Позже',f:()=>{}}]},
+  refugees:{t:'Беженцы с Комсомольской',x:()=>'По перегону пришли люди с узла трёх вокзалов: голодные, некоторые больны. Просят пустить.',c:[
+    {t:'Принять всех (+14 человек)',h:'Часть больна. Нужны еда и места.',f:s=>{addPeople(s,14,.3);s.hope+=4;}},
+    {t:'Принять только здоровых (+8)',h:'Остальных отправить назад',f:s=>{addPeople(s,8,0);s.disc+=3;}},
+    {t:'Закрыть гермоворота',h:'Надежда упадёт',f:s=>{s.hope-=8;s.disc+=4;}}]},
+  leavers:{t:'Уходящие',x:()=>'Группа жителей уверена: на поверхности, у Кремля, есть убежище с электричеством. Они хотят уйти и звать других.\n\nЕсли к 15-му дню надежда будет низкой, они уйдут и уведут людей.',c:[
+    {t:'Пусть говорят. Убедим делом',h:'Нужна надежда ≥ 50 к 15-му дню',f:s=>{s.leavers=1;}},
+    {t:'Запретить разговоры',h:'Недовольство +8, угроза снята',f:s=>{s.disc+=8;}},
+    {t:'Отпустить желающих сейчас',h:'Уйдут 8 человек',f:s=>{kill(s,0);for(let i=0;i<8;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);s.hope-=3;}}]},
+  leavers_end:{t:'Решение Уходящих',x:s=>s.hope>=50||has(s,'o_new')||has(s,'f_new')?'Уходящие видят: на станции есть будущее. Они остаются.':'Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.',c:[{t:'Ясно',f:s=>{if(!(s.hope>=50||has(s,'o_new')||has(s,'f_new'))){const n=Math.round(popTotal(s)*.12);for(let i=0;i<n;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);log(s,`Ушли ${n} человек.`,'bad');}else s.hope+=5;s.leavers=0;}}]},
+  rumor_m2:{t:'Слухи о Метро-2',x:()=>'Старик-путеец клянётся: под центром есть секретная линия Д-6. Вход где-то у Боровицкой. Там склады, рассчитанные на войну.',c:[{t:'Отправить разведку к Боровицкой',f:s=>{s.st['Боровицкая'].k=Math.max(1,s.st['Боровицкая'].k);ui.open='map';}},{t:'Сказки',f:()=>{}}]},
+  storm_warn:{t:'Прогноз',x:s=>`Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до ${WEATHER[26]+D_(s).temp}° на станции.\n\nЗапасите уголь, утеплите жильё, поднимите мощность генератора.`,c:[{t:'Готовиться',f:()=>{}}]},
+  storm:{t:'Чёрный холод',x:()=>'Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.',c:[{t:'Держаться',f:s=>{s.hope+=3;}}]},
+  explosion:{t:'Взрыв котла',x:(s,p)=>`Перегретый котёл не выдержал. Погибли ${p.k}. Генератор не работает сутки.`,c:[{t:'…',f:()=>{}}]},
+  ultimatum:{t:'Ультиматум',x:()=>'Жители собрались у генератора. Ещё немного — и вас сместят. Снизьте недовольство.',c:[{t:'Я всё исправлю',f:s=>{s.disc-=5;}}]},
+  despair:{t:'Отчаяние',x:()=>'Люди перестают вставать по утрам. Если надежда угаснет совсем, станция умрёт без вашего участия.',c:[{t:'Нужно что-то менять',f:()=>{}}]},
+  fight:{t:'Драка у кухни',x:()=>'Двое не поделили пайку. Толпа ждёт вашего решения.',c:[{t:'Выдать обоим двойной паёк',h:'−6 пайков, −недовольство',ok:s=>s.res.food>=6,f:s=>{s.res.food-=6;s.disc-=3;}},{t:'Наказать зачинщика',h:'+недовольство, но порядок',f:s=>{s.disc+=2;s.hope+=1;}}]},
+  theft:{t:'Кража со склада',x:()=>'Ночью пропал металл. Следы ведут в палатки у путей.',c:[{t:'Обыскать палатки',h:'Вернём металл, люди злы',f:s=>{s.res.steel+=8;s.disc+=4;}},{t:'Не поднимать шум',h:'−15 металла',f:s=>{s.res.steel=Math.max(0,s.res.steel-15);}}]},
+  sick_child:{t:'Больной ребёнок',x:()=>'Мать просит лекарства для сына. Медикаментов мало.',c:[{t:'Отдать 2 медикамента',h:'+надежда',ok:s=>s.res.meds>=2,f:s=>{s.res.meds-=2;s.hope+=4;}},{t:'Лекарства — для тяжёлых',h:'−надежда',f:s=>{s.hope-=3;if(s.ill.c<s.pop.c)s.ill.c++;}}]},
+  lamps:{t:'Перебои света',x:()=>'Проводка в северном конце платформы искрит. Можно чинить или отключить.',c:[{t:'Починить (−10 металла)',ok:s=>s.res.steel>=10,f:s=>{s.res.steel-=10;s.hope+=2;}},{t:'Отключить',h:'Темнее и тревожнее',f:s=>{s.disc+=2;}}]},
+  rats:{t:'Крысы на складе',x:()=>'Крысы прогрызли мешки с грибами.',c:[{t:'Устроить облаву',h:'−20 сырой еды, но крыс съедим',f:s=>{s.res.raw=Math.max(0,s.res.raw-20)+12;}},{t:'Смириться',h:'−30 сырой еды',f:s=>{s.res.raw=Math.max(0,s.res.raw-30);}}]},
+  song:{t:'Песня у генератора',x:()=>'Вечером кто-то достал гитару. Половина станции подпевает.',c:[{t:'Пусть поют',f:s=>{s.hope+=3;}}]},
+  promise:{t:'Просьба жителей',x:(s,p)=>`Люди просят: «${PROMISES.find(x=>x.k===p.k).t}». Срок — сутки.\n\nПообещаете — надежда вырастет, но провал ударит больно.`,c:[{t:'Обещаю',h:'+надежда сейчас',f:(s,p)=>{s.promise={k:p.k,left:24};s.hope+=4;}},{t:'Не могу обещать',h:'−надежда',f:s=>{s.hope-=3;}}]},
+  victory:{t:'Мы пережили холод',x:s=>`Тридцать дней. Мороз отступил к вентшахтам. На «Театральной» живут ${popTotal(s)} человек, погибли ${s.deaths}.\n\nСтанция выстояла.`,c:[{t:'Играть дальше',f:s=>{s.endless=true;}},{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
+  gameover:{t:'Конец',x:(s,p)=>({dead:'На станции не осталось живых.',disc:'Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.',hope:'Надежда угасла. Люди разошлись по тоннелям.'})[p.why]+`\n\nВы продержались ${s.day} дн.`,c:[{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
+  // разведка
+  st_loot:{t:'Разведка',x:(s,p)=>p.txt,c:[{t:'Забрать',f:()=>{}}]},
+  st_survivors:{t:'Выжившие',x:(s,p)=>p.txt,c:[
+    {t:'Взять всех',h:(s,p)=>`${p.n} человек пойдут на базу`,f:(s,p)=>{sendGroup(s,p.at,p.n,.25);}},
+    {t:'Только здоровых',h:(s,p)=>`${Math.ceil(p.n*.6)} человек`,f:(s,p)=>{sendGroup(s,p.at,Math.ceil(p.n*.6),0);s.hope-=1;}},
+    {t:'Оставить',h:'−надежда',f:s=>{s.hope-=3;}}]},
+  st_danger:{t:'Опасный перегон',x:(s,p)=>p.txt,c:[
+    {t:'Пройти напрямик',h:'Риск ранений',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.45*D_(s).danger){tm.rest=18;toast(s,'Разведчики ранены, отдыхают 18 ч','bad');}else toast(s,'Прошли без потерь','good');}},
+    {t:'Переждать',h:'+8 ч',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm)tm.rest=8;}}]},
+  st_raiders:{t:'Мародёры',x:()=>'В перегоне — застава мародёров. Требуют плату за проход.',c:[
+    {t:'Отдать половину груза',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm)for(const k in tm.cargo)tm.cargo[k]=Math.floor(tm.cargo[k]/2);}},
+    {t:'Прорываться',h:'Можно потерять весь груз',f:(s,p)=>{const tm=s.teams.find(t=>t.id===p.team);if(tm&&rnd()<.5*D_(s).danger){tm.cargo={};tm.rest=12;toast(s,'Груз потерян, отряд ранен','bad');}else toast(s,'Прорвались','good');}}]},
+  st_commune:{t:'Красная коммуна',x:(s,p)=>p.txt,c:[
+    {t:'Поддержать их порядок',h:'+120 сырой еды, +недовольство',f:(s,p)=>{addCargo(s,p.team,'raw',120);s.disc+=3;}},
+    {t:'Отказаться',h:'Уйти ни с чем',f:()=>{}}]},
+  st_archive:{t:'Архив',x:(s,p)=>p.txt,c:[{t:'Скопировать чертежи',h:'+60 очков исследований к текущей работе',f:s=>{s.flags.bonusRp=(s.flags.bonusRp||0)+60;}}]},
+  st_metro2:{t:'Метро-2',x:(s,p)=>p.txt+'\n\nНа карте открыта секретная линия Д-6.',c:[{t:'Вниз',f:s=>revealMetro2(s)}]},
+  st_end:{t:'Объект «Внуково»',x:(s,p)=>p.txt+'\n\nВозвращаясь, разведчики молчат. Новость разносится по станции: где-то кончается тьма.',c:[{t:'Это даёт надежду',f:s=>{s.hope+=20;}}]},
+};
+function revealMetro2(s){
+  if(s.flags.metro2)return;s.flags.metro2=1;
+  for(const id in G.nodes)if(G.nodes[id].secret&&!s.st[id])s.st[id]={k:1};
+  log(s,'Найден вход в Метро-2.','good');
+}
+
+/* ---------------------------- РАЗВЕДКА ---------------------------- */
+function teamSlots(s){const d=s.bld.filter(b=>b.type==='depot'&&!b.build).length;return d*(has(s,'t_teams')?2:1);}
+function syncTeams(s){while(s.teams.length<teamSlots(s)){const n=s.teams.length+1;s.teams.push({id:n,at:HUB,path:[],prog:0,cargo:{},rest:0,explore:0});}}
+function passable(s,id){return s.st[id]&&(s.st[id].k>=1||G.nodes[id].secret&&s.flags.metro2);}
+function findPath(s,from,to){
+  // Дейкстра по известным станциям (неизвестные можно проходить, если цель видна)
+  const dist={[from]:0},prev={},q=[from],done=new Set();
+  while(q.length){
+    q.sort((a,b)=>dist[a]-dist[b]);const u=q.shift();if(done.has(u))continue;done.add(u);if(u===to)break;
+    for(const e of G.adj[u]){
+      if(e.kind==='secret'&&!s.flags.metro2)continue;
+      if(!s.st[e.to])continue;
+      if(s.st[e.to].k===0&&e.to!==to&&s.st[u].k<2)continue;
+      const nd=dist[u]+e.len;if(dist[e.to]==null||nd<dist[e.to]){dist[e.to]=nd;prev[e.to]=u;q.push(e.to);}
+    }
+  }
+  if(dist[to]==null)return null;
+  const p=[to];let c=to;while(c!==from){c=prev[c];p.unshift(c);}return p;
+}
+function edgeLen(a,b){const e=G.adj[a].find(e=>e.to===b);return e?e.len:Math.hypot(G.nodes[a].x-G.nodes[b].x,G.nodes[a].y-G.nodes[b].y);}
+function teamSpeed(s){return has(s,'t_draisine')?60:38;}
+function moveTeams(s){
+  for(const tm of s.teams){
+    if(tm.rest>0){tm.rest--;continue;}
+    if(tm.explore>0){tm.explore--;if(!tm.explore)arrive(s,tm,tm.at,true);continue;}
+    if(tm.path.length<2)continue;
+    let budget=teamSpeed(s);
+    while(budget>0&&tm.path.length>=2){
+      const L=edgeLen(tm.path[0],tm.path[1]);const need=(1-tm.prog)*L;
+      if(budget>=need){budget-=need;tm.prog=0;tm.path.shift();tm.at=tm.path[0];
+        if(arrive(s,tm,tm.at,false))break;}
+      else{tm.prog+=budget/L;budget=0;}
+    }
+    if(tm.path.length<2)tm.path=[];
+  }
+  for(const g of s.groups){
+    let budget=26;
+    while(budget>0&&g.path.length>=2){const L=edgeLen(g.path[0],g.path[1]);const need=(1-g.prog)*L;
+      if(budget>=need){budget-=need;g.prog=0;g.path.shift();}else{g.prog+=budget/L;budget=0;}}
+    if(g.path.length<2){addPeople(s,g.n,g.sick);s.hope+=2;toast(s,`На станцию пришли ${g.n} выживших`,'good');log(s,`Пришли ${g.n} выживших.`,'good');g.done=1;}
+  }
+  s.groups=s.groups.filter(g=>!g.done);
+}
+function addCargo(s,team,k,n){const tm=s.teams.find(t=>t.id===team);if(tm)tm.cargo[k]=(tm.cargo[k]||0)+n;}
+function arrive(s,tm,id,explored){
+  if(id===HUB){
+    let got=[];for(const k in tm.cargo){if(tm.cargo[k]>0){s.res[k]+=tm.cargo[k];got.push(`${fmt(tm.cargo[k])} ${RES[k].n.toLowerCase()}`);}}
+    tm.cargo={};if(got.length)toast(s,`Отряд ${tm.id} привёз: ${got.join(', ')}`,'good');
+    return false;
+  }
+  const st=s.st[id];
+  if(st.k<2&&!explored){tm.explore=2;return true;} // остановка на разведку
+  if(st.k<2){
+    st.k=2;
+    for(const e of G.adj[id]){if(e.kind==='secret'&&!s.flags.metro2)continue;if(s.st[e.to])s.st[e.to].k=Math.max(1,s.st[e.to].k);}
+    explore(s,tm,id);
+    return true;
+  }
+  return false;
+}
+function distFromHub(id){const a=G.nodes[id],h=G.nodes[HUB];return Math.hypot(a.x-h.x,a.y-h.y);}
+function explore(s,tm,id){
+  const st=s.st[id];const c=stationContent(s,id);st.t=c.t;
+  const m=(1+distFromHub(id)/350)*(D_(s).start>1?1.1:1);
+  const amt=(a,b)=>Math.round((a+(b-a)*(c.r??rnd()))*m);
+  let txt='';const loot={};
+  switch(c.t){
+    case 'coal':loot.coal=amt(60,120);txt='Брошенный угольный склад у ремонтного тупика.';break;
+    case 'wood':loot.wood=amt(50,100);txt='Штабеля шпал и ящиков.';break;
+    case 'steel':loot.steel=amt(30,60);if(c.amt)loot.steel=amt(c.amt[0],c.amt[1]);txt=c.txt||'Ржавые вагоны и рельсы.';break;
+    case 'raw':loot.raw=c.amt?amt(c.amt[0],c.amt[1]):amt(40,80);txt=c.txt||'Консервы и мешки с сухим пайком.';break;
+    case 'water':loot.water=amt(60,120);txt='Резервуары технической воды.';break;
+    case 'meds':loot.meds=c.amt?amt(c.amt[0],c.amt[1]):amt(6,14);txt=c.txt||'Медпункт станции. Аптечки на месте.';break;
+    case 'cores':loot.cores=1;loot.steel=amt(15,30);txt=c.txt||'В подсобке — целый энергоблок.';break;
+    case 'mixed':loot.coal=amt(20,40);loot.wood=amt(20,40);loot.raw=amt(10,30);txt='Обжитая и брошенная станция. Есть чем поживиться.';break;
+    case 'seeds':s.flags.seeds=1;loot.raw=amt(20,40);txt=c.txt+'\n\nГрибные фермы теперь дают больше (как исследование «Субстрат»).';if(!s.tech.includes('t_farm2'))s.tech.push('t_farm2');break;
+    case 'bunker':loot.meds=amt(20,30);loot.raw=amt(40,60);txt=c.txt;break;
+    case 'draisine':txt=c.txt+'\n\nОтряды двигаются быстрее.';if(!s.tech.includes('t_draisine'))s.tech.push('t_draisine');loot.steel=amt(20,30);break;
+    case 'vault':loot.raw=amt(150,220);loot.meds=amt(20,35);loot.cores=1;txt=c.txt;break;
+    case 'trade':txt=c.txt+'\n\nПока отряд на станции, можно обменять груз (карта → станция).';break;
+    case 'survivors':{const n=c.people?ri(c.people[0],c.people[1]):ri(4,12);s.queue.push({id:'st_survivors',p:{txt:(c.txt||'В вестибюле живут люди. Они видели ваш свет.')+`\n\nИх ${n}.`,n,at:id,team:tm.id}});return;}
+    case 'danger':{
+      if(rnd()<.5)s.queue.push({id:'st_raiders',p:{team:tm.id}});
+      else s.queue.push({id:'st_danger',p:{team:tm.id,txt:pick(['Перегон затоплен по пояс. Вода ледяная.','Счётчик трещит: радиоактивная пыль из вентшахты.','Свод тоннеля просел, крепь трещит.'])}});
+      return;}
+    case 'commune':s.queue.push({id:'st_commune',p:{team:tm.id,txt:c.txt}});return;
+    case 'archive':s.queue.push({id:'st_archive',p:{txt:c.txt}});return;
+    case 'metro2':s.queue.push({id:'st_metro2',p:{txt:c.txt}});return;
+    case 'end':s.queue.push({id:'st_end',p:{txt:c.txt}});return;
+    default:txt='Пусто. Только иней на стенах.';
+  }
+  for(const k in loot)tm.cargo[k]=(tm.cargo[k]||0)+loot[k];
+  st.loot=loot;
+  const lt=Object.keys(loot).map(k=>`${RES[k].n}: ${loot[k]}`).join(', ');
+  toast(s,`${id}: ${lt||'пусто'}`,lt?'good':'');
+  log(s,`Разведка — ${id}. ${lt||'Пусто.'}`,'');
+  if(lt&&(c.t==='vault'||c.t==='bunker'||c.t==='seeds'||c.t==='draisine'))s.queue.push({id:'st_loot',p:{txt:`${id}\n\n${txt}\n\nНайдено: ${lt}.`}});
+}
+function sendGroup(s,at,n,sick){const p=findPath(s,at,HUB);if(!p){addPeople(s,n,sick);return;}s.groups.push({n,sick,path:p,prog:0});}
+const TRADE=[
+  {give:'coal',gn:40,get:'meds',n:5},{give:'wood',gn:40,get:'steel',n:20},{give:'steel',gn:20,get:'raw',n:50},
+  {give:'raw',gn:40,get:'coal',n:50},{give:'water',gn:50,get:'meds',n:4},{give:'meds',gn:5,get:'cores',n:1},
+];
+
+/* ---------------------------- ДЕЙСТВИЯ (все изменения состояния) ---------------------------- */
+function canAfford(s,cost){for(const k in cost)if((s.res[k]||0)<cost[k])return false;return true;}
+function pay(s,cost){for(const k in cost)s.res[k]-=cost[k];}
+function buildAvail(s,type){const d=B[type];if(d.tech&&!has(s,d.tech))return false;if(d.law&&!has(s,d.law))return false;return true;}
+function canPlace(s,type,x,y){
+  if(x<0||y<0||x>=GW||y>=GH)return false;const t=tile(s,x,y);
+  return t.k==='floor'&&!t.b&&!t.pile;
+}
+function canSign(s,id){
+  const L=LAWBY[id];if(has(s,id))return false;if(s.lawCd>0)return false;
+  if(L.ex&&has(s,L.ex))return false;if(L.req&&!has(s,L.req))return false;
+  if(L.cat!=='adapt'){if(s.day<5&&!s.flags.purposeOpen)return false;if(s.path&&s.path!==L.cat)return false;}
+  return true;
+}
+function signLaw(s,id,force){
+  if(!force&&!canSign(s,id))return;if(has(s,id))return;
+  const L=LAWBY[id];s.laws.push(id);s.lawCd=D_(s).law;
+  if(L.cat!=='adapt')s.path=L.cat;
+  if(L.fx.hope)s.hope+=L.fx.hope;if(L.fx.disc)s.disc+=L.fx.disc;
+  toast(s,`Закон подписан: ${L.n}`,'');log(s,`Подписан закон «${L.n}».`,'');
+  rebalance(s);
+}
+function act(s,a){
+  switch(a.t){
+    case 'build':{if(!buildAvail(s,a.type)||!canPlace(s,a.type,a.x,a.y)||!canAfford(s,B[a.type].cost))return;
+      pay(s,B[a.type].cost);place(s,a.type,a.x,a.y,false);computeHeat(s);break;}
+    case 'demolish':{const b=bById(s,a.id);if(!b)return;for(const k in B[b.type].cost)s.res[k]+=Math.floor(B[b.type].cost[k]*.5);
+      tile(s,b.x,b.y).b=0;s.bld=s.bld.filter(x=>x!==b);if(b.type==='depot'){const sl=teamSlots(s);s.teams=s.teams.slice(0,Math.max(sl,s.teams.filter(t=>t.path.length).length));}computeHeat(s);break;}
+    case 'work':{let j;if(a.id!=null){const b=bById(s,a.id);if(!b)return;j=jobsOf(s).find(x=>x.o===b);}
+      else{const t=tile(s,a.x,a.y);if(!t.pile)return;j=jobsOf(s).find(x=>x.o===t.pile);}
+      if(!j)return;const n=a.n||1;for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
+    case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
+    case 'gen':{if(a.k==='on'){if(s.gen.broken)return;if(!s.gen.on&&s.res.coal<1)return;s.gen.on=!s.gen.on;if(!s.gen.on)s.gen.over=false;}
+      if(a.k==='lvl')s.gen.lvl=clamp(s.gen.lvl+a.d,0,genMax(s));
+      if(a.k==='over'){if(!s.gen.on)return;s.gen.over=!s.gen.over;}
+      computeHeat(s);break;}
+    case 'research':{if(s.research||has(s,a.id))return;const T=TECHBY[a.id];if(T.req&&!T.req.every(r=>has(s,r)))return;if(!canAfford(s,T.cost))return;
+      pay(s,T.cost);s.research=a.id;s.rp=s.flags.bonusRp||0;s.flags.bonusRp=0;break;}
+    case 'law':signLaw(s,a.id);break;
+    case 'send':{const tm=s.teams.find(t=>t.id===a.team);if(!tm||tm.rest||tm.explore)return;
+      const from=tm.path.length>=2&&tm.prog>.5?tm.path[1]:tm.at;const p=findPath(s,from,a.to);if(!p)return;tm.path=p;tm.prog=0;tm.at=from;break;}
+    case 'outpost':{if(!has(s,'t_outpost'))return;const st=s.st[a.at];if(!st||st.k<2||st.o)return;
+      if(!['coal','wood','steel','raw','water','meds','mixed'].includes(st.t))return;
+      if(!s.teams.some(t=>t.at===a.at&&t.path.length<2))return;const cost={wood:20,steel:10};if(!canAfford(s,cost))return;pay(s,cost);
+      st.o=1;s.outposts.push({at:a.at,t:st.t});toast(s,`Аванпост: ${a.at}`,'good');break;}
+    case 'trade':{const tm=s.teams.find(t=>t.id===a.team);const T=TRADE[a.i];if(!tm||!T)return;const st=s.st[tm.at];if(!st||st.t!=='trade')return;
+      const have=(tm.cargo[T.give]||0)+(s.res[T.give]||0);if(have<T.gn)return;
+      let need=T.gn;const fromCargo=Math.min(need,tm.cargo[T.give]||0);tm.cargo[T.give]=(tm.cargo[T.give]||0)-fromCargo;need-=fromCargo;s.res[T.give]-=need;
+      tm.cargo[T.get]=(tm.cargo[T.get]||0)+T.n;break;}
+    case 'choose':{const e=s.queue[0];if(!e)return;const E=EV[e.id];const c=E.c[a.i];if(!c)return;if(c.ok&&!c.ok(s,e.p))return;
+      s.queue.shift();c.f(s,e.p||{});if(e.id==='purpose')s.flags.purposeOpen=1;checkEnd(s);break;}
+    case 'speed':{if(a.v===0&&s.survivor)return;s.paused=a.v===0;if(a.v)s.speed=a.v;break;}
+  }
+  s.hope=clamp(s.hope,0,100);s.disc=clamp(s.disc,0,100);
+}
+
+/* ---------------------------- КЛИЕНТ / РЕЖИМЫ ---------------------------- */
+let S=null;             // текущее состояние (у гостя — копия хоста)
+const ui={mode:'menu',sel:null,buildType:null,cat:null,open:null,heatView:false,team:null,mapSel:null,toMenu:false,diff:'normal',survivor:false,dirty:true};
+const coop={seen:new Set(),role:'solo',code:null,db:null,unsub:[],lastPush:0,partners:0,status:''};
+function dispatch(a){
+  if(!S)return;
+  if(coop.role==='guest'){coop.send(a);return;}
+  act(S,a);ui.dirty=true;
+}
+const toastQ=[];
+function toast(s,txt,k){if(s!==S&&coop.role!=='host')return;toastQ.push({txt,k,t:performance.now()});}
+
+/* ---------------------------- ОТРИСОВКА СТАНЦИИ ---------------------------- */
+const cv=$('game'),cx=cv.getContext('2d');
+let VW=0,VH=0,DPR=1;
+const cam={x:0,y:0,z:1};
+const TW=64,TH=32;
+function resize(){DPR=Math.min(2,window.devicePixelRatio||1);VW=innerWidth;VH=innerHeight;
+  for(const c of [cv,$('mapc')]){c.width=VW*DPR;c.height=VH*DPR;}
+  if(!cam.init){cam.init=1;cam.z=clamp(Math.min(VW/(GW*TW*1.05),VH/(GH*TH*1.9)),.55,1.6);}}
+addEventListener('resize',resize);
+const iso=(x,y)=>({x:(x-y)*TW/2,y:(x+y)*TH/2});
+const CXo=(GW-GH)*TW/4,CYo=(GW+GH)*TH/4;
+function toScreen(px,py){return{x:VW/2+(px-cam.x-CXo)*cam.z,y:VH*.5+(py-cam.y-CYo)*cam.z};}
+function screenToTile(sx,sy){
+  const px=(sx-VW/2)/cam.z+cam.x+CXo,py=(sy-VH*.5)/cam.z+cam.y+CYo;
+  const i=(px/(TW/2)+py/(TH/2))/2,j=(py/(TH/2)-px/(TW/2))/2;
+  return{x:Math.floor(i),y:Math.floor(j)};
+}
+const parts=[];const walkers=[];
+function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;
+  if(f<0){r*=1+f;g*=1+f;b*=1+f;}else{r+=(255-r)*f;g+=(255-g)*f;b+=(255-b)*f;}
+  return`rgb(${r|0},${g|0},${b|0})`;}
+function diamond(c,x,y,w,h){c.beginPath();c.moveTo(x,y-h/2);c.lineTo(x+w/2,y);c.lineTo(x,y+h/2);c.lineTo(x-w/2,y);c.closePath();}
+function drawBox(c,x,y,w,h,ht,col,lit,frost){
+  // x,y — центр основания ромба
+  const top=y-ht;
+  c.beginPath();c.moveTo(x-w/2,y);c.lineTo(x,y+h/2);c.lineTo(x,top+h/2);c.lineTo(x-w/2,top);c.closePath();c.fillStyle=shade(col,-.25);c.fill();
+  c.beginPath();c.moveTo(x+w/2,y);c.lineTo(x,y+h/2);c.lineTo(x,top+h/2);c.lineTo(x+w/2,top);c.closePath();c.fillStyle=shade(col,-.45);c.fill();
+  diamond(c,x,top,w,h);c.fillStyle=shade(col,frost?.35:.08);c.fill();
+  c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=1;c.stroke();
+  if(lit){c.fillStyle=lit;const n=Math.max(1,Math.round(ht/10));
+    for(let i=0;i<n;i++){const yy=y-ht*(i+.5)/(n+.3);c.fillRect(x-w*.32,yy+h*.12,4,5);c.fillRect(x+w*.18,yy+h*.12,4,5);}}
+}
+function render(t){
+  const s=S;cx.setTransform(DPR,0,0,DPR,0,0);
+  const amb=s?ambient(s):-10;const cold=clamp((-amb-5)/45,0,1);
+  // фон: свод станции
+  const g=cx.createLinearGradient(0,0,0,VH);g.addColorStop(0,'#07090c');g.addColorStop(.5,'#10151b');g.addColorStop(1,'#0a0d11');
+  cx.fillStyle=g;cx.fillRect(0,0,VW,VH);
+  if(!s)return;
+  const night=s.hour<6||s.hour>=21?.35:s.hour<8||s.hour>=19?.18:0;
+  // арки свода
+  const o=toScreen(0,0);
+  cx.save();cx.globalAlpha=.55;
+  for(let i=-3;i<=3;i++){const ax=VW/2+i*260*cam.z,ay=o.y-40*cam.z;
+    cx.beginPath();cx.ellipse(ax,ay+120*cam.z,150*cam.z,220*cam.z,0,Math.PI,2*Math.PI);cx.strokeStyle='#1d252e';cx.lineWidth=16*cam.z;cx.stroke();}
+  cx.restore();
+  cx.save();cx.translate(VW/2,VH*.5);cx.scale(cam.z,cam.z);cx.translate(-cam.x-CXo,-cam.y-CYo);
+  const R=genRadius(s);
+  // плитки
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const p=iso(x,y);const tt=tile(s,x,y);const h=heatAt(s,x,y);const lv=lvlOf(h);
+    diamond(cx,p.x,p.y,TW,TH);
+    let col=tt.k==='track'?'#22262b':((x+y)%2?'#3a434c':'#353d46');
+    if(ui.heatView)col=['#5d8fd0','#7ab0e0','#9db4c8','#d0a85a','#e88a3a'][lv];
+    cx.fillStyle=col;cx.fill();
+    if(!ui.heatView&&cold>0&&tt.k!=='track'){cx.fillStyle=`rgba(200,225,245,${cold*.22*(lv<=1?1:lv===2?.5:.1)})`;cx.fill();}
+    cx.strokeStyle='rgba(0,0,0,.25)';cx.lineWidth=1;cx.stroke();
+    if(tt.k==='track'){cx.strokeStyle='#4a4f55';cx.lineWidth=1.5;
+      for(const off of [-.18,.18]){const a=iso(x-.5,y+off),b=iso(x+.5,y+off);cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();}}
+  }
+  // кольцо тепла
+  if(s.gen.on){cx.save();cx.strokeStyle='rgba(242,163,58,.28)';cx.setLineDash([6,6]);cx.lineWidth=1.5;
+    const c0=iso(GX,GY);cx.beginPath();cx.ellipse(c0.x,c0.y,(R+.5)*TW/Math.SQRT2*1,(R+.5)*TH/Math.SQRT2*1,0,0,7);cx.stroke();cx.restore();}
+  // объекты по глубине
+  const items=[];
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const tt=tile(s,x,y);if(tt.b||tt.pile)items.push({x,y,tt});}
+  items.sort((a,b)=>(a.x+a.y)-(b.x+b.y));
+  for(const it of items){
+    const p=iso(it.x,it.y);const tt=it.tt;
+    if(tt.b===-1){drawGenerator(s,p,t);continue;}
+    if(tt.pile){drawPile(tt.pile,p,it.x,it.y);continue;}
+    const b=bById(s,tt.b);if(!b)continue;const d=B[b.type];
+    const ht=d.h*TH*1.3;
+    const staffed=!d.job||workforce(b.a)>0;
+    const lit=!b.build&&b.on&&staffed?'rgba(255,190,90,.9)':null;
+    cx.globalAlpha=b.build?.55:1;
+    drawBox(cx,p.x,p.y,TW*.82,TH*.82,ht,d.col,lit,cold>.5&&lvlOf(heatAt(s,b.x,b.y))<=1);
+    cx.globalAlpha=1;
+    if(b.build){cx.strokeStyle='#c9a26a';cx.lineWidth=1;for(let i=0;i<3;i++){cx.beginPath();cx.moveTo(p.x-TW*.4,p.y-i*8);cx.lineTo(p.x+TW*.4,p.y-ht+i*6);cx.stroke();}}
+    if(ui.sel&&ui.sel.k==='b'&&ui.sel.id===b.id){diamond(cx,p.x,p.y,TW,TH);cx.strokeStyle='#f2a33a';cx.lineWidth=2;cx.stroke();}
+    if(d.job&&!b.build&&workforce(b.a)===0){cx.fillStyle='#e06450';cx.beginPath();cx.arc(p.x,p.y-ht-10,4,0,7);cx.fill();}
+  }
+  // люди
+  drawWalkers(s);
+  // призрак строительства
+  if(ui.buildType&&ui.hover){const p=iso(ui.hover.x,ui.hover.y);const ok=canPlace(s,ui.buildType,ui.hover.x,ui.hover.y);
+    diamond(cx,p.x,p.y,TW,TH);cx.fillStyle=ok?'rgba(127,196,138,.35)':'rgba(224,100,80,.35)';cx.fill();
+    cx.globalAlpha=.6;drawBox(cx,p.x,p.y,TW*.82,TH*.82,B[ui.buildType].h*TH*1.3,B[ui.buildType].col,null);cx.globalAlpha=1;}
+  else if(ui.hover&&ui.hover.x>=0&&ui.hover.y>=0&&ui.hover.x<GW&&ui.hover.y<GH){const p=iso(ui.hover.x,ui.hover.y);diamond(cx,p.x,p.y,TW,TH);cx.strokeStyle='rgba(207,227,242,.4)';cx.lineWidth=1;cx.stroke();}
+  if(ui.sel&&ui.sel.k==='p'){const p=iso(ui.sel.x,ui.sel.y);diamond(cx,p.x,p.y,TW,TH);cx.strokeStyle='#f2a33a';cx.lineWidth=2;cx.stroke();}
+  // частицы
+  for(const q of parts){cx.fillStyle=`rgba(${q.c},${q.a})`;cx.beginPath();cx.arc(q.x,q.y,q.r,0,7);cx.fill();}
+  cx.restore();
+  // свет и тьма
+  cx.save();cx.globalCompositeOperation='lighter';
+  const gp=toScreen(iso(GX,GY).x,iso(GX,GY).y);
+  if(s.gen.on){const rr=(R+2)*TW*.75*cam.z;const lg=cx.createRadialGradient(gp.x,gp.y-30*cam.z,10,gp.x,gp.y,rr);
+    lg.addColorStop(0,`rgba(255,150,60,${.22+s.gen.lvl*.05+(s.gen.over?.08:0)})`);lg.addColorStop(1,'rgba(255,120,40,0)');cx.fillStyle=lg;cx.fillRect(0,0,VW,VH);}
+  cx.restore();
+  const vg=cx.createRadialGradient(VW/2,VH*.5,Math.min(VW,VH)*.25,VW/2,VH*.5,Math.max(VW,VH)*.75);
+  vg.addColorStop(0,`rgba(0,0,0,${night*.35})`);vg.addColorStop(1,`rgba(0,0,0,${.38+night*.3})`);cx.fillStyle=vg;cx.fillRect(0,0,VW,VH);
+  if(cold>.2){const fg=cx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.35,VW/2,VH/2,Math.max(VW,VH)*.72);
+    fg.addColorStop(0,'rgba(190,220,245,0)');fg.addColorStop(1,`rgba(190,220,245,${(cold-.2)*.35})`);cx.fillStyle=fg;cx.fillRect(0,0,VW,VH);}
+}
+function drawGenerator(s,p,t){
+  const ht=B.gen.h*TH*1.4;
+  drawBox(cx,p.x,p.y,TW*.95,TH*.95,ht*.45,'#4a3c30',null);
+  const top=p.y-ht*.45;
+  cx.fillStyle='#3a2f27';cx.fillRect(p.x-12,top-ht*.7,24,ht*.7);
+  cx.fillStyle='#2b231d';cx.beginPath();cx.ellipse(p.x,top-ht*.7,12,5,0,0,7);cx.fill();
+  const glow=s.gen.on?(.5+.5*Math.sin(t/300))*.3+.5:0;
+  cx.fillStyle=s.gen.on?`rgba(255,${s.gen.over?90:150},50,${glow})`:'#20262c';
+  cx.fillRect(p.x-TW*.22,top+4,TW*.44*.4,10);cx.fillRect(p.x+2,top+8,TW*.44*.4,10);
+  if(s.gen.on&&Math.random()<.5)parts.push({x:p.x+(Math.random()-.5)*8,y:top-ht*.7,vx:(Math.random()-.5)*.3,vy:-.6-Math.random()*.5,r:3+Math.random()*4,a:.35,c:'120,120,125',life:1});
+  if(ui.sel&&ui.sel.k==='gen'){diamond(cx,p.x,p.y,TW,TH);cx.strokeStyle='#f2a33a';cx.lineWidth=2;cx.stroke();}
+}
+function drawPile(pl,p,x,y){
+  const n=Math.min(6,Math.ceil(pl.amt/35));const col={coal:'#2c2b2a',wood:'#7a5634',steel:'#5f6d78'}[pl.r];
+  const r=seeded(x*31+y*17);
+  for(let i=0;i<n;i++){const ox=(r()-.5)*TW*.5,oy=(r()-.5)*TH*.4;
+    if(pl.r==='coal'){cx.fillStyle=shade(col,r()*.2);cx.beginPath();cx.moveTo(p.x+ox-9,p.y+oy);cx.lineTo(p.x+ox,p.y+oy-10);cx.lineTo(p.x+ox+9,p.y+oy);cx.fill();}
+    else drawBox(cx,p.x+ox,p.y+oy,16,8,pl.r==='steel'?9:7,col,null);}
+  const w=pl.a.w+pl.a.e+pl.a.c;if(w){cx.fillStyle='#f2a33a';cx.font='10px PT Mono, monospace';cx.fillText(w,p.x-3,p.y-16);}
+}
+function drawWalkers(s){
+  const want=Math.min(46,Math.ceil(popTotal(s)/3));
+  while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
+  walkers.length=want;
+  const working=workHour(s)&&!s.paused;
+  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW)}:null).filter(Boolean))
+    :s.bld.filter(b=>B[b.type].house&&!b.build);
+  for(const w of walkers){
+    if(Math.hypot(w.tx-w.x,w.ty-w.y)<.15||w.w++>400){const tg=targets.length?targets[Math.floor(Math.random()*targets.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.8;w.ty=tg.y+(Math.random()-.5)*.8+.5;w.w=0;}
+    const sp=s.paused?0:.012*Math.min(3,s.speed);const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    const p=iso(w.x,w.y);cx.fillStyle='#11161b';cx.fillRect(p.x-1.5,p.y-7,3,7);cx.fillStyle='#b9c2c9';cx.fillRect(p.x-1.5,p.y-9,3,3);
+  }
+}
+function stepParticles(){for(const q of parts){q.x+=q.vx;q.y+=q.vy;q.r+=.05;q.a*=.985;}while(parts.length&&parts[0].a<.03)parts.shift();if(parts.length>220)parts.splice(0,parts.length-220);}
+
+/* ---------------------------- КАРТА МЕТРО ---------------------------- */
+const mc=$('mapc'),mx=mc.getContext('2d');const mcam={x:600,y:620,z:.8};
+function m2s(x,y){return{x:VW/2+(x-mcam.x)*mcam.z,y:VH/2+(y-mcam.y)*mcam.z};}
+function s2m(x,y){return{x:(x-VW/2)/mcam.z+mcam.x,y:(y-VH/2)/mcam.z+mcam.y};}
+function renderMap(t){
+  const s=S;mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle='#06090c';mx.fillRect(0,0,VW,VH);
+  // сетка
+  mx.strokeStyle='rgba(120,150,170,.06)';mx.lineWidth=1;
+  for(let gx=0;gx<=1200;gx+=100){const a=m2s(gx,0),b=m2s(gx,1200);mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);mx.stroke();}
+  for(let gy=0;gy<=1200;gy+=100){const a=m2s(0,gy),b=m2s(1200,gy);mx.beginPath();mx.moveTo(a.x,a.y);mx.lineTo(b.x,b.y);mx.stroke();}
+  const vis=id=>s.st[id]!=null;
+  for(const L of LINES){
+    if(L.secret&&!s.flags.metro2)continue;
+    const ids=G.lines[L.id];mx.strokeStyle=L.c;mx.lineWidth=Math.max(2,4*mcam.z);mx.lineJoin='round';
+    mx.globalAlpha=.85;mx.beginPath();ids.forEach((id,i)=>{const p=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y);});
+    if(L.ring){const p=m2s(G.nodes[ids[0]].x,G.nodes[ids[0]].y);mx.lineTo(p.x,p.y);}
+    if(L.secret)mx.setLineDash([8,6]);mx.stroke();mx.setLineDash([]);mx.globalAlpha=1;
+  }
+  // пересадки
+  mx.strokeStyle='rgba(220,230,240,.35)';mx.lineWidth=Math.max(1,2*mcam.z);
+  for(const a in G.adj)for(const e of G.adj[a])if(e.kind!=='t'&&a<e.to&&vis(a)&&vis(e.to)){const p=m2s(G.nodes[a].x,G.nodes[a].y),q=m2s(G.nodes[e.to].x,G.nodes[e.to].y);mx.setLineDash(e.kind==='secret'?[3,4]:[]);mx.beginPath();mx.moveTo(p.x,p.y);mx.lineTo(q.x,q.y);mx.stroke();}
+  mx.setLineDash([]);
+  // туман: темнота вдали от изученного
+  // станции
+  const r=Math.max(3,6*mcam.z);
+  for(const id in G.nodes){
+    if(!vis(id))continue;const n=G.nodes[id];const st=s.st[id];const p=m2s(n.x,n.y);
+    if(p.x<-50||p.y<-50||p.x>VW+50||p.y>VH+50)continue;
+    mx.beginPath();mx.arc(p.x,p.y,r,0,7);
+    mx.fillStyle=st.k===2?'#cfe3f2':st.k===1?'#7d8f9e':'#141a20';mx.fill();
+    mx.lineWidth=1.5;mx.strokeStyle=st.k===0?'#56677a':'#0b0e12';mx.stroke();
+    if(st.o){mx.strokeStyle='#7fc48a';mx.lineWidth=2;mx.strokeRect(p.x-r-3,p.y-r-3,2*r+6,2*r+6);}
+    if(st.t==='trade'&&st.k===2){mx.fillStyle='#c48a4a';mx.beginPath();mx.arc(p.x,p.y,r*.45,0,7);mx.fill();}
+    if(id===HUB){mx.strokeStyle='#f2a33a';mx.lineWidth=3;mx.beginPath();mx.arc(p.x,p.y,r+5,0,7);mx.stroke();}
+    if(ui.mapSel===id){mx.strokeStyle='#f2a33a';mx.lineWidth=2;mx.beginPath();mx.arc(p.x,p.y,r+9,0,7);mx.stroke();}
+    if(st.k>=1&&(mcam.z>1.05||id===HUB||st.k===2&&mcam.z>.7)){mx.fillStyle=st.k===2?'#cfe3f2':'#8ea3b5';mx.font=`${Math.round(clamp(11*mcam.z,10,15))}px PT Sans, sans-serif`;mx.fillText(id,p.x+r+4,p.y+4);}
+  }
+  // путь выбранного отряда
+  const tm=s.teams.find(x=>x.id===ui.team);
+  if(tm&&ui.mapSel&&ui.mapSel!==tm.at){const p=findPath(s,tm.path.length>=2&&tm.prog>.5?tm.path[1]:tm.at,ui.mapSel);if(p){mx.strokeStyle='rgba(242,163,58,.8)';mx.lineWidth=3;mx.setLineDash([6,5]);mx.beginPath();p.forEach((id,i)=>{const q=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(q.x,q.y):mx.moveTo(q.x,q.y);});mx.stroke();mx.setLineDash([]);}}
+  // отряды и группы
+  for(const g of s.groups){const q=posOn(g);mx.fillStyle='#e8e8e8';for(let i=0;i<3;i++){mx.beginPath();mx.arc(q.x+i*4-4,q.y+8,2,0,7);mx.fill();}}
+  for(const x of s.teams){const q=posOn(x);mx.save();mx.translate(q.x,q.y);mx.rotate(Math.PI/4);mx.fillStyle=x.rest?'#e06450':'#f2a33a';mx.fillRect(-6,-6,12,12);mx.restore();
+    mx.fillStyle='#0b0e12';mx.font='bold 10px PT Mono, monospace';mx.fillText(x.id,q.x-3,q.y+4);}
+}
+function posOn(o){
+  const a=G.nodes[o.path&&o.path.length>=2?o.path[0]:(o.at||HUB)];
+  if(o.path&&o.path.length>=2){const b=G.nodes[o.path[1]];return m2s(a.x+(b.x-a.x)*o.prog,a.y+(b.y-a.y)*o.prog);}
+  return m2s(a.x,a.y);
+}
+
+/* ---------------------------- ИНТЕРФЕЙС ---------------------------- */
+let prevRes=null,resRate={};
+function renderTop(){
+  const s=S;
+  setHTML($('res'),RES_ORDER.map(k=>{const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
+  const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;if(d>LAST_DAY&&!s.endless)return'';return`<span>д${d}: ${WEATHER[Math.min(d,LAST_DAY)-1]+D_(s).temp}°</span>`;}).join('');
+  setHTML($('temp'),`<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div><div class="fc">${fc}</div></div>`);
+  const hh=String(s.hour).padStart(2,'0');
+  const sp=s.survivor?[1,2]:[0,1,2,3];
+  setHTML($('clock'),`<span class="day">День ${s.day}${s.endless?'':' / '+LAST_DAY}</span><span class="num">${hh}:00</span>
+   <div class="speed">${sp.map(v=>`<button data-speed="${v}" class="${(v===0&&s.paused)||(!s.paused&&s.speed===v)?'on':''}" aria-label="${v?'Скорость '+v:'Пауза'}">${v?'×'+v:'II'}</button>`).join('')}</div>
+   ${coop.role!=='solo'?`<span class="coopbadge">${coop.role==='host'?'ХОСТ':'ГОСТЬ'} ${coop.code} · ${coop.status}</span>`:''}
+   <button class="iconbtn" data-act="full" title="Во весь экран (F)">⤢</button><button class="iconbtn" data-act="menu">Меню</button>`);
+  const hope=s.hope,disc=s.disc;
+  setHTML($('meters'),`<div class="meter hope"><span class="lbl">Надежда</span><div class="bar"><div class="fill" style="width:${hope}%"></div></div><span class="num">${Math.round(hope)}</span></div>
+   <div class="meter disc"><span class="lbl">Недовольство</span><div class="bar"><div class="fill" style="width:${disc}%"></div></div><span class="num">${Math.round(disc)}</span></div>`);
+  const {homeless}=homesHeat(s);const ill=s.ill.w+s.ill.e+s.ill.c,crit=s.crit.w+s.crit.e+s.crit.c;
+  const {beds,hbeds}=bedCount(s);
+  const pr=s.promise?`<span style="color:var(--amber)">Обещание: ${PROMISES.find(p=>p.k===s.promise.k).t} (${s.promise.left} ч)</span>`:'';
+  setHTML($('popline'),`<span>Жители <b>${popTotal(s)}</b></span><span>Рабочие <b>${free(s,'w')}/${s.pop.w}</b></span><span>Инженеры <b>${free(s,'e')}/${s.pop.e}</b></span><span>Дети <b>${s.pop.c}</b></span><span>Больны <b>${ill}</b>${crit?` · тяжёлые <b style="color:var(--bad)">${crit}</b>`:''} · коек <b>${beds+hbeds}</b></span><span>Жильё <b>${housing(s)}</b>${homeless?` · без крыши <b style="color:var(--bad)">${homeless}</b>`:''}</span>${s.unfed?`<span style="color:var(--bad)">Голодают ${s.unfed}</span>`:''}${s.thirsty?`<span style="color:var(--bad)">Жажда ${s.thirsty}</span>`:''}${pr}`);
+}
+function renderBar(){
+  const s=S;
+  setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
+    `<span class="sep"></span><button class="major" data-open="tech">Мастерская${s.research?' ·':''}</button><button class="major" data-open="laws">Устав${s.lawCd?'':' ·'}</button><button class="major" data-open="map">Карта метро</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button>`);
+  const cards=$('cards');
+  if(!ui.cat){cards.hidden=true;return;}
+  cards.hidden=false;
+  const list=Object.entries(B).filter(([k,d])=>d.cat===ui.cat);
+  setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),af=canAfford(s,d.cost);
+    const lock=!av?(d.tech?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
+    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${Object.entries(d.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')} · ${d.time} ч</span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
+}
+function workCtrl(id,a,max,job,xy){
+  const tot=a.w+a.e+a.c;
+  return`<div class="ctrl"><button class="btn pm" data-work="${id}" data-n="-1" ${xy} aria-label="Убрать работника">−</button><span class="num">${tot} / ${max}</span><button class="btn pm" data-work="${id}" data-n="1" ${xy} aria-label="Добавить работника">+</button><button class="btn" data-work="${id}" data-n="${max}" ${xy}>Все</button><button class="btn" data-work="${id}" data-n="-${max}" ${xy}>0</button>
+   <span class="hint">${a.w?`рабочие ${a.w} `:''}${a.e?`инженеры ${a.e} `:''}${a.c?`дети ${a.c}`:''}</span></div>`;
+}
+function renderInfo(){
+  const s=S,el=$('info');
+  if(!ui.sel){el.hidden=true;return;}
+  el.hidden=false;let h='';
+  if(ui.sel.k==='gen'){
+    const lv=s.gen.lvl;const fuel=[0,3,5,8,12][lv]*(s.gen.over?1.5:1)*D_(s).cons;
+    h=`<h3>Генератор</h3><div class="sub">Сердце станции. Тепло в радиусе ${genRadius(s)} клеток.</div>
+    <div class="row"><span>Состояние</span><span>${s.gen.broken?'сломан':s.gen.on?'работает':'остановлен'}</span></div>
+    <div class="row"><span>Мощность</span><span>${lv} / ${genMax(s)} (+${genHeat(s)}°)</span></div>
+    <div class="row"><span>Уголь в час</span><span>${s.gen.on?fuel.toFixed(1):0}</span></div>
+    <div class="row"><span>Хватит угля</span><span>${s.gen.on&&fuel?Math.floor(s.res.coal/fuel)+' ч':'—'}</span></div>
+    <div class="ctrl"><button class="btn ${s.gen.on?'':'primary'}" data-gen="on">${s.gen.on?'Выключить':'Запустить'}</button>
+    <button class="btn pm" data-gen="lvl" data-d="-1" aria-label="Меньше мощность">−</button><span class="num">${lv}</span><button class="btn pm" data-gen="lvl" data-d="1" aria-label="Больше мощность">+</button></div>
+    <div class="ctrl"><button class="btn ${s.gen.over?'danger':''}" data-gen="over">${s.gen.over?'Снять форсаж':'Форсаж +10°'}</button><span class="hint">Давление ${Math.round(s.gen.stress)}%</span></div>
+    <div class="prog"><i style="width:${s.gen.stress}%;background:${s.gen.stress>70?'var(--bad)':'var(--amber)'}"></i></div>
+    <p class="hint">Форсаж греет сильнее и жжёт в 1,5 раза больше угля. На 100% котёл взорвётся.</p>`;
+  }else if(ui.sel.k==='p'){
+    const t=tile(s,ui.sel.x,ui.sel.y);if(!t.pile){ui.sel=null;el.hidden=true;return;}
+    h=`<h3>Завал: ${RES[t.pile.r].n.toLowerCase()}</h3><div class="sub">Разбирать могут рабочие (и дети по закону). Только днём.</div>
+    <div class="row"><span>Осталось</span><span>${fmt(t.pile.amt)}</span></div>${workCtrl('p',t.pile.a,5,'w',`data-x="${ui.sel.x}" data-y="${ui.sel.y}"`)}`;
+  }else if(ui.sel.k==='b'){
+    const b=bById(s,ui.sel.id);if(!b){ui.sel=null;el.hidden=true;return;}
+    const d=B[b.type];const deg=heatAt(s,b.x,b.y);const lv=lvlOf(deg);
+    h=`<h3>${d.n}</h3><div class="sub">${d.d||''}</div>
+    <div class="row"><span>Состояние</span><span>${b.build?`строится, ${b.build} ч`:b.on?'работает':'отключено'}</span></div>
+    <div class="row"><span>Температура</span><span class="lvl${lv}">${LVL_N[lv]} (${Math.round(deg)}°)</span></div>`;
+    if(d.house)h+=`<div class="row"><span>Мест</span><span>${d.house}</span></div>`;
+    if(d.job&&!b.build){const eff=HEAT_EFF[lv];h+=`<div class="row"><span>Эффективность</span><span>${Math.round(eff*100*(d.needHeat&&lv<d.needHeat?.4:1))}%</span></div>`+workCtrl(b.id,b.a,d.jobs,d.job,'');}
+    if(d.beds)h+=`<div class="row"><span>Коек</span><span>${d.beds}${d.heal?' · лечит тяжёлых':''}</span></div>`;
+    if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
+    h+=`<div class="ctrl">${d.job||d.fuel?`<button class="btn" data-toggle="${b.id}">${b.on?'Отключить':'Включить'}</button>`:''}<button class="btn danger" data-demolish="${b.id}">Снести (вернём 50%)</button></div>`;
+  }
+  setHTML(el,`<button class="closex" data-act="unsel" aria-label="Закрыть">×</button>`+h);
+}
+function renderOverlay(){
+  const s=S,el=$('overlay');
+  // события в приоритете
+  if(s&&s.queue.length&&ui.mode==='game'){
+    const e=s.queue[0];const E=EV[e.id];const p=e.p||{};
+    el.hidden=false;el.className='overlay event';
+    setHTML(el,`<div class="sheet panel" role="dialog" aria-modal="true"><h2>${esc(E.t)}</h2><p>${esc(E.x(s,p))}</p><div class="choices">${E.c.map((c,i)=>{const ok=!c.ok||c.ok(s,p);const hh=typeof c.h==='function'?c.h(s,p):c.h;return`<button data-choose="${i}" ${ok?'':'disabled'}>${esc(c.t)}${hh?`<small>${esc(hh)}</small>`:''}</button>`;}).join('')}</div>${coop.role==='guest'?'<p class="hint">Решение отправится хосту.</p>':''}</div>`);
+    return;
+  }
+  if(ui.open==='tech'){
+    el.hidden=false;el.className='overlay';
+    const cats=[...new Set(TECH.map(t=>t.cat))];
+    const ws=s.bld.filter(b=>b.type==='workshop'&&!b.build&&workforce(b.a)>0).length;
+    const cur=s.research?TECHBY[s.research]:null;
+    setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Мастерская</h2>
+    <p class="lead">${cur?`Идёт исследование: <b>${cur.n}</b> — ${Math.floor(s.rp)} / ${cur.rp} очков.`:'Выберите исследование.'} Работающих мастерских: ${ws}. ${ws?'':'Постройте мастерскую и поставьте туда инженеров.'}</p>
+    ${cur?`<div class="prog" style="margin-bottom:12px"><i style="width:${Math.min(100,s.rp/cur.rp*100)}%"></i></div>`:''}
+    <div class="grid3">${cats.map(c=>`<div class="col"><h4>${c}</h4>${TECH.filter(t=>t.cat===c).map(t=>{const done=has(s,t.id);const reqOk=!t.req||t.req.every(r=>has(s,r));const can=!done&&!s.research&&reqOk&&canAfford(s,t.cost);
+      return`<button class="tech ${done?'done':''} ${s.research===t.id?'active':''}" data-research="${t.id}" ${can?'':'disabled'}><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}${!reqOk?` · нужно: ${t.req.map(r=>TECHBY[r].n).join(', ')}`:''}</span></button>`;}).join('')}</div>`).join('')}</div></div>`);
+    return;
+  }
+  if(ui.open==='laws'){
+    el.hidden=false;el.className='overlay';
+    const purposeOpen=s.day>=5||s.flags.purposeOpen;
+    const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=L.ex&&has(s,L.ex);
+      return`<button class="tech ${sig?'done':''}" data-law="${L.id}" ${ok?'':'disabled'}><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</button>`;};
+    setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
+    <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются.</p>
+    <div class="grid3"><div class="col"><h4>Выживание</h4>${LAWS.filter(l=>l.cat==='adapt').slice(0,6).map(lawBtn).join('')}</div>
+    <div class="col"><h4>&nbsp;</h4>${LAWS.filter(l=>l.cat==='adapt').slice(6).map(lawBtn).join('')}</div>
+    <div class="col"><h4>Путь: Порядок</h4>${purposeOpen?(s.path==='faith'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='order').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div>
+    <div class="col"><h4>Путь: Братство</h4>${purposeOpen?(s.path==='order'?'<span class="hint">Выбран другой путь.</span>':LAWS.filter(l=>l.cat==='faith').map(lawBtn).join('')):'<span class="hint">Откроется на 5-й день.</span>'}</div></div></div>`);
+    return;
+  }
+  if(ui.open==='log'){
+    el.hidden=false;el.className='overlay';
+    setHTML(el,`<div class="sheet panel" style="width:min(640px,100%)"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Журнал</h2>
+    <p class="lead">Погибло всего: ${s.deaths}. Аванпостов: ${s.outposts.length}. Изучено станций: ${Object.values(s.st).filter(x=>x.k===2).length}.</p>
+    ${s.log.map(l=>`<div class="row"><span>${esc(l.txt)}</span><span>д${l.d} ${String(l.h).padStart(2,'0')}:00</span></div>`).join('')}</div>`);
+    return;
+  }
+  el.hidden=true;
+}
+function renderMapSide(){
+  const s=S;
+  setHTML($('maptop'),`<div class="title" style="font-size:18px">Карта метро</div><div class="hint">Колесо или щипок — масштаб, перетаскивание — сдвиг. Выберите отряд, затем станцию.</div>
+   <div class="legend">${LINES.filter(L=>!L.secret||s.flags.metro2).map(L=>`<span><i style="background:${L.c}"></i>${L.n}</span>`).join('')}</div>
+   <div class="ctrl"><button class="btn" data-act="closemap">Вернуться на станцию</button></div>`);
+  let h=`<h3 class="title" style="margin:0 0 6px">Отряды</h3>`;
+  if(!s.teams.length)h+=`<p class="hint">Нет отрядов. Постройте «Дрезинное депо» (вкладка «Разведка»).</p>`;
+  for(const t of s.teams){const where=t.path.length>=2?`в пути → ${t.path[t.path.length-1]}`:t.at;const cargo=Object.entries(t.cargo).filter(([k,v])=>v>0).map(([k,v])=>`${fmt(v)} ${RES[k].n.toLowerCase()}`).join(', ');
+    h+=`<button class="team ${ui.team===t.id?'sel':''}" data-team="${t.id}"><b>Отряд ${t.id}</b> · ${esc(where)}${t.rest?` · отдых ${t.rest} ч`:''}${t.explore?` · разведка ${t.explore} ч`:''}<br><span class="hint">${cargo?'Груз: '+cargo:'Без груза'}</span></button>`;}
+  const tm=s.teams.find(t=>t.id===ui.team);
+  if(tm&&tm.at!==HUB&&tm.path.length<2)h+=`<div class="ctrl"><button class="btn primary" data-send="${HUB}">Вернуть на базу</button></div>`;
+  if(ui.mapSel){
+    const id=ui.mapSel,st=s.st[id]||{k:0};const n=G.nodes[id];
+    const lines=n.lines.map(l=>LINES.find(L=>L.id===l)).map(L=>`<span style="color:${L.c}">●</span> ${L.n}`).join('<br>');
+    const fac=st.k===2&&st.t==='trade'?FACTIONS.ring:st.k===2&&st.t==='commune'?FACTIONS.commune:st.k===2&&st.t==='archive'?FACTIONS.archive:null;
+    h+=`<h3 style="margin-top:14px">${esc(id)}</h3><div class="sub">${lines}</div>
+     <div class="row"><span>Статус</span><span>${id===HUB?'наша база':st.k===2?'изучена':st.k===1?'известна':'неизвестна'}</span></div>
+     ${st.loot?`<div class="row"><span>Найдено</span><span>${Object.entries(st.loot).map(([k,v])=>`${v} ${RES[k].n.toLowerCase()}`).join(', ')||'—'}</span></div>`:''}
+     ${fac?`<div class="row"><span>Фракция</span><span>${fac.n}</span></div><p class="hint">${fac.d}</p>`:''}
+     ${st.o?'<div class="row"><span>Аванпост</span><span>шлёт ресурсы</span></div>':''}`;
+    if(tm&&id!==tm.at&&st.k>=1){const p=findPath(s,tm.path.length>=2&&tm.prog>.5?tm.path[1]:tm.at,id);
+      h+=p?`<div class="ctrl"><button class="btn primary" data-send="${esc(id)}" ${tm.rest||tm.explore?'disabled':''}>Отправить отряд ${tm.id}</button><span class="hint">≈ ${Math.ceil(p.slice(1).reduce((a,x,i)=>a+edgeLen(p[i],x),0)/teamSpeed(s))} ч</span></div>`:`<p class="hint">Пути нет: изучите соседние станции.</p>`;}
+    else if(!tm&&st.k>=1&&id!==HUB)h+=`<p class="hint">Выберите отряд, чтобы отправить его сюда.</p>`;
+    if(st.k===0)h+=`<p class="hint">Станция ещё не видна. Изучите соседние.</p>`;
+    const here=s.teams.filter(t=>t.at===id&&t.path.length<2);
+    if(has(s,'t_outpost')&&st.k===2&&!st.o&&['coal','wood','steel','raw','water','meds','mixed'].includes(st.t))
+      h+=`<div class="ctrl"><button class="btn" data-outpost="${esc(id)}" ${here.length&&canAfford(s,{wood:20,steel:10})?'':'disabled'}>Основать аванпост (20 дерева, 10 металла)</button></div>${here.length?'':'<p class="hint">Нужен отряд на станции.</p>'}`;
+    if(st.t==='trade'&&here.length){h+=`<h3 style="margin-top:10px">Обмен</h3>`+TRADE.map((T,i)=>`<div class="ctrl"><button class="btn" data-trade="${i}" data-tteam="${here[0].id}">${T.gn} ${RES[T.give].n.toLowerCase()} → ${T.n} ${RES[T.get].n.toLowerCase()}</button></div>`).join('')+'<p class="hint">Берётся из груза отряда, затем со склада. Полученное едет в грузе.</p>';}
+  }
+  setHTML($('mapside'),h);
+}
+function renderMenu(){
+  const el=$('overlay');el.hidden=false;el.className='overlay';el._h=null;
+  const hasSave=!!store('ls_save');
+  el.innerHTML=`<div class="sheet panel" id="menu" style="width:min(780px,100%)">
+  <p class="logo">Последняя <span>станция</span></p>
+  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Вы управляете общиной на «Театральной»: тепло генератора, еда, вода, лекарства, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь ${LAST_DAY} дней.</p>
+  <div class="title" style="color:var(--frost-dim);font-size:12px">Сложность</div>
+  <div class="diffs">${Object.entries(DIFF).map(([k,d])=>`<button class="diff ${ui.diff===k?'on':''}" data-diff="${k}"><b>${d.n}</b><small>${d.d}</small></button>`).join('')}</div>
+  <label class="chk"><input type="checkbox" id="survivor" ${ui.survivor?'checked':''}> Режим «Выживший»: без паузы, скорость максимум ×2</label>
+  <div class="menurow"><button class="btn primary" data-act="new">Новая игра</button>${hasSave?'<button class="btn" data-act="load">Продолжить</button>':''}${S&&!S.over?'<button class="btn" data-act="resume">Вернуться в игру</button>':''}</div>
+  <div class="title" style="color:var(--frost-dim);font-size:12px;margin-top:18px">Кооператив</div>
+  <p class="hint">Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.</p>
+  <div class="menurow"><button class="btn" data-act="host">Создать кооператив</button><input type="text" id="joincode" maxlength="6" placeholder="КОД" aria-label="Код кооператива"><button class="btn" data-act="join">Подключиться</button><span class="hint" id="coopmsg">${esc(coop.status)}</span></div>
+  <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.</p>
+  </div>`;
+}
+
+/* ---------------------------- СОХРАНЕНИЯ ---------------------------- */
+function autosave(s){if(coop.role==='guest')return;try{store('ls_save',JSON.stringify(s));}catch(e){}}
+function loadSave(){try{const t=store('ls_save');if(!t)return null;const s=JSON.parse(t);return s&&s.v===1?s:null;}catch(e){return null;}}
+
+/* ---------------------------- КООПЕРАТИВ (db: хост пишет состояние, гость шлёт действия) ---------------------------- */
+async function coopDb(){
+  if(coop.db)return coop.db;
+  if(!window.claude||!window.claude.use){coop.status='Кооператив работает только на странице claude.ai';return null;}
+  try{coop.db=await window.claude.use('db');}catch(e){coop.db=null;}
+  if(!coop.db)coop.status='Кооператив недоступен: нужен вход в claude.ai и доступ к странице';
+  return coop.db;
+}
+function coopStop(){for(const u of coop.unsub)try{u();}catch(e){}coop.unsub=[];coop.role='solo';coop.code=null;}
+async function coopHost(){
+  const db=await coopDb();if(!db){ui.dirty=true;renderMenu();return;}
+  coopStop();
+  const code=Array.from({length:5},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[ri(0,31)]).join('');
+  if(!S||S.over)S=newGame(ui.diff,ui.survivor);
+  coop.role='host';coop.code=code;coop.status='ждём напарника';
+  const ref=db.doc('coop/'+code);
+  try{await ref.set({s:JSON.stringify(S),t:Date.now()});}catch(e){coop.status='Не удалось создать: '+(e.code||'ошибка');coop.role='solo';renderMenu();return;}
+  coop.unsub.push(db.collection('coop/'+code+'/acts').onSnapshot(snap=>{
+    for(const ch of snap.docChanges()){if(ch.type!=='added'||coop.seen.has(ch.doc.id))continue;coop.seen.add(ch.doc.id);const d=ch.doc.data();try{const a=JSON.parse(d.a);act(S,a);ui.dirty=true;}catch(e){}
+      db.doc('coop/'+code+'/acts/'+ch.doc.id).delete().catch(()=>{});}
+  },e=>{coop.status='связь потеряна';}));
+  coop.unsub.push(db.collection('coop/'+code+'/players').onSnapshot(snap=>{
+    const now=Date.now();let n=0;snap.docs.forEach(d=>{const x=d.data();if(x&&now-x.t<60000)n++;});coop.partners=n;coop.status=n?`напарников: ${n}`:'ждём напарника';
+  },()=>{}));
+  startGame();
+}
+async function coopPush(){
+  if(coop.role!=='host'||!coop.db)return;const now=Date.now();if(now-coop.lastPush<2000)return;coop.lastPush=now;
+  try{await coop.db.doc('coop/'+coop.code).set({s:JSON.stringify(S),t:now});}catch(e){coop.status='ошибка записи';}
+}
+async function coopJoin(code){
+  code=(code||'').trim().toUpperCase();if(!/^[A-Z0-9]{5}$/.test(code)){coop.status='Введите код из 5 символов';renderMenu();return;}
+  const db=await coopDb();if(!db){renderMenu();return;}
+  coopStop();coop.role='guest';coop.code=code;coop.status='подключение…';S=null;
+  const me='p'+Math.random().toString(36).slice(2,9);
+  let got=false;const timer=setTimeout(()=>{if(!got){coop.status='Игра не найдена или нет доступа';ui.dirty=true;if(ui.mode==='menu')renderMenu();}},10000);
+  coop.unsub.push(db.doc('coop/'+code).onSnapshot(snap=>{
+    const d=snap.data();if(!d||!d.s)return;got=true;clearTimeout(timer);
+    try{const ns=JSON.parse(d.s);const oldq=S&&S.queue.length;S=ns;coop.status=Date.now()-d.t>15000?'хост не отвечает':'на связи';ui.dirty=true;if(ui.mode!=='game')startGame(true);}catch(e){}
+  },e=>{coop.status='Нет доступа к игре';clearTimeout(timer);if(ui.mode==='menu')renderMenu();}));
+  coop.send=a=>{db.collection('coop/'+code+'/acts').add({a:JSON.stringify(a),t:Date.now()}).catch(()=>{coop.status='действие не отправлено';});};
+  const beat=()=>db.doc('coop/'+code+'/players/'+me).set({t:Date.now()}).catch(()=>{});
+  beat();const iv=setInterval(beat,20000);coop.unsub.push(()=>clearInterval(iv));
+  renderMenu();
+}
+
+/* ---------------------------- ЦИКЛ ---------------------------- */
+let last=performance.now(),uiT=0,rateT=0;
+function startGame(fromCoop){
+  ui.mode='game';ui.sel=null;ui.cat=null;ui.open=null;$('overlay').hidden=true;
+  if(S&&!fromCoop)syncTeams(S);
+  if(S)prevRes={...S.res};
+  ui.dirty=true;
+}
+function loop(t){
+  const dt=Math.min(.1,(t-last)/1000);last=t;
+  if(ui.mode==='game'&&S){
+    const modal=S.queue.length>0;
+    if(coop.role!=='guest'&&!S.over&&!S.paused&&!(modal&&!S.survivor)){
+      S.acc+=dt*S.speed/5; // 1 игровой час ≈ 5 с на ×1
+      let n=0;while(S.acc>=1&&n<6){S.acc-=1;hourTick(S);syncTeams(S);n++;ui.dirty=true;}
+    }
+    if(coop.role==='host')coopPush();
+    stepParticles();
+    if(ui.open==='map'){$('mapwrap').hidden=false;renderMap(t);}
+    else{$('mapwrap').hidden=true;render(t);}
+    uiT+=dt;rateT+=dt;
+    if(rateT>=5&&prevRes){for(const k in S.res)resRate[k]=(S.res[k]-prevRes[k])/rateT*5*(S.paused?0:1);prevRes={...S.res};rateT=0;}
+    if(ui.dirty||uiT>.5){uiT=0;ui.dirty=false;renderTop();renderBar();renderInfo();if(ui.open==='map')renderMapSide();renderOverlay();}
+    if(ui.toMenu){ui.toMenu=false;if(S&&S.over)store('ls_save','');coopStop();ui.mode='menu';renderMenu();}
+  }else if(ui.mode==='menu'){render(t);}
+  document.body.classList.toggle('inmenu',ui.mode!=='game');
+  flushToasts(t);
+  requestAnimationFrame(loop);
+}
+function flushToasts(t){
+  const box=$('toasts');
+  while(toastQ.length){const q=toastQ.shift();const d=document.createElement('div');d.className='toast panel '+(q.k||'');d.textContent=q.txt;box.prepend(d);setTimeout(()=>d.remove(),6000);}
+  while(box.children.length>6)box.lastChild.remove();
+}
+
+/* ---------------------------- ВВОД ---------------------------- */
+let drag=null;
+function onDown(e,isMap){drag={x:e.clientX,y:e.clientY,moved:false,map:isMap,cx:isMap?mcam.x:cam.x,cy:isMap?mcam.y:cam.y};}
+function onMove(e){
+  if(!drag){if(ui.mode==='game'&&S&&ui.open!=='map')ui.hover=screenToTile(e.clientX,e.clientY);return;}
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>5)drag.moved=true;
+  if(drag.moved){if(drag.map){mcam.x=drag.cx-dx/mcam.z;mcam.y=drag.cy-dy/mcam.z;}else{cam.x=drag.cx-dx/cam.z;cam.y=drag.cy-dy/cam.z;}}
+  if(!drag.map)ui.hover=screenToTile(e.clientX,e.clientY);
+}
+function onUp(e){
+  if(!drag)return;const d=drag;drag=null;if(d.moved)return;
+  if(d.map){mapClick(e.clientX,e.clientY);return;}
+  if(ui.mode!=='game'||!S)return;
+  const tl=screenToTile(e.clientX,e.clientY);
+  if(ui.buildType){if(canPlace(S,ui.buildType,tl.x,tl.y)&&canAfford(S,B[ui.buildType].cost)){dispatch({t:'build',type:ui.buildType,x:tl.x,y:tl.y});if(!e.shiftKey)ui.buildType=null;}return;}
+  if(tl.x<0||tl.y<0||tl.x>=GW||tl.y>=GH){ui.sel=null;ui.dirty=true;return;}
+  const t=tile(S,tl.x,tl.y);
+  if(t.b===-1)ui.sel={k:'gen'};else if(t.b)ui.sel={k:'b',id:t.b};else if(t.pile)ui.sel={k:'p',x:tl.x,y:tl.y};else ui.sel=null;
+  ui.dirty=true;
+}
+function mapClick(x,y){
+  const m=s2m(x,y);let best=null,bd=1e9;
+  for(const id in G.nodes){if(!S.st[id])continue;const n=G.nodes[id];const d=Math.hypot(n.x-m.x,n.y-m.y);if(d<bd){bd=d;best=id;}}
+  for(const tm of S.teams){const q=posOn(tm);if(Math.hypot(q.x-x,q.y-y)<12){ui.team=tm.id;ui.dirty=true;return;}}
+  ui.mapSel=bd*mcam.z<18?best:null;ui.dirty=true;
+}
+cv.addEventListener('pointerdown',e=>onDown(e,false));
+$('mapc').addEventListener('pointerdown',e=>onDown(e,true));
+addEventListener('pointermove',onMove);addEventListener('pointerup',onUp);
+cv.addEventListener('wheel',e=>{e.preventDefault();cam.z=clamp(cam.z*(e.deltaY<0?1.1:.9),.4,2.5);},{passive:false});
+$('mapc').addEventListener('wheel',e=>{e.preventDefault();const before=s2m(e.clientX,e.clientY);mcam.z=clamp(mcam.z*(e.deltaY<0?1.12:.89),.35,3.5);const after=s2m(e.clientX,e.clientY);mcam.x+=before.x-after.x;mcam.y+=before.y-after.y;},{passive:false});
+cv.addEventListener('contextmenu',e=>{e.preventDefault();ui.buildType=null;ui.sel=null;ui.dirty=true;});
+// щипок на телефоне
+const pts=new Map();let pinch0=null;
+function pinchHandler(isMap){return e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===2){const [a,b]=[...pts.values()];const d=Math.hypot(a.x-b.x,a.y-b.y);if(!pinch0)pinch0={d,z:isMap?mcam.z:cam.z};else{const z=pinch0.z*d/pinch0.d;if(isMap)mcam.z=clamp(z,.35,3.5);else cam.z=clamp(z,.4,2.5);}drag=null;}};}
+cv.addEventListener('pointermove',pinchHandler(false));$('mapc').addEventListener('pointermove',pinchHandler(true));
+addEventListener('pointerup',e=>{pts.delete(e.pointerId);if(pts.size<2)pinch0=null;});
+addEventListener('pointercancel',e=>{pts.delete(e.pointerId);pinch0=null;drag=null;});
+
+function toggleFull(){const d=document;if(!d.fullscreenElement){(d.documentElement.requestFullscreen?d.documentElement.requestFullscreen():Promise.reject()).catch(()=>{toast(S,'Браузер не разрешил полноэкранный режим','');});}else d.exitFullscreen&&d.exitFullscreen().catch(()=>{});}
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key==='f'||e.key==='F'||e.key==='а'||e.key==='А'){toggleFull();return;}
+  if(ui.mode!=='game'||!S)return;
+  if(e.key==='Escape'){if(ui.buildType)ui.buildType=null;else if(ui.open)ui.open=null;else if(ui.cat)ui.cat=null;else ui.sel=null;ui.dirty=true;}
+  if(e.key===' '){e.preventDefault();dispatch({t:'speed',v:S.paused?(S.speed||1):0});}
+  if(e.key==='1'||e.key==='2'||e.key==='3'){const v=+e.key;if(!(S.survivor&&v>2))dispatch({t:'speed',v});}
+  if(e.key==='h'||e.key==='H'||e.key==='р'||e.key==='Р'){ui.heatView=!ui.heatView;ui.dirty=true;}
+  if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ui.open=ui.open==='map'?null:'map';ui.dirty=true;}
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
+  if(ds.speed!=null){dispatch({t:'speed',v:+ds.speed});}
+  else if(ds.cat){ui.cat=ui.cat===ds.cat?null:ds.cat;ui.buildType=null;}
+  else if(ds.build){ui.buildType=ds.build;ui.sel=null;}
+  else if(ds.open){ui.open=ui.open===ds.open?null:ds.open;ui.cat=null;if(ds.open==='map'&&S.teams.length&&!ui.team)ui.team=S.teams[0].id;}
+  else if(ds.work!=null){const n=+ds.n;if(ds.work==='p')dispatch({t:'work',x:+ds.x,y:+ds.y,n});else dispatch({t:'work',id:+ds.work,n});}
+  else if(ds.toggle)dispatch({t:'toggle',id:+ds.toggle});
+  else if(ds.demolish){dispatch({t:'demolish',id:+ds.demolish});ui.sel=null;}
+  else if(ds.gen)dispatch({t:'gen',k:ds.gen,d:+(ds.d||0)});
+  else if(ds.research)dispatch({t:'research',id:ds.research});
+  else if(ds.law)dispatch({t:'law',id:ds.law});
+  else if(ds.choose!=null)dispatch({t:'choose',i:+ds.choose});
+  else if(ds.team){ui.team=+ds.team;}
+  else if(ds.send){if(ui.team!=null)dispatch({t:'send',team:ui.team,to:ds.send});}
+  else if(ds.outpost)dispatch({t:'outpost',at:ds.outpost});
+  else if(ds.trade!=null)dispatch({t:'trade',team:+ds.tteam,i:+ds.trade});
+  else if(ds.diff){ui.diff=ds.diff;renderMenu();return;}
+  else if(ds.act){
+    const a=ds.act;
+    if(a==='close')ui.open=null;
+    else if(a==='closemap')ui.open=null;
+    else if(a==='unsel')ui.sel=null;
+    else if(a==='heat')ui.heatView=!ui.heatView;
+    else if(a==='full')toggleFull();
+    else if(a==='menu'){if(S&&coop.role!=='guest')autosave(S);ui.mode='menu';renderMenu();return;}
+    else if(a==='new'){coopStop();ui.survivor=$('survivor').checked;S=newGame(ui.diff,ui.survivor);cam.x=0;cam.y=0;startGame();}
+    else if(a==='load'){coopStop();const sv=loadSave();if(sv){S=sv;startGame();}}
+    else if(a==='resume'){startGame(coop.role==='guest');}
+    else if(a==='host'){ui.survivor=$('survivor').checked;coop.status='создаём…';coopHost();return;}
+    else if(a==='join'){coopJoin($('joincode').value);return;}
+  }
+  ui.dirty=true;
+});
+addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;});
+
+/* ---------------------------- СТАРТ ---------------------------- */
+function boot(data){
+  resize();
+  const bottom=$('bottom');const pl=document.createElement('div');pl.id='popline';bottom.insertBefore(pl,$('bar'));
+  if(data&&data.s){try{S=JSON.parse(data.s);startGame();}catch(e){S=null;}}
+  if(!S){S=null;ui.mode='menu';renderMenu();}
+  requestAnimationFrame(loop);
+}
+if(window.claude&&window.claude.hot)window.claude.hot.snapshot&&window.claude.hot.snapshot(()=>({s:S&&coop.role!=='guest'?JSON.stringify(S):null}));
+window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
+</script>
