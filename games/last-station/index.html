@@ -996,7 +996,7 @@ function newGame(diff,survivor){
   for(let d=0,tries=0;d<(D.deposits||2)&&tries<800;tries++){
     const x=r()<.5?1+Math.floor(r()*3):GW-4+Math.floor(r()*3),y=1+Math.floor(r()*(GH-2));
     const t=tile(s,x,y);if(t.k!=='floor'||t.pile||t.b)continue;
-    const k=kinds[d%kinds.length];t.pile={r:k,amt:Math.round(({coal:700,steel:350,wood:500})[k]*(.85+r()*.3)),a:{w:0,e:0,c:0},clear:Math.round(50+r()*30),clear0:0,max:8,dep:1};t.pile.clear0=t.pile.clear;d++;
+    const k=kinds[d%kinds.length];t.pile={r:k,amt:Math.round(({coal:700,steel:350,wood:500})[k]*(.85+r()*.3)),a:{w:0,e:0,c:0},clear:100,clear0:0,max:8,dep:1};t.pile.clear0=t.pile.clear;d++;
   }
   tile(s,GX,GY).b=-1; // генератор
   // стартовые постройки
@@ -1191,15 +1191,15 @@ function hourTick(s){
     }
     const deep=wTier(s)===2;
     if(deep&&wh&&s.hour===12){let w=0;for(const t of s.grid)if(t.pile)w+=t.pile.a.w+t.pile.a.c;for(const b of s.bld)if(b.type==='gather')w+=workforce(b.a);const k=Math.round(w*.15);if(k>0){sicken(s,k);toast(s,`−40°: на завалах заболели ${k}`,'cold');}}
-    // −40° и ниже: на завалах работают вдвое медленнее и болеют (раньше работа вставала совсем — с 16-го дня навсегда)
-    if(wh)for(const t of s.grid)if(t.pile){
-      const wf=workforce(t.pile.a)*(deep?.5:1);if(wf<=0)continue;
+    // завалы и залежи разбирают круглые сутки и при любом морозе
+    for(const t of s.grid)if(t.pile){
+      const wf=workforce(t.pile.a);if(wf<=0)continue;
       if(t.pile.clear>0){const cl=Math.min(t.pile.clear,wf*(has(s,'t_drills')?1.5:1));t.pile.clear-=cl;s.res.stone+=cl*.8;if(!t.pile.clear)toast(s,`Залежь расчищена: ${RES[t.pile.r].n}`,'good');continue;}
       const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')*(has(s,'t_drills')?1.25:1));
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
     }
-    if(wh)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b)*(deep?.5:1);if(wf<=0)continue;
+    for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
       const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')/P.length;
       for(const t of P){const g=Math.min(t.pile.amt,each);t.pile.amt-=g;s.res[t.pile.r]+=g;if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}}}
     if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');ev(s,'info',`Исследовано: «${T.n}»`);s.research=null;s.rp=0;}}
@@ -3264,8 +3264,8 @@ function dayRates(s){
     if(d.prod)for(const k in d.prod){const m=d.prod[k]*wf*eff*h*bMult(s,b,k);o[k]=m;out[k]+=m;}
     if(d.kitchen){const c=7.5*wf*eff*h*(has(s,'t_cook2')?1.5:1);o.kcap=c;kcap+=c;}
     if(d.rp){const SI=sciInfo(s);const r=SI.W.includes(b)?SI.perH*H/SI.W.length:0;o.rp=r;out.rp+=r;}}
-  for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b)*(wTier(s)===2?.5:1);const P=gatherPiles(s,b);if(!wf||!P.length)continue;for(const t of P)out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')/P.length);}
-  for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a)*(wTier(s)===2?.5:1);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')*(has(s,'t_drills')?1.25:1));}
+  for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);const P=gatherPiles(s,b);if(!wf||!P.length)continue;for(const t of P)out[t.pile.r]+=Math.min(t.pile.amt,wf*24*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')/P.length);}
+  for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*24*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')*(has(s,'t_drills')?1.25:1));}
   for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:25}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t==='meds'?'raw':o.t==='water'?'coal':o.t]+=g;}
   const cooked=Math.min(kcap,out.raw+s.res.raw);out.food+=cooked*rationMult(s);out.rawCooked=cooked;
   const n=popTotal(s);
@@ -3638,7 +3638,7 @@ function warnings(s){
     if(big>=0&&dt<3)W.push(['cold','❄',`Через ${big+2} дн. придёт сильный мороз: ${weatherAt(s.day+big+2)+D.temp}°`]);}
   {const tier=wTier(s),mp=medposts(s);
     if(tier===1)W.unshift([mp>=3?'cold':'bad','🌡',`Мороз −30°: люди болеют каждую ночь${mp>=3?' — 3 медпункта справляются':` — нужны 3 работающих медпункта (сейчас ${mp})`}`]);
-    if(tier===2)W.unshift(['bad','❄',`Лютый мороз ${weatherAt(s.day)}°: дома нужно утеплить ${insNeed(s)} раз(а), иначе люди замерзают насмерть; на завалах работают вдвое медленнее и болеют`]);}
+    if(tier===2)W.unshift(['bad','❄',`Лютый мороз ${weatherAt(s.day)}°: дома нужно утеплить ${insNeed(s)} раз(а), иначе люди замерзают насмерть`]);}
   // обморожения этой ночью
   {const {homeless}=homesHeat(s),tier=wTier(s);let e=0;if(tier>=1)e=popTotal(s)*(tier===2?.07:.05)*(1-Math.min(3,medposts(s))/3)*D.sick+homeless*.08*D.sick;e=Math.round(e);
     if(e>=1)W.push([e>=4?'bad':'cold','🌡',`Риск обморожений: ночью могут заболеть ≈ ${e} чел.${homeless?` Без крыши ${homeless}.`:''}`]);}
