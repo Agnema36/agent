@@ -202,6 +202,17 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 .logo{font-family:var(--display);font-size:clamp(34px,7vw,64px);line-height:1;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--frost);text-shadow:0 0 30px rgba(242,163,58,.25)}
 .logo span{color:var(--amber)}
 .logo::after{content:"";display:block;height:2px;margin-top:10px;background:linear-gradient(90deg,var(--amber),rgba(176,138,78,.2) 60%,transparent)}
+.overlay.menubg{background:radial-gradient(ellipse at center,rgba(6,9,13,.45),rgba(4,6,9,.85)),url('map_bg.jpg') center/cover no-repeat,#0b0e12;flex-direction:column}
+#msnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.overlay.menubg>*:not(#msnow){position:relative;z-index:1}
+.mlang{position:fixed!important;top:calc(12px + env(safe-area-inset-top,0px));right:14px;display:flex;border:1px solid var(--rim);border-radius:2px;overflow:hidden}
+.mlang button{background:rgba(14,18,22,.8);border:0;color:var(--frost-dim);padding:4px 9px;font:12px var(--mono)}.mlang button.on{background:var(--amber);color:#14100a}
+.mcol{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}.msub{color:var(--frost-dim);margin:4px 0 18px}
+.mbtns{display:flex;flex-direction:column;gap:8px;width:min(300px,80vw)}.btn.big{padding:12px 16px;font-size:15px;letter-spacing:.06em}
+.mwide{width:min(900px,100%)}.mback{margin-bottom:8px}.diffs.four{grid-template-columns:repeat(4,1fr)}@media (max-width:700px){.diffs.four{grid-template-columns:1fr 1fr}}
+.diff small.dnum{display:block;margin-top:6px;color:var(--amber);font-family:var(--mono);font-size:11px;line-height:1.35}
+.mods{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px}.mods small{color:var(--frost-dim)}
+.btn.huge{width:100%;padding:14px;font-size:18px;letter-spacing:.1em}.ctl{margin:6px 0 0 18px;color:var(--frost-dim);line-height:1.7}
 .diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
 .diff{padding:10px;border:1px solid var(--rim);background:var(--steel);text-align:left;border-radius:2px}
 .diff.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
@@ -536,6 +547,11 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Москва после ядерной зимы. Продержитесь как можно дольше.','Moscow after the nuclear winter. Hold out as long as you can.'],['Вернуться в игру','Resume'],['Сохранить','Save'],['Продолжить','Continue'],['Новая игра','New game'],['Загрузить','Load'],['Настройки','Settings'],['← Назад','← Back'],
+['Старт: уголь','Start: coal'],['дерево','wood'],['еда','food'],['Теплее на','Warmer by'],['Мороз на','Frost'],['сильнее','harsher'],['Температура по плану','Temperature as planned'],['затишье','calm'],['мороз','frost'],
+['Без паузы','No pause'],['— паузы нет, скорость не больше ×2','— no pause, speed up to ×2'],['До первой смерти','Until the first death'],['— игра кончается, как только погибнет первый житель','— the game ends as soon as the first resident dies'],
+['Одно сохранение','Single save'],['— только автосохранение, слоты недоступны','— autosave only, no save slots'],['Начать','Start'],['Режим «Одно сохранение»: слоты недоступны, игра сохраняется автоматически.','“Single save” mode: slots are unavailable, the game saves automatically.'],
+['Управление','Controls'],['Перетаскивание — сдвиг камеры','Drag — pan the camera'],['Правая кнопка или Q/E — поворот','Right button or Q/E — rotate'],['Колесо или щипок — масштаб','Wheel or pinch — zoom'],['Esc — отмена','Esc — cancel'],['Пробел — пауза','Space — pause'],['1–3 — скорость','1–3 — speed'],['F — весь экран','F — fullscreen'],['M — карта метро','M — metro map'],
 ['Мутанты на станции убивают людей!','Mutants are in the station killing people!'],
 ['Счёт:','Score:'],['(очко за каждую прожитую минуту).','(one point per minute survived).'],
 ['Стройка:','Construction:'],['строят','builders'],['Стройка стоит: нет свободных рабочих','Construction halted: no free workers'],
@@ -3110,12 +3126,12 @@ function onRaid(g,id){
 /* ---------------------------- СЛОТЫ СОХРАНЕНИЯ ---------------------------- */
 const SLOTS=5;
 function slotInfo(i){try{const t=store('ls_slot'+i);if(!t)return null;const s=JSON.parse(t);return s&&s.v===1?s:null;}catch(e){return null;}}
-function slotsHTML(){
-  const rows=[];for(let i=1;i<=SLOTS;i++){const s=slotInfo(i);const meta=s?`${DIFF[s.diff]?DIFF[s.diff].n:''} · День ${s.day} · жителей ${popTotal(s)}${s.savedAt?' · '+new Date(s.savedAt).toLocaleString():''}`:'пусто';
-    rows.push(`<div class="slot"><span class="num">${i}</span><span class="sm">${esc(meta)}</span><button class="btn" data-slotsave="${i}" ${S&&!S.over&&coop.role!=='guest'?'':'disabled'}>Сохранить</button><button class="btn" data-slotload="${i}" ${s?'':'disabled'}>Загрузить</button><button class="btn danger" data-slotdel="${i}" ${s?'':'disabled'}>×</button></div>`);}
+function slotsHTML(canSave){
+  const rows=[];for(let i=1;i<=SLOTS;i++){const s=slotInfo(i);const meta=s?`День ${s.day} · жителей ${popTotal(s)} · ${DIFF[s.diff]?DIFF[s.diff].n:''}${s.savedAt?' · '+new Date(s.savedAt).toLocaleString():''}`:'пусто';
+    rows.push(`<div class="slot"><span class="num">${i}</span><span class="sm">${esc(meta)}</span>${canSave?`<button class="btn" data-slotsave="${i}">Сохранить</button>`:''}<button class="btn" data-slotload="${i}" ${s?'':'disabled'}>Загрузить</button><button class="btn danger" data-slotdel="${i}" ${s?'':'disabled'}>×</button></div>`);}
   return rows.join('');
 }
-function slotSave(i){if(!S||coop.role==='guest')return;if(S.diff==='hardcore'){toast(S,'На «Хардкоре» сохранять в слоты нельзя','bad');return;}S.savedAt=Date.now();store('ls_slot'+i,JSON.stringify(S));toast(S,`Сохранено в слот ${i}`,'good');}
+function slotSave(i){if(!S||coop.role==='guest')return;if(S.diff==='hardcore'||S.oneSave){toast(S,'На «Хардкоре» сохранять в слоты нельзя','bad');return;}S.savedAt=Date.now();store('ls_slot'+i,JSON.stringify(S));toast(S,`Сохранено в слот ${i}`,'good');}
 function slotLoad(i){const s=slotInfo(i);if(!s)return;coopStop();allyStop();S=s;for(const k in R3.bmap)void 0;startGame();}
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -3411,23 +3427,48 @@ function renderMapSide(){
   }
   setHTML($('mapside'),h);
 }
+const MENU_DIFFS=['easy','normal','hard','extreme'];
+function diffInfo(k){const d=DIFF[k],st=d.start;return `Старт: уголь ${Math.round(250*st)}, дерево ${Math.round(140*st)}, еда ${Math.round(100*st)}. ${d.temp>0?`Теплее на ${d.temp}°`:d.temp<0?`Мороз на ${-d.temp}° сильнее`:'Температура по плану'} (затишье ${-10+d.temp}°, мороз ${-30+d.temp}°).`;}
 function renderMenu(){
-  const el=$('overlay');el.hidden=false;el.className='overlay';el._h=null;
-  const hasSave=!!store('ls_save');
-  el.innerHTML=`<div class="sheet panel" id="menu" style="width:min(780px,100%)">
-  <p class="logo">Последняя <span>станция</span></p>
-  <p class="lead" style="margin-top:10px">Москва после ядерной зимы. Задача — выжить. Вы управляете общиной на «Театральной»: тепло очага, еда, законы и надежда. Разведчики уходят по веткам метро за ресурсами и выжившими. Продержитесь как можно дольше: мороз будет только крепчать.</p>
-  <div class="title" style="color:var(--frost-dim);font-size:12px">Сложность</div>
-  <div class="diffs">${Object.entries(DIFF).map(([k,d])=>`<button class="diff ${ui.diff===k?'on':''}" data-diff="${k}"><b>${d.n}</b><small>${d.d}</small></button>`).join('')}</div>
-  <label class="chk"><input type="checkbox" id="survivor" ${ui.survivor?'checked':''}> Режим «Выживший»: без паузы, скорость максимум ×2</label>
-  <label class="chk"><input type="checkbox" id="onedeath" ${ui.oneDeath?'checked':''}> Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель</label>
-  <div class="menurow"><button class="btn primary" data-act="new">Новая игра</button>${hasSave?'<button class="btn" data-act="load">Продолжить</button>':''}${S&&!S.over?'<button class="btn" data-act="resume">Вернуться в игру</button>':''}</div>
-  <div class="title" style="color:var(--frost-dim);font-size:12px;margin-top:18px">Сохранения</div>
-  <div class="slots">${slotsHTML()}</div>
-  <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
-  <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, M — карта метро.</p>
-  </div>`;
-  trDOM(el);
+  const el=$('overlay');el.hidden=false;el.className='overlay menubg';el._h=null;
+  const paused=!!(S&&!S.over),hasSave=!!store('ls_save'),scr=ui.menuScr||'main';
+  const back=`<button class="btn mback" data-scr="main">← Назад</button>`;
+  const lang=`<div class="mlang"><button class="${LANG==='ru'?'on':''}" data-lang="ru">RU</button><button class="${LANG==='en'?'on':''}" data-lang="en">EN</button></div>`;
+  let h='';
+  if(scr==='main'){
+    h=`<div class="mcol"><p class="logo">Последняя <span>станция</span></p><p class="msub">Москва после ядерной зимы. Продержитесь как можно дольше.</p>
+      <div class="mbtns">
+      ${paused?'<button class="btn primary big" data-act="resume">Вернуться в игру</button>':''}
+      ${paused&&coop.role!=='guest'?'<button class="btn big" data-scr="load" data-save="1">Сохранить</button>':''}
+      ${!paused&&hasSave?'<button class="btn primary big" data-act="load">Продолжить</button>':''}
+      <button class="btn big ${!paused&&!hasSave?'primary':''}" data-scr="new">Новая игра</button>
+      <button class="btn big" data-scr="load">Загрузить</button>
+      <button class="btn big" data-scr="settings">Настройки</button></div></div>`;
+  }else if(scr==='new'){
+    if(!MENU_DIFFS.includes(ui.diff))ui.diff='normal';
+    h=`<div class="sheet panel mwide">${back}<h2>Новая игра</h2>
+      <div class="diffs four">${MENU_DIFFS.map(k=>{const d=DIFF[k];return`<button class="diff ${ui.diff===k?'on':''}" data-diff="${k}"><b>${d.n}</b><small>${d.d}</small><small class="dnum">${diffInfo(k)}</small></button>`;}).join('')}</div>
+      <div class="mods"><label class="chk"><input type="checkbox" id="survivor" ${ui.survivor?'checked':''}> Без паузы <small>— паузы нет, скорость не больше ×2</small></label>
+      <label class="chk"><input type="checkbox" id="onedeath" ${ui.oneDeath?'checked':''}> До первой смерти <small>— игра кончается, как только погибнет первый житель</small></label>
+      <label class="chk"><input type="checkbox" id="onesave" ${ui.oneSave?'checked':''}> Одно сохранение <small>— только автосохранение, слоты недоступны</small></label></div>
+      <button class="btn primary huge" data-act="new">Начать</button></div>`;
+  }else if(scr==='load'){
+    const saving=paused&&ui.menuSave&&coop.role!=='guest';
+    h=`<div class="sheet panel mwide">${back}<h2>${saving?'Сохранить':'Загрузить'}</h2>${saving&&S.oneSave?'<p class="hint">Режим «Одно сохранение»: слоты недоступны, игра сохраняется автоматически.</p>':''}<div class="slots">${slotsHTML(saving&&!S.oneSave)}</div></div>`;
+  }else if(scr==='settings'){
+    h=`<div class="sheet panel mwide">${back}<h2>Настройки</h2>
+      <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
+      <h3 style="margin-top:14px">Управление</h3>
+      <ul class="ctl"><li>Перетаскивание — сдвиг камеры</li><li>Правая кнопка или Q/E — поворот</li><li>Колесо или щипок — масштаб</li><li>Esc — отмена</li><li>Пробел — пауза</li><li>1–3 — скорость</li><li>F — весь экран</li><li>M — карта метро</li></ul></div>`;
+  }
+  el.innerHTML=`<canvas id="msnow" aria-hidden="true"></canvas>${lang}${h}`;
+  trDOM(el);menuSnow();
+}
+function menuSnow(){// падающий снег поверх фона меню
+  const c=$('msnow');if(!c)return;const x=c.getContext('2d');let W=0,H=0;const P=Array.from({length:160},()=>({x:Math.random(),y:Math.random(),r:.6+Math.random()*2.2,v:.02+Math.random()*.05,w:Math.random()*6}));
+  const step=t=>{if(!c.isConnected)return;if(c.width!==innerWidth||c.height!==innerHeight){W=c.width=innerWidth;H=c.height=innerHeight;}x.clearRect(0,0,W,H);x.fillStyle='rgba(225,236,248,.75)';
+    for(const p of P){p.y+=p.v*.016;p.x+=Math.sin(t/1500+p.w)*.0004+.0003;if(p.y>1.02){p.y=-.02;p.x=Math.random();}if(p.x>1)p.x-=1;x.beginPath();x.arc(p.x*W,p.y*H,p.r,0,7);x.fill();}requestAnimationFrame(step);};
+  requestAnimationFrame(step);
 }
 
 /* ---------------------------- СОХРАНЕНИЯ ---------------------------- */
@@ -3508,7 +3549,7 @@ function loop(t){
     uiT+=dt;rateT+=dt;
     if(rateT>=5&&prevRes){for(const k in S.res)resRate[k]=(S.res[k]-prevRes[k])/rateT*5*(S.paused?0:1);prevRes={...S.res};rateT=0;}
     if(ui.dirty||uiT>.5){uiT=0;ui.dirty=false;renderTop();renderBar();renderInfo();if(ui.open==='map')renderMapSide();renderOverlay();}
-    if(ui.toMenu){ui.toMenu=false;if(S&&S.over)store('ls_save','');coopStop();ui.mode='menu';renderMenu();}
+    if(ui.toMenu){ui.toMenu=false;if(S&&S.over)store('ls_save','');coopStop();ui.mode='menu';ui.menuScr='main';renderMenu();}
   }else if(ui.mode==='menu'){draw(t);}
   document.body.classList.toggle('inmenu',ui.mode!=='game');
   flushToasts(t);
@@ -3587,6 +3628,7 @@ document.addEventListener('click',e=>{
   else if(ds.open){ui.open=ui.open===ds.open?null:ds.open;ui.cat=null;if(ds.open==='map'&&S.teams.length&&!ui.team)ui.team=S.teams[0].id;}
   else if(ds.work!=null){const n=+ds.n,who=ds.who||undefined;if(ds.work==='p')dispatch({t:'work',x:+ds.x,y:+ds.y,n,who});else dispatch({t:'work',id:+ds.work,n,who});}
   else if(ds.allyraid){allyRaid(ds.allyraid);}
+  else if(ds.scr){ui.menuScr=ds.scr;ui.menuSave=!!ds.save;renderMenu();return;}
   else if(ds.slotsave){slotSave(+ds.slotsave);renderMenu();return;}
   else if(ds.slotload){slotLoad(+ds.slotload);return;}
   else if(ds.slotdel){store('ls_slot'+ds.slotdel,'');renderMenu();return;}
@@ -3622,8 +3664,8 @@ document.addEventListener('click',e=>{
       S.ally={code,me:'s'+Math.random().toString(36).slice(2,9),name:String($('allyname').value||'Станция').slice(0,24)};autosave(S);allyConnect(S);$('overlay')._h=null;}
     else if(a==='allyleave'){if(S){S.ally=null;allyStop();autosave(S);}$('overlay')._h=null;}
     else if(a==='full')toggleFull();
-    else if(a==='menu'){if(S&&coop.role!=='guest')autosave(S);ui.mode='menu';renderMenu();return;}
-    else if(a==='new'){coopStop();ui.survivor=$('survivor').checked;ui.oneDeath=$('onedeath').checked;S=newGame(ui.diff,ui.survivor);S.oneDeath=ui.oneDeath;cam.x=0;cam.y=0;startGame();}
+    else if(a==='menu'){if(S&&coop.role!=='guest')autosave(S);ui.mode='menu';ui.menuScr='main';renderMenu();return;}
+    else if(a==='new'){coopStop();ui.survivor=$('survivor').checked;ui.oneDeath=$('onedeath').checked;ui.oneSave=$('onesave').checked;S=newGame(ui.diff,ui.survivor);S.oneDeath=ui.oneDeath;S.oneSave=ui.oneSave;ui.menuScr='main';cam.x=0;cam.y=0;startGame();}
     else if(a==='load'){coopStop();const sv=loadSave();if(sv){S=sv;startGame();}}
     else if(a==='resume'){startGame(coop.role==='guest');}
     else if(a==='host'){ui.survivor=$('survivor').checked;ui.oneDeath=$('onedeath').checked;coop.status='создаём…';coopHost();return;}
@@ -3631,7 +3673,7 @@ document.addEventListener('click',e=>{
   }
   ui.dirty=true;
 });
-addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;if(e.target.id==='onedeath')ui.oneDeath=e.target.checked;});
+addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;if(e.target.id==='onedeath')ui.oneDeath=e.target.checked;if(e.target.id==='onesave')ui.oneSave=e.target.checked;});
 
 /* ---------------------------- СТАРТ ---------------------------- */
 function boot(data){
