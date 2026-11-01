@@ -322,7 +322,10 @@ const DIFF={
   hardcore:{n:'Хардкор',d:'Без паузы и без второго шанса. Смерть станции — конец сохранения.',start:.4,cons:1.5,temp:-20,disc:2,sick:2,danger:2,law:30,hc:1,piles:1.8,deposits:5}
 };
 // температура на станции по дням сценария (до поправки сложности)
-const WEATHER=[-8,-8,-10,-12,-12,-14,-22,-15,-15,-16,-18,-20,-20,-28,-30,-20,-18,-20,-22,-24,-25,-26,-30,-34,-44,-48,-50,-46,-34,-28];
+const WEATHER=[-10,-10,-30,-30,-30,-30,-30,-30,-30,-10,-10,-30,-30,-30,-30,-40,-40,-10,-10,-30,-30,-30,-30,-30,-40,-40,-40,-40,-30,-30]; // 1–2 затишье −10, 3–9 мороз −30, 10–11 затишье, 12–15 −30, 16–17 лютый −40, 18–19 затишье, 20–24 −30, 25–28 лютый −40 (Чёрный холод), 29–30 −30
+function wTier(s){const i=s.endless&&s.day>LAST_DAY?18+((s.day-1)%10):Math.min(s.day,LAST_DAY)-1;const w=WEATHER[i];return w<=-40?2:w<=-30?1:0;}
+function medposts(s){return s.bld.filter(b=>(b.type==='medpost'||b.type==='hospital')&&!b.build&&b.on&&workforce(b.a)>0).length;}
+
 const LAST_DAY=30;
 
 /* здания: job 'w' — рабочие (могут инженеры и, по закону, дети), 'e' — только инженеры */
@@ -531,6 +534,9 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Мороз −30°: люди болеют каждую ночь','Frost −30°: people fall ill every night'],[' — 3 медпункта справляются',' — 3 first-aid posts cope'],[' — нужны 3 работающих медпункта (сейчас',' — need 3 staffed first-aid posts (now'],
+['Лютый мороз −40°: в неутеплённых домах и без крыши люди замерзают насмерть; завалы не разбирают — там только болеют','Deep frost −40°: people freeze to death in uninsulated homes and outdoors; no one clears debris — they only fall ill there'],
+['Лютый мороз: замёрзли насмерть','Deep frost: froze to death'],['— утеплите дома','— insulate the homes'],['Замёрзли насмерть:','Froze to death:'],['−40°: на завалах заболели','−40°: fell ill at the debris piles'],
 ['Пост сбора','Gathering post'],['Рабочие сами разбирают все завалы в радиусе (как радиус огня печи). До 20 человек.','Workers clear every debris pile within the radius (same as the stove’s heat radius). Up to 20 people.'],
 ['Сбор:','Gathering:'],['завал(ов) в радиусе ·','pile(s) in range ·'],['чел.','ppl'],
 ['Нормы выработки','Output quotas'],['Все производства +10%. Недовольство понемногу растёт каждый день.','All production +10%. Discontent creeps up every day.'],
@@ -1046,14 +1052,16 @@ function hourTick(s){
         s.res.raw-=cap;s.res.food+=cap*mult;
       }
     }
-    if(wh)for(const t of s.grid)if(t.pile){
+    const deep=wTier(s)===2;
+    if(deep&&wh&&s.hour===12){let w=0;for(const t of s.grid)if(t.pile)w+=t.pile.a.w+t.pile.a.c;for(const b of s.bld)if(b.type==='gather')w+=workforce(b.a);const k=Math.round(w*.15);if(k>0){sicken(s,k);toast(s,`−40°: на завалах заболели ${k}`,'cold');}}
+    if(wh&&!deep)for(const t of s.grid)if(t.pile){
       const wf=workforce(t.pile.a);if(wf<=0)continue;
       if(t.pile.clear>0){const cl=Math.min(t.pile.clear,wf*(has(s,'t_drills')?1.5:1));t.pile.clear-=cl;s.res.stone+=cl*.8;if(!t.pile.clear)toast(s,`Залежь расчищена: ${RES[t.pile.r].n}`,'good');continue;}
       const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
     }
-    if(wh)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
+    if(wh&&!deep)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
       const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)/P.length;
       for(const t of P){const g=Math.min(t.pile.amt,each);t.pile.amt-=g;s.res[t.pile.r]+=g;if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}}}
     if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');s.research=null;s.rp=0;}}
@@ -1107,18 +1115,21 @@ function homesHeat(s){
   return{per,homeless:left};
 }
 function nightSickness(s){
-  const D=D_(s);const {per,homeless}=homesHeat(s);
-  const P=[.12,.07,.035,.012,.003];
-  let n=0;
-  for(let l=0;l<5;l++)for(let i=0;i<per[l];i++)if(rnd()<P[l]*D.sick)n++;
-  const hl=lvlOf(ambient(s)+genHeat(s)*.5);
-  for(let i=0;i<homeless;i++)if(rnd()<P[hl]*1.8*D.sick)n++;
-  if(has(s,'additives'))n+=Math.round(popTotal(s)*.006);
+  const D=D_(s),tier=wTier(s),pop=popTotal(s);let n=0;
+  // −10: затишье, от холода не болеют. −30: болеют стабильно, три медпункта покрывают. −40: ещё сильнее.
+  if(tier>=1){const cover=Math.min(3,medposts(s))/3;n+=Math.round(pop*(tier===2?.07:.05)*(1-cover)*D.sick);
+    const {homeless}=homesHeat(s);n+=Math.round(homeless*.08*D.sick);}
+  if(has(s,'additives'))n+=Math.round(pop*.006);
   if(s.unfed>0)n+=Math.round(s.unfed*.05);
   if(has(s,'child_shelter')&&s.bld.some(b=>b.type==='nursery'&&!b.build))n=Math.round(n*.85);
   if(has(s,'quarantine'))n=Math.round(n*.8);
   if(has(s,'crowding'))n=Math.round(n*1.15+.4);
   if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');}
+  // −40: в неутеплённых домах и без крыши люди замерзают насмерть
+  if(tier===2){const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({cap:capOf(s,b),ok:(b.ins||0)>=1||(b.lvl||0)>=1})).sort((a,c)=>c.ok-a.ok);
+    let left=pop,risk=0;for(const h of homes){const k=Math.min(left,h.cap);if(!h.ok)risk+=k;left-=k;}risk+=left;
+    let d=0;for(let i=0;i<risk;i++)if(rnd()<.05*D.sick)d++;
+    if(d>0){kill(s,d,'all');toast(s,`Лютый мороз: замёрзли насмерть ${d} — утеплите дома`,'bad');log(s,`Замёрзли насмерть: ${d}.`,'bad');}}
 }
 function morning(s){
   const D=D_(s);
@@ -2404,7 +2415,6 @@ function makePile(r,amt,rich){
   const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(3,Math.min(rich?16:11,Math.ceil(amt/(rich?35:18))));
   const rr=seeded(hash(r+amt));
   // протоптанный круг и следы полозьев
-  const dirt=new T.Mesh(new T.CircleGeometry(.48,18),new T.MeshStandardMaterial({color:0x7d8794,roughness:1,transparent:true,opacity:.55,depthWrite:false}));dirt.rotation.x=-Math.PI/2;dirt.position.y=.012;g.add(dirt);
   for(let k=0;k<3;k++){const tr=new T.Mesh(new T.PlaneGeometry(.035,.5+rr()*.5),new T.MeshBasicMaterial({color:0x5a6470,transparent:true,opacity:.45,depthWrite:false}));tr.rotation.x=-Math.PI/2;tr.rotation.z=rr()*6;tr.position.set((rr()-.5)*.6,.014,(rr()-.5)*.6);g.add(tr);}
   const darkW=kmat('x',{color:0x2a221c,roughness:.95}),darkW2=kmat('x',{color:0x3a2c20,roughness:.9}),coalM=kmat('x',{color:0x121214,roughness:.7,metalness:.1}),rust=kmat('x',{color:0x3a3634,roughness:.6,metalness:.6}),rust2=kmat('x',{color:0x4a3a30,roughness:.7,metalness:.4});
   for(let i=0;i<n;i++){const a=rr()*6.28,d=Math.sqrt(rr())*.42,x=Math.cos(a)*d,z=Math.sin(a)*d;let m;
@@ -2418,7 +2428,6 @@ function makePile(r,amt,rich){
       m.position.set(x,.05,z);m.rotation.set((rr()-.5)*.9,rr()*3,(rr()-.5)*.9);}
     m.castShadow=true;g.add(m);}
   // сугробики вокруг
-  const sm=snowMat(0xe8eef4);for(let k=0;k<3+n/4;k++){const a=rr()*6.28,sb=new T.Mesh(new T.SphereGeometry(.09+rr()*.08,8,5,0,6.29,0,1.5),sm);sb.scale.y=.45;sb.position.set(Math.cos(a)*(.25+rr()*.25),0,Math.sin(a)*(.25+rr()*.25));g.add(sb);}
   if(rich)g.scale.setScalar(1.2);
   g.userData={amt};return g;
 }
@@ -3191,8 +3200,11 @@ function warnings(s){
     else if(dt<=-3)W.push(['','☀',`Завтра потеплеет: ${tm}°`]);
     const big=[2,3,4,5].map(i=>WEATHER[Math.min(s.day+i,LAST_DAY)-1]+D.temp).findIndex(t=>t<=now-12);
     if(big>=0&&dt<3)W.push(['cold','❄',`Через ${big+2} дн. придёт сильный мороз: ${WEATHER[Math.min(s.day+big+2,LAST_DAY)-1]+D.temp}°`]);}
+  {const tier=wTier(s),mp=medposts(s);
+    if(tier===1)W.unshift([mp>=3?'cold':'bad','🌡',`Мороз −30°: люди болеют каждую ночь${mp>=3?' — 3 медпункта справляются':` — нужны 3 работающих медпункта (сейчас ${mp})`}`]);
+    if(tier===2)W.unshift(['bad','❄','Лютый мороз −40°: в неутеплённых домах и без крыши люди замерзают насмерть; завалы не разбирают — там только болеют']);}
   // обморожения этой ночью
-  {const {per,homeless}=homesHeat(s),P=[.12,.07,.035,.012,.003];let e=0;for(let l=0;l<5;l++)e+=per[l]*P[l]*D.sick;e+=homeless*P[lvlOf(ambient(s)+genHeat(s)*.5)]*1.8*D.sick;e=Math.round(e);
+  {const {homeless}=homesHeat(s),tier=wTier(s);let e=0;if(tier>=1)e=popTotal(s)*(tier===2?.07:.05)*(1-Math.min(3,medposts(s))/3)*D.sick+homeless*.08*D.sick;e=Math.round(e);
     if(e>=1)W.push([e>=4?'bad':'cold','🌡',`Риск обморожений: ночью могут заболеть ≈ ${e} чел.${homeless?` Без крыши ${homeless}.`:''}`]);}
   // уголь
   {const fuel=s.gen.on?[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D.cons:0;if(fuel>0&&s.res.coal/fuel<24)W.push(['bad','⚠',`Уголь кончится через ${Math.floor(s.res.coal/fuel)} ч — огонь погаснет`]);}
