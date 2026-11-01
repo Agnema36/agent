@@ -2422,8 +2422,6 @@ let LOG_END_M=null;const LOG_END=()=>LOG_END_M||(LOG_END_M=new THREE.MeshStandar
 function makePile(r,amt,rich){
   const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(3,Math.min(rich?16:11,Math.ceil(amt/(rich?35:18))));
   const rr=seeded(hash(r+amt));
-  // протоптанный круг и следы полозьев
-  for(let k=0;k<3;k++){const tr=new T.Mesh(new T.PlaneGeometry(.035,.5+rr()*.5),new T.MeshBasicMaterial({color:0x5a6470,transparent:true,opacity:.45,depthWrite:false}));tr.rotation.x=-Math.PI/2;tr.rotation.z=rr()*6;tr.position.set((rr()-.5)*.6,.014,(rr()-.5)*.6);g.add(tr);}
   const darkW=kmat('x',{color:0x2a221c,roughness:.95}),darkW2=kmat('x',{color:0x3a2c20,roughness:.9}),coalM=kmat('x',{color:0x121214,roughness:.7,metalness:.1}),rust=kmat('x',{color:0x3a3634,roughness:.6,metalness:.6}),rust2=kmat('x',{color:0x4a3a30,roughness:.7,metalness:.4});
   for(let i=0;i<n;i++){const a=rr()*6.28,d=Math.sqrt(rr())*.42,x=Math.cos(a)*d,z=Math.sin(a)*d;let m;
     if(r==='wood'){// обломки досок и брёвен вразброс
