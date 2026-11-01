@@ -1943,7 +1943,7 @@ function init3D(){
       const im=new T.InstancedMesh(geo,mat,count);im.castShadow=true;im.customDepthMaterial=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking,map:tex,alphaTest:.45});
       im.instanceColor=new T.InstancedBufferAttribute(new Float32Array(count*3).fill(1),3);im.count=0;im.frustumCulled=false;sc.add(im);
       const o={im,h,aspect:.6,ready:false,n:0};return o;};
-    for(const [k,h] of [['ghoul',.5],['shambler',.48],['dog',.32],['brute',.74],['boar',.5],['bloat',.36]])R3.spr[k]=mk(k,h,160);
+    for(const [k,h] of [['ghoul',.5],['shambler',.48],['dog',.32],['brute',.74],['boar',.5],['bloat',.36]]){const o=R3.spr[k]=mk(k,h,160);o.im.material.depthTest=false;o.im.renderOrder=5;}
     for(const [k,h] of [['p_scout',.37],['p_engineer',.36],['p_worker',.37],['p_child',.26]])R3.spr[k]=mk(k,h,60);}
   R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso'||n==='skirt';m.userData.part=n;sc.add(m);return m;});
   {// шинели разных оттенков: бурые, хаки, серые, светлые
@@ -2186,11 +2186,11 @@ function buildEscalators(sx){
   // сплошные заснеженные откосы по бокам и под ступенями (клин от пола до верхней площадки)
   const wedge=(depth,mat,z,dy)=>{const sh=new T.Shape();sh.moveTo(0,-.8);sh.lineTo(len+.2,-.8);sh.lineTo(len+.2,rise+dy);sh.lineTo(0,dy);sh.lineTo(0,-.8);
     const gg=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:false});gg.translate(0,0,-depth/2);const m=mesh(gg,mat,false);m.material.side=T.DoubleSide;m.scale.x=sx;m.position.set(0,0,z);g.add(m);return m;};
-  const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(2.5,bank,3.15,.35);
+  const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(1.9,bank,2.85,.35);
   {const pz=wz(GH-1)-zc,px=sx*(len+.3),arch=kmat('stone',{color:0x55524c});
-    for(const dz of [-.75,.75]){const pil=mesh(new T.BoxGeometry(.35,1.6,.3),arch);pil.position.set(px,-.5+.8,pz+dz);g.add(pil);}
-    const top=mesh(new T.BoxGeometry(.35,.3,1.8),arch);top.position.set(px,-.5+1.75,pz);g.add(top);
-    const hole=new T.Mesh(new T.PlaneGeometry(1.2,1.5),new T.MeshBasicMaterial({color:0x020304}));hole.position.set(px+sx*.2,-.5+.75,pz);hole.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(hole);}wedge(3.6,snowMat(0x55524c),0,-.2);
+    for(const dz of [-1.25,1.25]){const pil=mesh(new T.BoxGeometry(.4,2,.35),arch);pil.position.set(px,-.5+1,pz+dz);g.add(pil);}
+    const top=mesh(new T.BoxGeometry(.4,.35,2.85),arch);top.position.set(px,-.5+2.15,pz);g.add(top);
+    const hole=new T.Mesh(new T.PlaneGeometry(2.2,1.95),new T.MeshBasicMaterial({color:0x020304}));hole.position.set(px+sx*.2,-.5+.98,pz);hole.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(hole);}wedge(3.6,snowMat(0x55524c),0,-.2);
   const landTex=ctex(256,256,(c,w,h)=>{c.fillStyle='#3a3836';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){const v=95+Math.random()*30|0;c.fillStyle=`rgb(${v},${v-3},${v-8})`;c.fillRect(x+1,y+1,30,30);
       for(let k=0;k<6;k++){c.fillStyle=`rgba(20,18,16,${Math.random()*.4})`;c.fillRect(x+Math.random()*30,y+Math.random()*30,2,2);}}
     for(let i=0;i<24;i++){c.fillStyle=`rgba(225,232,238,${.25+Math.random()*.4})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,6+Math.random()*24,3+Math.random()*10,Math.random()*3,0,7);c.fill();}
@@ -3159,7 +3159,7 @@ function combatStep(s,dt){
     if(dawn&&z.on&&!z.flee)z.flee=1; // на рассвете уцелевшие уходят в тоннель
     let tx,ty,tg=null;
     if(z.flee){// уходят: сначала спускаются на пути, потом по рельсам в тоннель; застрявшие исчезают
-      z.fleeT=(z.fleeT||0)+dt;if(z.x>GW+1.5||z.fleeT>4){z.gone=1;continue;}
+      z.fleeT=(z.fleeT||0)+dt;if(z.x>GW+5.5||z.fleeT>9){z.gone=1;continue;}
       if(Math.abs(z.y-(GH-1))>.25&&z.x<GW-.6){tx=Math.min(GW-1,z.x+.4);ty=GH-1;}else{tx=GW+8;ty=GH-1;}}
     else if(z.x>GW-1.5&&!z.on){tx=GW-1.6;ty=GH-1;}
     else if(z.inside&&!(z.tauntT>0)&&!s.bld.some(b=>b.type==='catapult'&&!b.build&&Math.hypot(b.x-z.x,b.y-z.y)<=tauntR(s,b))){// бродит от дома к дому
@@ -3169,9 +3169,9 @@ function combatStep(s,dt){
     const dx=tx-z.x,dy=ty-z.y,d=Math.hypot(dx,dy)||1;if(z.fl>0)z.fl-=dt;z.cyc=(z.cyc||0)+dt;
     // стиль движения: упырь дёргается, секач рывками, пёс зигзагом; перед атакой — рывок
     let mul=1;if(z.t==='ghoul')mul=Math.sin(z.cyc*9+z.id)>-.3?1.35:.1;else if(z.t==='boar')mul=(z.cyc%.6)<.32?1.9:.08;
-    z.lg=z.on&&!z.flee&&d<1.1&&d>.65?1:0;if(z.lg)mul*=2.6;
+    z.lg=z.on&&!z.flee&&d<1.1&&d>.65?1:0;if(z.lg)mul*=2.6;if(z.flee)mul=Math.max(mul,1)*2; // отходят бегом
     const st=z.sp*dt*mul;
-    if(z.on&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*(z.dm||1)*(ZDMG[s.diff]||1)*dt;z.att=tg.id;
+    if(z.on&&!z.flee&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*(z.dm||1)*(ZDMG[s.diff]||1)*dt;z.att=tg.id;
         if(tg.hp<=0){tile(s,tg.x,tg.y).b=0;s.bld=s.bld.filter(x=>x!==tg);toast(s,`Мутанты сломали: ${B[tg.type].n}`,'bad');log(s,`Разрушено: ${B[tg.type].n}.`,'bad');computeHeat(s);}continue;}
       // дошёл до жилья: убивает людей, пока жив, затем идёт к следующему зданию
       if(!z.flee){z.inside=1;z.bite=(z.bite||0)+dt*(z.dm||1);if(z.bite>=.3){z.bite=0;z.nb=(z.nb||0)+1;if(z.nb>=3){z.nb=0;z.lastRt=z.rt;z.rt=null;}const k=kill(s,1,'all');if(k){s.hope-=1;if(w)w.breach++;s.zombieKills=(s.zombieKills||0)+1;if(!s._bt||s.hour!==s._bt){s._bt=s.hour;toast(s,'Мутанты на станции убивают людей!','bad');}}}}
@@ -3181,7 +3181,8 @@ function combatStep(s,dt){
   }
   // мутанты не слипаются: держат дистанцию друг от друга
   {const MD=.24;for(let i=0;i<Z.length;i++){const a=Z[i];if(a.dead)continue;for(let j=i+1;j<Z.length;j++){const b=Z[j];if(b.dead)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
-      if(d<MD){const k=(MD-(d||.001))/2,ux=d?dx/d:Math.cos(i+j),uy=d?dy/d:Math.sin(i+j);a.x-=ux*k;a.y-=uy*k;b.x+=ux*k;b.y+=uy*k;}}}}
+      if(d<MD){const k=(MD-(d||.001))/2,ux=d?dx/d:Math.cos(i+j),uy=d?dy/d:Math.sin(i+j);a.x-=ux*k;a.y-=uy*k;b.x+=ux*k;b.y+=uy*k;}}}
+    for(const z of Z){if(!z.on||z.flee&&Math.abs(z.y-(GH-1))<.3)z.y=clamp(z.y,GH-1.22,GH-.78);}}
   // башни
   s.fx=[];
   for(const b of s.bld){if(b.build||!b.on||!TOWER[b.type])continue;const S_=towerStats(s,b);if(S_.dps<=0)continue;
