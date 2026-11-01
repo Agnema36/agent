@@ -536,6 +536,7 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Счёт:','Score:'],['(очко за каждую прожитую минуту).','(one point per minute survived).'],
 ['Стройка:','Construction:'],['строят','builders'],['Стройка стоит: нет свободных рабочих','Construction halted: no free workers'],
 ['Урезанные пайки','Cut rations'],['Каждый ест на 20% меньше. Недовольство растёт каждый день.','Everyone eats 20% less. Discontent grows every day.'],['Закон: Урезанные пайки','Law: Cut rations'],
 ['Голод убивает вдвое реже.','Hunger kills half as often.'],['Все сыты','Everyone is fed'],['Голод','Hunger'],['Котельная станции: запас угля.','The station boiler room: a coal stock.'],
@@ -1313,7 +1314,7 @@ const EV={
   song:{t:'Песня у огня',x:()=>'Вечером кто-то достал гитару. Половина станции подпевает.',c:[{t:'Пусть поют',f:s=>{s.hope+=3;}}]},
   promise:{t:'Просьба жителей',x:(s,p)=>`Люди просят: «${PROMISES.find(x=>x.k===p.k).t}». Срок — сутки.\n\nПообещаете — надежда вырастет, но провал ударит больно.`,c:[{t:'Обещаю',h:'+надежда сейчас',f:(s,p)=>{s.promise={k:p.k,left:24};s.hope+=4;}},{t:'Не могу обещать',h:'−надежда',f:s=>{s.hope-=3;}}]},
   victory:{t:'Мы пережили холод',x:s=>`Тридцать дней. Мороз отступил к вентшахтам. На «Театральной» живут ${popTotal(s)} человек, погибли ${s.deaths}.\n\nСтанция выстояла.`,c:[{t:'Играть дальше',f:s=>{s.endless=true;}},{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
-  gameover:{t:'Конец',x:(s,p)=>({dead:'На станции не осталось живых.',disc:'Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.',hope:'Надежда угасла. Люди разошлись по тоннелям.',death1:'Режим «До первой смерти»: на станции погиб человек. Игра окончена.'})[p.why]+`\n\nВы продержались ${s.day} дн.`,c:[{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
+  gameover:{t:'Конец',x:(s,p)=>({dead:'На станции не осталось живых.',disc:'Жители сместили вас и выставили в тоннель. Станция пойдёт своим путём.',hope:'Надежда угасла. Люди разошлись по тоннелям.',death1:'Режим «До первой смерти»: на станции погиб человек. Игра окончена.'})[p.why]+`\n\nСчёт: ${Math.floor((s.playSec||0)/60)} (очко за каждую прожитую минуту).`+`\n\nВы продержались ${s.day} дн.`,c:[{t:'В главное меню',f:()=>{ui.toMenu=true;}}]},
   // разведка
   st_loot:{t:'Разведка',x:(s,p)=>p.txt,c:[{t:'Забрать',f:()=>{}}]},
   st_survivors:{t:'Выжившие',x:(s,p)=>p.txt,c:[
@@ -3484,6 +3485,7 @@ function loop(t){
     const modal=S.queue.length>0&&!ui.evMin;
     if(coop.role!=='guest'&&!S.over&&!S.paused&&!(modal&&!S.survivor)){
       S.acc+=dt*S.speed/5; // 1 игровой час ≈ 5 с на ×1
+      S.playSec=(S.playSec||0)+dt; // счёт: 1 очко за каждую прожитую минуту игры
       combatStep(S,dt*S.speed/5);upgradeStep(S,dt*S.speed/5);
       let n=0;while(S.acc>=1&&n<6){S.acc-=1;hourTick(S);syncTeams(S);n++;ui.dirty=true;}
     }
