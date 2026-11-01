@@ -1731,11 +1731,23 @@ function init3D(){
     for(let i=0;i<0;i++){c.fillStyle=`rgba(${60+Math.random()*30|0},${48+Math.random()*20|0},36,${.08+Math.random()*.18})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,4+Math.random()*16,2+Math.random()*7,Math.random()*3,0,7);c.fill();}
     for(let i=0;i<14;i++){const x=Math.random()*w,y=Math.random()*h,a=Math.random()*6;c.fillStyle='rgba(90,100,115,.18)';for(let k=0;k<5;k++){c.beginPath();c.ellipse(x+Math.cos(a)*k*6+(k%2?2:-2),y+Math.sin(a)*k*6,1.2,2,a,0,7);c.fill();}}});
   snowTex.wrapS=snowTex.wrapT=T.RepeatWrapping;snowTex.repeat.set(9,4);R3.snowTex=snowTex;
-  const SW=GW+.4,SD=GH-2,gx=SW*4,gz=SD*4;
+  const SW=GW+.4,SD=GH-2,gx=Math.round(SW*6),gz=SD*6;
   const gG=new T.PlaneGeometry(SW,SD,gx,gz);gG.rotateX(-Math.PI/2);gG.translate(-.5,0,wz((GH-1)/2));
   gG.setAttribute('color',new T.BufferAttribute(new Float32Array(gG.attributes.position.count*3),3));
   R3.snowG=gG;R3.snowSeed=Array.from({length:gG.attributes.position.count},()=>Math.random());
-  R3.ground=new T.Mesh(gG,new T.MeshStandardMaterial({map:snowTex,bumpMap:snowTex,bumpScale:.02,vertexColors:true,roughness:.95,metalness:0}));
+  {// процедурный PBR-снег: цвет, нормали и шероховатость из одного поля высот (бесшовно)
+    const N=256,hgt=new Float32Array(N*N),rnd2=seeded(77);
+    const oct=(f,a)=>{const g=Array.from({length:(f+1)*(f+1)},()=>rnd2());for(let y=0;y<N;y++)for(let x=0;x<N;x++){const fx=x/N*f,fy=y/N*f,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,sx=tx*tx*(3-2*tx),sy=ty*ty*(3-2*ty);
+      const v=(i,j)=>g[((j%f)*(f+1))+(i%f)];const a0=v(ix,iy)+(v(ix+1,iy)-v(ix,iy))*sx,a1=v(ix,iy+1)+(v(ix+1,iy+1)-v(ix,iy+1))*sx;hgt[y*N+x]+=(a0+(a1-a0)*sy)*a;}};
+    oct(4,.5);oct(8,.25);oct(16,.14);oct(32,.07);oct(64,.04);
+    // ветровая рябь
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++)hgt[y*N+x]+=Math.sin((x*.9+y*.35)/N*Math.PI*2*10+hgt[y*N+x]*6)*.02;
+    const mk=f=>{const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),id=x.createImageData(N,N);for(let i=0;i<N*N;i++){const p=f(i%N,(i/N)|0,i);id.data.set([p[0],p[1],p[2],255],i*4);}x.putImageData(id,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(7,4);t.anisotropy=8;return t;};
+    const H=(x,y)=>hgt[((y+N)%N)*N+((x+N)%N)];
+    const alb=mk((x,y,i)=>{const h=H(x,y),sp=rnd2()<.004?40:0;return[Math.min(255,212+h*30+sp),Math.min(255,222+h*26+sp),Math.min(255,232+h*20+sp)];});alb.encoding=T.sRGBEncoding;
+    const nrm=mk((x,y)=>{const dx=(H(x+1,y)-H(x-1,y))*5,dy=(H(x,y+1)-H(x,y-1))*5,l=Math.hypot(dx,dy,1);return[(-dx/l*.5+.5)*255,(-dy/l*.5+.5)*255,(1/l*.5+.5)*255];});
+    const rgh=mk((x,y)=>{const v=(.7+H(x,y)*.25)*255;return[v,v,v];});
+    R3.ground=new T.Mesh(gG,new T.MeshStandardMaterial({map:alb,normalMap:nrm,normalScale:new T.Vector2(.8,.8),roughnessMap:rgh,roughness:1,vertexColors:true,metalness:0}));}
   R3.ground.receiveShadow=true;sc.add(R3.ground);
   // генератор
   R3.gen=makeGenerator();sc.add(R3.gen);
@@ -2468,12 +2480,22 @@ function render3D(t){
       if(ui.heatView)c.setHex(HEATC[lv]);else{base.setHex(((x+y)%2)?0x5e5c58:0x575551);c.copy(base).lerp(fr,FROST[lv]*(.35+cold*.55));}
       R3.tiles.setColorAt(y*GW+x,c);}
     R3.tiles.instanceColor.needsUpdate=true;R3.tiles.visible=!!ui.heatView;
-    const P=R3.snowG.attributes.position,C=R3.snowG.attributes.color,wet=new T.Color(0x2a2d31),snow=new T.Color(0xdfe7f0),mud=new T.Color(0x4a4038),cc=new T.Color();
+    const P=R3.snowG.attributes.position,C=R3.snowG.attributes.color,wet=new T.Color(0x2a2d31),snow=new T.Color(0xdfe7f0),mud=new T.Color(0x4a4038),trod=new T.Color(0x5e6874),cc=new T.Color();
+    const BL=s.bld.filter(b=>!b.build),SEG=BL.filter(b=>B[b.type].house||B[b.type].job).map(b=>[b.x,b.y+.45]);
+    const segD=(px,py)=>{let m=9;for(const [bx,by] of SEG){const dx=GX-bx,dy=GY-by,l2=dx*dx+dy*dy||1,t=clamp(((px-bx)*dx+(py-by)*dy)/l2,0,1);const d=Math.hypot(px-bx-t*dx,py-by-t*dy);if(d<m)m=d;}return m;};
     for(let i=0;i<P.count;i++){const X=P.getX(i),Z=P.getZ(i);const tx=clamp(Math.round(X+GX),0,GW-1),ty=clamp(Math.round(Z+GY),1,GH-2);
       const outside=X+GX< -.5||X+GX>GW-.5;const lv=outside?lvlOf(ambient(s)):lvlOf(heatAt(s,tx,ty));
       const amt=clamp(.25+FROST[lv]*(.4+cold*.6)+(outside?.2:0),0,1),n=R3.snowSeed[i];
       cc.copy(wet).lerp(mud,clamp(amt*1.6,0,1)*.6).lerp(snow,clamp((amt-.3)/.7,0,1)*(.75+n*.25));if(n<.12)cc.lerp(mud,.35);
-      C.setXYZ(i,cc.r,cc.g,cc.b);P.setY(i,amt>.35?(amt-.35)*.09*(.4+n*.9):0);}
+      const px=X+GX,py=Z+GY;let h=amt>.35?(amt-.35)*.09*(.4+n*.9):0;
+      // сугробы у стен платформы и у торцов
+      const wall=Math.max(0,1-(py-.5)/1.4),ends=Math.max(0,1-Math.min(px+.6,GW-.4-px)/1.6);h+=(wall*wall*.5+ends*ends*.3)*(.5+amt*.6)*(.8+n*.4);
+      if(wall>.2||ends>.2)cc.lerp(snow,Math.max(wall,ends)*.8);
+      // наметы вокруг зданий
+      for(const b of BL){const d=Math.hypot(px-b.x,py-b.y);if(d>.4&&d<.85){h+=Math.sin((d-.4)/.45*Math.PI)*.06*amt;}}
+      // протоптанные тропинки к печи
+      const sd=segD(px,py);if(sd<.16){const k=1-sd/.16;h*=1-k*.85;cc.lerp(trod,k*.75);}
+      C.setXYZ(i,cc.r,cc.g,cc.b);P.setY(i,h);}
     P.needsUpdate=true;C.needsUpdate=true;R3.snowG.computeVertexNormals();}
   // освещение: время суток
   const night=s.hour<6||s.hour>=21?1:s.hour<8||s.hour>=19?.5:0;
