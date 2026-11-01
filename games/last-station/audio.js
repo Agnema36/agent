@@ -79,7 +79,7 @@
     if (window.Howl && A.tracks[st] !== false) {
       let h = A.tracks[st];
       if (!h) {
-        h = A.tracks[st] = new Howl({ src: ['audio/' + st + '.mp3', 'audio/' + st + '.ogg'], loop: true, volume: 0,
+        h = A.tracks[st] = new Howl({ src: ['audio/' + st + '.mp3', 'audio/' + st + '.ogg'], loop: true, volume: 0, html5: true,
           onloaderror: () => { A.tracks[st] = false; if (A.state === st) { A.cur = null; startSynth(st); } } });
       }
       if (h && h.state && h.state() !== 'unloaded') {
