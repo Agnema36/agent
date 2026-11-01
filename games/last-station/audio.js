@@ -9,7 +9,7 @@
   const load = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch (e) { return {}; } };
   const saved = load();
   const A = {
-    settings: { music: saved.music != null ? saved.music : 0.6, sfx: saved.sfx != null ? saved.sfx : 0.8 },
+    settings: { master: saved.master != null ? saved.master : 1, music: saved.music != null ? saved.music : 0.6, sfx: saved.sfx != null ? saved.sfx : 0.8 },
     state: null, ctx: null, ready: false, tracks: {}, synth: null
   };
   const save = () => { try { localStorage.setItem(LS, JSON.stringify(A.settings)); } catch (e) {} };
@@ -22,11 +22,12 @@
     if (window.Howler && Howler.ctx) A.ctx = Howler.ctx; else if (AC) A.ctx = new AC(); else return;
     if (A.ctx.state === 'suspended') A.ctx.resume();
     const c = A.ctx;
-    A.master = c.createGain(); A.master.connect(c.destination);
+    A.master = c.createGain(); A.master.gain.value = A.settings.master; A.master.connect(c.destination);
+    if (window.Howler) Howler.volume(A.settings.master);
     A.music = c.createGain(); A.music.gain.value = A.settings.music; A.music.connect(A.master);
     A.sfx = c.createGain(); A.sfx.gain.value = A.settings.sfx; A.sfx.connect(A.master);
     A.noise = makeNoise(c);
-    buildAmbient();
+    // фоновый шум (ветер, треск, гул) отключён по просьбе игрока
     A.ready = true;
     if (A.pending) { const s = A.pending; A.pending = null; A.state = null; playState(s); }
   }
@@ -63,7 +64,7 @@
     const g2g = c.createGain(); g2g.gain.value = 0.25; g1.connect(gf); g2.connect(g2g); g2g.connect(gf); gf.connect(A.genG); g1.start(); g2.start();
   }
   function updateAmbient(o) {
-    if (!A.ready) return;
+    if (!A.ready || !A.windG) return;
     const df = o && o.distToFire != null ? o.distToFire : 20, dg = o && o.distToGenerator != null ? o.distToGenerator : 99;
     ramp(A.fireG.gain, clamp(0.5 / (1 + df * df * 0.08), 0, 0.5), 0.2);
     ramp(A.genG.gain, clamp(0.18 / (1 + dg * dg * 0.06), 0, 0.18), 0.2);
@@ -151,7 +152,8 @@
   }
 
   function setMusicVolume(v) { A.settings.music = clamp(+v, 0, 1); save(); if (A.music) ramp(A.music.gain, A.settings.music, 0.1); if (A.cur) A.cur.volume(A.settings.music); }
+  function setMasterVolume(v) { A.settings.master = clamp(+v, 0, 1); save(); if (A.master) ramp(A.master.gain, A.settings.master, 0.1); if (window.Howler) Howler.volume(A.settings.master); }
   function setSfxVolume(v) { A.settings.sfx = clamp(+v, 0, 1); save(); if (A.sfx) ramp(A.sfx.gain, A.settings.sfx, 0.1); }
 
-  window.GameAudio = { init, playState, updateAmbient, growl, setMusicVolume, setSfxVolume, settings: A.settings, _a: A };
+  window.GameAudio = { init, playState, updateAmbient, growl, setMasterVolume, setMusicVolume, setSfxVolume, settings: A.settings, _a: A };
 })();

@@ -214,7 +214,8 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 .mwide{width:min(900px,100%)}.mback{margin-bottom:8px}.diffs.four{grid-template-columns:repeat(4,1fr)}@media (max-width:700px){.diffs.four{grid-template-columns:1fr 1fr}}
 .diff small.dnum{display:block;margin-top:6px;color:var(--amber);font-family:var(--mono);font-size:11px;line-height:1.35}
 .mods{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px}.mods small{color:var(--frost-dim)}
-.btn.huge{width:100%;padding:14px;font-size:18px;letter-spacing:.1em}.vol{display:flex;align-items:center;gap:12px;margin:6px 0;color:var(--frost-dim)}.vol input{flex:1;max-width:320px;accent-color:var(--amber)}
+.btn.huge{width:100%;padding:14px;font-size:18px;letter-spacing:.1em}.hudvol{display:flex;align-items:center;gap:4px;font-size:13px}.hudvol input{width:80px;accent-color:var(--amber)}
+.vol{display:flex;align-items:center;gap:12px;margin:6px 0;color:var(--frost-dim)}.vol input{flex:1;max-width:320px;accent-color:var(--amber)}
 .ctl{margin:6px 0 0 18px;color:var(--frost-dim);line-height:1.7}
 .diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
 .diff{padding:10px;border:1px solid var(--rim);background:var(--steel);text-align:left;border-radius:2px}
@@ -552,6 +553,7 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
 ['Москва после ядерной зимы. Продержитесь как можно дольше.','Moscow after the nuclear winter. Hold out as long as you can.'],['Вернуться в игру','Resume'],['Сохранить','Save'],['Продолжить','Continue'],['Новая игра','New game'],['Загрузить','Load'],['Настройки','Settings'],['← Назад','← Back'],
@@ -3337,12 +3339,13 @@ function renderTop(){
   setHTML($('res'),RES_ORDER.map(k=>{if(k==='sick'){const il=s.ill.w+s.ill.e+s.ill.c,cr=s.crit.w+s.crit.e+s.crit.c;return`<div class="res" title="Больные (тяжёлые: ${cr})">${ico('meds')}<span class="v" style="${il+cr?'color:#ff9a8a':''}">${il+cr}</span>${cr?`<span class="d neg">${cr} тяж.</span>`:''}</div>`;}const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
   const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;return`<span>д${d}: ${weatherAt(d)+D_(s).temp}°</span>`;}).join('');
   setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div></div>`);
+  {const hv=$('hudvol');if(hv&&!hv._i&&window.GameAudio){hv._i=1;hv.value=GameAudio.settings.master;}}
   const hh=String(s.hour).padStart(2,'0');
   const sp=s.survivor?[1,2]:[0,1,2,3];
   setHTML($('clock'),`<span class="day">${s.oneDeath?'<span title="До первой смерти" style="color:var(--bad)">✝ </span>':''}День ${s.day}</span><span class="num">${hh}:00</span>
    <div class="speed">${sp.map(v=>`<button data-speed="${v}" class="${(v===0&&s.paused)||(!s.paused&&s.speed===v)?'on':''}" aria-label="${v?'Скорость '+v:'Пауза'}">${v?'×'+v:'II'}</button>`).join('')}</div>
    ${coop.role!=='solo'?`<span class="coopbadge">${coop.role==='host'?'ХОСТ':'ГОСТЬ'} ${coop.code} · ${coop.status}</span>`:''}
-   <button class="iconbtn" data-lang="${LANG==='ru'?'en':'ru'}" title="Язык / Language">${LANG==='ru'?'EN':'RU'}</button><button class="iconbtn" data-act="full" title="Во весь экран (F)">⤢</button><button class="iconbtn" data-act="menu">Меню</button>`);
+   <label class="hudvol" title="Громкость"><span aria-hidden="true">🔊</span><input type="range" id="hudvol" min="0" max="1" step="0.05" aria-label="Громкость"></label><button class="iconbtn" data-lang="${LANG==='ru'?'en':'ru'}" title="Язык / Language">${LANG==='ru'?'EN':'RU'}</button><button class="iconbtn" data-act="full" title="Во весь экран (F)">⤢</button><button class="iconbtn" data-act="menu">Меню</button>`);
   const hope=s.hope,disc=s.disc;
   setHTML($('meters'),`<div class="meter hope ${hope<25?'low':''}" data-tip="hope">${HOPE_ICO}<span class="lbl">Надежда</span><div class="bar"><div class="fill" style="width:${hope}%"></div></div><span class="num">${Math.round(hope)}</span></div>
    <div class="meter disc" data-tip="disc">${DISC_ICO}<span class="lbl">Недовольство</span><div class="bar"><div class="fill" style="width:${disc}%"></div></div><span class="num">${Math.round(disc)}</span></div>`);
@@ -3554,6 +3557,7 @@ function renderMenu(){
     h=`<div class="sheet panel mwide">${back}<h2>Настройки</h2>
       <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
       <h3 style="margin-top:14px">Звук</h3>
+      <label class="vol">Общая громкость <input type="range" id="mastervol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.master:1}"></label>
       <label class="vol">Музыка <input type="range" id="musvol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.music:.6}"></label>
       <label class="vol">Звуки <input type="range" id="sfxvol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.sfx:.8}"></label>
       <h3 style="margin-top:14px">Графика</h3>
@@ -3785,7 +3789,7 @@ document.addEventListener('click',e=>{
   ui.dirty=true;
 });
 ['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{if(window.GameAudio)GameAudio.init();},{passive:true}));
-addEventListener('input',e=>{if(!window.GameAudio)return;if(e.target.id==='musvol')GameAudio.setMusicVolume(e.target.value);if(e.target.id==='sfxvol')GameAudio.setSfxVolume(e.target.value);});
+addEventListener('input',e=>{if(!window.GameAudio)return;if(e.target.id==='musvol')GameAudio.setMusicVolume(e.target.value);if(e.target.id==='hudvol'||e.target.id==='mastervol'){GameAudio.setMasterVolume(e.target.value);const o=$(e.target.id==='hudvol'?'mastervol':'hudvol');if(o)o.value=e.target.value;}if(e.target.id==='sfxvol')GameAudio.setSfxVolume(e.target.value);});
 addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;if(e.target.id==='onedeath')ui.oneDeath=e.target.checked;if(e.target.id==='onesave')ui.oneSave=e.target.checked;if(e.target.id==='art2d'){ART2D=e.target.checked;try{localStorage.setItem('ls_art2d',ART2D?'1':'0');}catch(_){}}});
 
 /* ---------------------------- СТАРТ ---------------------------- */
