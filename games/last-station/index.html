@@ -2523,13 +2523,50 @@ function makeBuilding(type){
       kpipe(cw,[-.07,-.03,0],[0,.0,0],.006,KM.dark());kpipe(cw,[.07,-.03,0],[0,.0,0],.006,KM.dark());ksnow(cw,.16,.14,0,-.03,0,.012);
       kTowerLevels(T,body,u,TOP+.04,.4,M);
       break;}
-    case 'steamgun':{
-      kplinth(body,.7,.7);kcyl(body,.3,.34,.25,KM.iron(),0,.05,0,18);
-      const tur=new T.Group();tur.position.y=.3;body.add(tur);u.tur=tur;kcyl(tur,.22,.24,.2,KM.iron(),0,0,0,16);
-      const brl=mesh(new T.CylinderGeometry(.06,.07,.6,12),KM.dark());brl.rotation.x=Math.PI/2;brl.position.set(0,.12,.32);tur.add(brl);u.brl=brl;
-      for(const z of [.15,.3,.45]){const rg=mesh(new T.TorusGeometry(.075,.012,6,12),KM.brass(),false);rg.position.set(0,.12,z);tur.add(rg);}
-      kcyl(tur,.07,.07,.35,KM.pipe(),-.15,.1,-.1,10);kcyl(tur,.04,.04,.12,KM.brass(),-.15,.45,-.1,8);u.chimTop=new T.Vector3(-.15,.9,-.1);
-      const fire=new T.Mesh(new T.PlaneGeometry(.1,.08),M.core.clone());fire.position.set(0,.05,.23);tur.add(fire);u.wins.push(fire);break;}
+    case 'steamgun':{// паровая пушка: бронебашня, котёл с топкой, труба, тяжёлый ствол
+      krailbase(body,.88);const iron=kmat('iron',{metalness:.75,roughness:.45,color:0x5a5650}),rust=RUST(),brk=kmat('brick',{color:0x7a6a62}),dk=KM.dark(),TOP=.88;
+      kbox(body,.74,.5,.74,brk,0,.035,0);
+      for(const sx of [-1,1])for(const sz of [-1,1])kbox(body,.07,.84,.07,iron,sx*.37,.035,sz*.37);
+      for(const y of [.1,.5]){kbox(body,.78,.035,.78,rust,0,y,0);}
+      // топка за решёткой: светится, пока есть уголь
+      const fireM=new T.MeshStandardMaterial({color:0x2a1408,emissive:0xff6a1a,emissiveIntensity:2.2});u.fireM=fireM;
+      const fb=kbox(body,.3,.22,.02,fireM,0,.1,.375);for(let k=-2;k<=2;k++)kbox(body,.014,.24,.02,dk,k*.06,.09,.39);for(const y of [.1,.32])kbox(body,.34,.03,.03,iron,0,y,.39);
+      const glow=new T.Mesh(new T.PlaneGeometry(.7,.5),new T.MeshBasicMaterial({map:R3.tx&&R3.tx.glow,color:0xff8a40,transparent:true,opacity:.55,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));glow.rotation.x=-Math.PI/2;glow.position.set(0,.04,.6);body.add(glow);u.fireGlow=glow;
+      const pl=new T.PointLight(0xff7a30,1.4,1.8,2);pl.position.set(0,.25,.55);body.add(pl);u.fireL=pl;
+      kwindow(body,u,-.39,.6,.15,-Math.PI/2,.08,.1);
+      // бронированный верх
+      kbox(body,.82,.34,.82,rust,0,.54,0);for(const y of [.56,.84])kbox(body,.86,.03,.86,iron,0,y,0);
+      for(let i=0;i<4;i++)for(let k=-3;k<=3;k++){const rv=mesh(new T.SphereGeometry(.012,5,4),iron,false);const a=i*Math.PI/2;rv.position.set(Math.sin(a)*.415+Math.cos(a)*k*.11,.7,Math.cos(a)*.415-Math.sin(a)*k*.11);body.add(rv);}
+      kbox(body,.84,.03,.84,iron,0,TOP,0);ksnow(body,.8,.8,0,TOP+.03,0,.014);
+      // перила
+      for(const [x,z] of [[-.4,-.4],[.4,-.4],[-.4,.4],[.4,.4],[0,-.4],[-.4,0],[.4,0],[0,.4]])kcyl(body,.01,.01,.16,iron,x,TOP+.03,z,5);
+      for(const z of [-.4,.4]){kpipe(body,[-.4,TOP+.19,z],[.4,TOP+.19,z],.01,iron);}for(const x of [-.4,.4]){kpipe(body,[x,TOP+.19,-.4],[x,TOP+.19,.4],.01,iron);}
+      // трубы от котла
+      kpipe(body,[.36,.2,.25],[.43,.2,.25],.03,KM.pipe());kpipe(body,[.43,.2,.25],[.43,.75,.25],.03,KM.pipe());kpipe(body,[.43,.75,.25],[.36,.75,.25],.03,KM.pipe());
+      // дымовая труба
+      kcyl(body,.06,.065,.62,iron,-.28,TOP,-.28,10);kcyl(body,.08,.08,.04,rust,-.28,TOP+.6,-.28,10);u.chimTop=new T.Vector3(-.28,TOP+.7,-.28);u.smokeFuel=1;
+      // фонарь
+      {const l=new T.Mesh(new T.CylinderGeometry(.025,.025,.05,6),M.win);l.position.set(-.45,.62,.32);body.add(l);u.wins.push(l);kbox(body,.06,.012,.012,iron,-.42,.65,.32);}
+      // мешки и уголь у основания
+      const bag=kmat('canvas',{color:0x6a5c48,roughness:1});for(const [x,z] of [[.3,.5],[.42,.46]]){const sb=mesh(new T.SphereGeometry(.07,8,6),bag);sb.scale.set(.9,1.3,.9);sb.position.set(x,.11,z);body.add(sb);}
+      for(let i=0;i<7;i++){const c=mesh(new T.DodecahedronGeometry(.035,0),kmat('x',{color:0x151515,roughness:.6}));c.position.set(-.32+(i%4)*.05,.05+(i>3?.04:0),.5+(i%2)*.03);body.add(c);}
+      // лафет и ствол
+      const tur=new T.Group();tur.position.set(.04,TOP+.03,.04);body.add(tur);u.aim=tur;u.noKick=1;
+      kcyl(tur,.2,.22,.05,iron,0,0,0,14);for(const sx of [-1,1]){const ch=kbox(tur,.04,.2,.26,rust,sx*.1,.05,0);}
+      const wh=mesh(new T.CylinderGeometry(.07,.07,.03,12),iron);wh.rotation.z=Math.PI/2;wh.position.set(.14,.16,-.02);tur.add(wh);
+      const pitch=new T.Group();pitch.position.set(0,.2,0);pitch.rotation.x=-.16;tur.add(pitch);
+      const brl=new T.Group();brl.position.z=.32;pitch.add(brl);u.brl=brl;
+      const bc=mesh(new T.CylinderGeometry(.075,.1,.66,14),kmat('x',{color:0x26282a,metalness:.8,roughness:.4}));bc.rotation.x=Math.PI/2;bc.position.z=-.12;brl.add(bc);
+      for(const z of [-.36,-.1,.12]){const rg=mesh(new T.TorusGeometry(.09,.016,6,14),iron,false);rg.position.z=z;brl.add(rg);}
+      const mz=mesh(new T.TorusGeometry(.08,.022,6,14),iron,false);mz.position.z=.21;brl.add(mz);const bore=new T.Mesh(new T.CircleGeometry(.06,12),new T.MeshBasicMaterial({color:0x050505}));bore.position.z=.215;brl.add(bore);
+      u.muzzle=new T.Object3D();u.muzzle.position.z=.26;brl.add(u.muzzle);
+      // значок «нет угля»
+      {const tx=ctex(96,96,(c,w,h)=>{c.fillStyle='rgba(20,22,26,.9)';c.beginPath();c.arc(w/2,h/2,44,0,7);c.fill();c.strokeStyle='#e0603a';c.lineWidth=6;c.stroke();
+        c.fillStyle='#2a2a2a';c.strokeStyle='#8a8a8a';c.lineWidth=2;for(const [x,y,r] of [[36,56,14],[58,52,16],[48,38,12]]){c.beginPath();c.moveTo(x-r,y);c.lineTo(x-r*.4,y-r);c.lineTo(x+r*.6,y-r*.8);c.lineTo(x+r,y+r*.2);c.lineTo(x,y+r);c.closePath();c.fill();c.stroke();}
+        c.strokeStyle='#e0603a';c.lineWidth=7;c.beginPath();c.moveTo(20,76);c.lineTo(76,20);c.stroke();});
+        const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,depthTest:false,toneMapped:false}));sp.scale.set(.32,.32,1);sp.position.set(0,TOP+.95,0);sp.visible=false;sp.renderOrder=6;body.add(sp);u.noCoal=sp;}
+      kTowerLevels(T,body,u,TOP+.03,.42,M);
+      break;}
     case 'flamer':{
       const bag=kmat('canvas',{color:0x8a7a5a,roughness:1});for(let i=0;i<9;i++){const a=Math.PI*.15+i/8*Math.PI*1.7;const sb=mesh(new T.SphereGeometry(.09,8,6),bag);sb.scale.set(1.3,.6,.8);sb.position.set(Math.cos(a)*.34,.06,Math.sin(a)*.34);sb.rotation.y=-a;body.add(sb);}
       for(const x of [-.12,.05])kcyl(body,.07,.07,.26,kmat('x',{color:0x8a3a2a,metalness:.5,roughness:.5}),x,0,-.12,10);
@@ -2665,6 +2702,7 @@ function camUpdate(){
   const ex=Math.max(0,(20-p.d)/15);p.tx=clamp(p.tx,-GW/2+2-ex*2,GW/2-2+ex*2);p.tz=clamp(p.tz,-GH/2+2.5,GH/2-2.5);
   c.position.set(p.tx+Math.sin(p.yaw)*Math.cos(p.pitch)*p.d,Math.sin(p.pitch)*p.d,p.tz+Math.cos(p.yaw)*Math.cos(p.pitch)*p.d);
   c.lookAt(p.tx,0,p.tz);
+  if(R3.shake>.002){const k=R3.shake;c.position.x+=(Math.random()-.5)*k;c.position.y+=(Math.random()-.5)*k*.6;c.position.z+=(Math.random()-.5)*k;R3.shake*=.86;}
 }
 function pick3D(sx,sy){
   if(!R3.ok)return null;
@@ -2739,6 +2777,8 @@ function render3D(t){
     const fz=FROST[lv]*(.3+cold*.7);for(const m of u.roofs){if(m.userData.base==null)m.userData.base=m.color.getHex();if(m.userData.fz!==fz){m.userData.fz=fz;m.color.setHex(m.userData.base).lerp(new T.Color(0xe8eff6),fz);}}
     if(u.ice){u.ice.visible=fz>.3;u.drift.visible=fz>.15;u.drift.scale.setScalar(.6+fz*.8);}
     if(u.lvParts)u.lvParts.forEach((q,i)=>q.visible=(b.lvl||0)>i);
+    if(u.fireM){const fuel=!b.build&&s.res.coal>=1,fl=.8+.2*Math.sin(t/90+b.id)*Math.sin(t/37);u.fuel=fuel;u.fireM.emissiveIntensity=fuel?2.2*fl:0;u.fireL.intensity=fuel?1.4*fl:0;u.fireGlow.visible=fuel;u.noCoal.visible=!fuel&&!b.build;
+      if(fuel&&Math.random()<.18){const p=u.chimTop.clone();u.body.localToWorld(p);spawnSteam(p,.2,.8,true);}}
     if(u.lv!==b.lvl||u.inz!==b.ins){u.lv=b.lvl;u.inz=b.ins;const sc=1+Math.min(.15,.03*(b.lvl||0));u.body.scale.x=u.body.scale.z=sc;
       if(u.badge){g.remove(u.badge);u.badge=null;}
       if(b.lvl||b.ins){const tx=ctex(128,48,(c,w,h)=>{c.fillStyle='rgba(20,24,28,.85)';c.fillRect(0,0,w,h);c.strokeStyle='#b08a4e';c.lineWidth=3;c.strokeRect(2,2,w-4,h-4);
@@ -2746,7 +2786,7 @@ function render3D(t){
         if(t1&&t2){c.fillText(t1,w*.3,h/2+1);c.fillStyle='#8fd0f5';c.fillText(t2,w*.72,h/2+1);}else{if(t2)c.fillStyle='#8fd0f5';c.fillText(t1||t2,w/2,h/2+1);}});
         const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.set(.5,.19,1);sp.position.y=Math.max(1.25,(u.top||0)*(1+Math.min(.15,.03*(b.lvl||0)))+.18);g.add(sp);u.badge=sp;}}
     if(u.wheel&&lit)(u.wheel.geometry.type==='CylinderGeometry'?u.wheel.rotation.y+=.2:u.wheel.rotation.z+=.03);
-    if(u.chimTop&&u.chimTop.isVector3&&lit&&Math.random()<(b.type==='kitchen'?.12:.05)){const p=u.chimTop.clone().add(g.position);spawnSteam(p,.18,.6,true);}
+    if(u.chimTop&&u.chimTop.isVector3&&lit&&!u.smokeFuel&&Math.random()<(b.type==='kitchen'?.12:.05)){const p=u.chimTop.clone().add(g.position);spawnSteam(p,.18,.6,true);}
   }
   for(const [id,g] of R3.bmap)if(!seen.has(id)){sc.remove(g);R3.bmap.delete(id);}
   // завалы
@@ -2829,10 +2869,10 @@ function towerFire3D(s,dtR){
       R3.sc.add(m);PROJ.push({m,a:a0,b:to,t:0,dur:.38,h:.12,kind:'arrow'});}
     else if(k==='catapult'){if(u.arm){u.armT=.35;u.pend={to:to.clone(),t:.22};}else{const m=mesh(new T.DodecahedronGeometry(.06,0),kmat('stone',{color:0x6e6a62}));R3.sc.add(m);PROJ.push({m,a:g.position.clone().add(new T.Vector3(0,1.1,0)),b:to,t:0,dur:.9,h:1.4,kind:'stone'});}}
     else{const m=new T.Mesh(new T.SphereGeometry(.035,8,6),new T.MeshBasicMaterial({color:0xffd080,toneMapped:false}));R3.sc.add(m);
-      const mz=g.position.clone().add(new T.Vector3(0,.42,0)).add(to.clone().sub(g.position).setY(0).normalize().multiplyScalar(.62));
+      let mz=g.position.clone().add(new T.Vector3(0,.42,0)).add(to.clone().sub(g.position).setY(0).normalize().multiplyScalar(.62));if(u.muzzle){g.updateMatrixWorld(true);mz=new T.Vector3();u.muzzle.getWorldPosition(mz);}
       PROJ.push({m,a:mz,b:to,t:0,dur:.22,h:.05,kind:'shell'});u.recoil=.12;
       const fl=new T.Sprite(new T.SpriteMaterial({map:R3.tx.glow,color:0xffa040,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));fl.position.copy(mz);fl.scale.set(.7,.7,1);R3.sc.add(fl);PROJ.push({m:fl,t:0,dur:.15,kind:'flash'});
-      spawnSteam(mz,.25,.6);}
+      spawnSteam(mz,.25,.6);for(let q=0;q<3;q++)spawnSteam(mz.clone().add(new T.Vector3((Math.random()-.5)*.15,q*.04,(Math.random()-.5)*.15)),.3+q*.1,.3,true);}
   }
   // полёт
   for(const p of PROJ){p.t+=dtR;const k=Math.min(1,p.t/p.dur);
@@ -2841,14 +2881,14 @@ function towerFire3D(s,dtR){
       if(p.kind==='arrow'){const nx=p.a.clone().lerp(p.b,Math.min(1,k+.05));nx.y+=Math.sin(Math.min(1,k+.05)*Math.PI)*p.h;p.m.position.copy(pos);p.m.lookAt(nx);}
       else{p.m.position.copy(pos);p.m.rotation.x+=.2;}
       if(k>=1&&!p.hit){p.hit=1;if(p.kind==='stone'){for(let q=0;q<4;q++)spawnSteam(p.b.clone().setY(.08+q*.05).add(new T.Vector3((Math.random()-.5)*.3,0,(Math.random()-.5)*.3)),.5+q*.08,.2+q*.1,true);debris(p.b,0x6e6a62,7);}
-        if(p.kind==='shell'){const bm=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.tx.glow,color:0xff7a30,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));bm.position.copy(p.b).setY(.25);R3.sc.add(bm);PROJ.push({m:bm,t:0,dur:.3,kind:'boom'});spawnSteam(p.b.clone().setY(.2),.4,.5);}}}
+        if(p.kind==='shell'){const bm=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.tx.glow,color:0xff7a30,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));bm.position.copy(p.b).setY(.25);R3.sc.add(bm);PROJ.push({m:bm,t:0,dur:.3,kind:'boom'});spawnSteam(p.b.clone().setY(.2),.4,.5);spawnSteam(p.b.clone().setY(.15),.5,.3,true);debris(p.b,0x3a3632,6);R3.shake=Math.min(.2,(R3.shake||0)+.1);}}}
   }
   for(let i=PROJ.length-1;i>=0;i--){const p=PROJ[i];if(p.t>=p.dur+(p.kind==='arrow'?.05:0)){R3.sc.remove(p.m);if(p.m.material&&p.kind!=='stone')p.m.material.dispose&&p.m.material.dispose();PROJ.splice(i,1);}}
   // откат ствола и взмах рычага
   for(const g of R3.bmap.values()){const u=g.userData;
     if(u.aim&&dtR>0){u.aimT=Math.max(0,(u.aimT||0)-dtR);const want=u.aimT>0?u.aimY:Math.sin(performance.now()/2600+g.position.x)*1.1;let dy=want-u.aim.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.aim.rotation.y+=dy*Math.min(1,(u.aimT>0?12:1.5)*Math.max(dtR,.016));
       if(!u.noKick){u.kick=Math.max(0,(u.kick||0)-dtR*.4);u.aim.position.z=.06-u.kick;}}
-    if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);u.brl.position.z=.32-u.recoil;}
+    if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);u.brl.position.z=.32-u.recoil*(u.muzzle?1.4:1);}
     if(u.pend&&dtR>0){u.pend.t-=dtR;if(u.pend.t<=0){g.updateMatrixWorld(true);const a0=new THREE.Vector3();u.rock.getWorldPosition(a0);const m=mesh(new THREE.DodecahedronGeometry(.06,0),u.rock.material);R3.sc.add(m);
       PROJ.push({m,a:a0,b:u.pend.to,t:0,dur:.85,h:1.1,kind:'stone'});u.pend=null;u.rock.visible=false;u.rockT=.9;}}
     if(u.rock&&u.rockT>0){u.rockT-=dtR;if(u.rockT<=0)u.rock.visible=true;}
