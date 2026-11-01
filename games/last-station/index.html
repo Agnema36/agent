@@ -439,10 +439,10 @@ const B={
   still:{n:'Самогонный цех',cat:'special',cost:{wood:15,steel:5},time:3,h:.7,col:'#6b5636',law:'moonshine',d:'Снимает недовольство. Здоровья не добавляет.'},
   nursery:{n:'Детский приют',cat:'special',cost:{wood:20},time:3,h:.7,col:'#6f6250',law:'child_shelter',d:'Дети в тепле и безопасности. +надежда.'},
   patrol:{n:'Пост патруля',cat:'purpose',cost:{wood:15,steel:5},time:3,job:'w',jobs:5,h:.7,col:'#4d5560',law:'o_patrol',d:'Патрули гасят недовольство.'},
-  radio:{n:'Радиоточка',cat:'purpose',cost:{steel:15},time:3,h:.9,col:'#545a62',law:'o_radio',d:'Сводки и речи по громкоговорителям.'},
-  guardhouse:{n:'Гауптвахта',cat:'purpose',cost:{wood:20,steel:15},time:5,job:'w',jobs:3,h:.9,col:'#474e57',law:'o_prison',d:'Смутьяны под замком.'},
-  hall:{n:'Дом собраний',cat:'purpose',cost:{wood:20},time:4,h:.8,col:'#6f5d48',law:'f_hall',d:'Вечерние собрания. +надежда.'},
-  shrine:{n:'Часовня',cat:'purpose',cost:{wood:25,steel:5},time:4,h:1.2,col:'#75604a',law:'f_shrine',d:'Свечи на платформе. +надежда.'},
+  radio:{n:'Радиоточка',cat:'purpose',cost:{steel:15},time:3,h:.9,col:'#545a62',law:'o_agit',d:'Сводки и речи по громкоговорителям.'},
+  guardhouse:{n:'Гауптвахта',cat:'purpose',cost:{wood:20,steel:15},time:5,job:'w',jobs:3,h:.9,col:'#474e57',law:'o_force',d:'Смутьяны под замком.'},
+  hall:{n:'Храм',cat:'purpose',cost:{wood:30,steel:10},time:5,h:.8,col:'#6f5d48',law:'f_temple',d:'Главный храм станции. +надежда.'},
+  shrine:{n:'Часовня',cat:'purpose',cost:{wood:25,steel:5},time:4,h:1.2,col:'#75604a',law:'f_shrines',d:'Свечи на платформе. +надежда.'},
 };
 const CATS=[['heat','Отопление'],['house','Жильё'],['food','Еда'],['res','Ресурсы'],['med','Медицина'],['tech','Наука'],['scout','Разведка'],['special','Особые'],['defense','Оборона'],['purpose','Путь']];
 
@@ -487,64 +487,75 @@ const TECH=[
 ];
 const TECHBY=Object.fromEntries(TECH.map(t=>[t.id,t]));
 
+// Законы. У каждого есть плюс и минус (m — постоянные модификаторы: sick/prod/food/sci/build/wave/pile — множители, h/d — надежда/недовольство в день, wood — дерево в день).
+// Законы, ведущие к событиям или к гибели людей, убраны. Минусы — болезни, недовольство, надежда, ресурсы, но не смерть.
 const LAWS=[
-  {id:'child_labor',cat:'adapt',n:'Детский труд',d:'Дети работают на безопасных местах (вполсилы).',ex:'child_shelter',fx:{disc:5}},
-  {id:'child_shelter',cat:'adapt',n:'Детские приюты',d:'Здание «Детский приют». Дети меньше болеют. +надежда.',ex:'child_labor',fx:{hope:5}},
-  {id:'ext_shift',cat:'adapt',n:'Удлинённая смена',d:'Работа до 22:00 вместо 18:00. Недовольство растёт каждый день.',fx:{disc:4}},
-  {id:'soup',cat:'adapt',n:'Похлёбка',d:'Кухни дают на 25% больше пайков.',ex:'additives',fx:{disc:2}},
-  {id:'additives',cat:'adapt',n:'Опилки в пайках',d:'Кухни дают на 50% больше пайков, но люди чаще болеют.',ex:'soup',fx:{disc:4}},
-  {id:'food_ration',cat:'adapt',n:'Урезанные пайки',d:'Каждый ест на 20% меньше. Недовольство растёт каждый день.',fx:{disc:4}},
-  {id:'cemetery',cat:'adapt',n:'Кладбище',d:'Здание «Кладбище». Смерти бьют по надежде слабее.',ex:'pit',fx:{hope:3}},
-  {id:'pit',cat:'adapt',n:'Тоннель мёртвых',d:'Тела уносят в заброшенный перегон. Без затрат, но людям тяжело.',ex:'cemetery',fx:{hope:-5}},
-  {id:'radical',cat:'adapt',n:'Радикальное лечение',d:'Больные выздоравливают быстрее, ценой жёстких мер.',ex:'overcrowd',fx:{hope:-3}},
-  {id:'overcrowd',cat:'adapt',n:'Переполненные медпункты',d:'Коек в 1,5 раза больше, лечение медленнее.',ex:'radical',fx:{}},
-  {id:'arena',cat:'adapt',n:'Бойцовская арена',d:'Здание. Снимает недовольство, но бывают травмы.',fx:{}},
-  {id:'moonshine',cat:'adapt',n:'Самогон',d:'Здание «Самогонный цех». Снимает недовольство.',fx:{}},
-  {id:'apprentice',cat:'adapt',n:'Ученичество',d:'Каждый день один ребёнок становится инженером (нужна мастерская).',ex:'child_labor',fx:{hope:3}},
-  {id:'mandatory',cat:'adapt',n:'Трудовая повинность',d:'Больные выходят на работу. Чаще тяжелеют. +недовольство.',fx:{disc:5}},
-  {id:'emergency',cat:'adapt',n:'Экстренная смена',d:'Любое здание может работать сутки без остановки. Риск травм.',fx:{disc:2}},
-  {id:'communal',cat:'adapt',n:'Общие кухни',d:'Еды уходит на 15% меньше. Людям не нравится есть из общего котла.',ex:'private',fx:{disc:3}},
-  {id:'private',cat:'adapt',n:'Личные пайки',d:'Еды уходит на 10% больше, зато +надежда каждый день.',ex:'communal',fx:{hope:3}},
-  {id:'quarantine',cat:'adapt',n:'Карантин',d:'Болеют на 20% реже. Изоляция злит людей.',fx:{disc:2}},
-  {id:'crowding',cat:'adapt',n:'Уплотнение',d:'Мест в жилье в 1,5 раза больше. Чаще болеют, −надежда.',fx:{hope:-3}},
-  {id:'recycling',cat:'adapt',n:'Сбор вторсырья',d:'Добывающие здания +10%. Недовольство растёт.',fx:{disc:2}},
-  {id:'expedition',cat:'adapt',n:'Разведка любой ценой',d:'Отряды на 30% быстрее, но опасности страшнее.',fx:{}},
-  {id:'barter',cat:'adapt',n:'Договор с Кольцом',d:'Обмен у торговцев даёт в 1,5 раза больше.',fx:{hope:2}},
-  {id:'norms',cat:'adapt',br:'ind',n:'Нормы выработки',d:'Все производства +10%. Недовольство понемногу растёт каждый день.',fx:{disc:3}},
-  {id:'standard',cat:'adapt',br:'ind',n:'Стандартизация',d:'Типовые чертежи: постройка зданий на 15% дешевле.',fx:{disc:1}},
-  {id:'scrapdrive',cat:'adapt',br:'ind',n:'Сбор металлолома',d:'Каждое утро общий сбор приносит 6 металла. Людям не нравится.',fx:{disc:2}},
-  {id:'techcourse',cat:'adapt',br:'ind',n:'Инженерные курсы',d:'Раз в 3 дня один рабочий становится инженером (нужна мастерская).',fx:{hope:1}},
-  {id:'restday',cat:'adapt',br:'care',n:'Выходной день',d:'Каждый 7-й день — отдых: надежда +6, недовольство −4.',fx:{hope:3}},
-  {id:'o_patrol',cat:'order',n:'Патрули',d:'Пост патруля: −недовольство.',fx:{disc:-3}},
-  {id:'o_radio',cat:'order',n:'Агитация',d:'Радиоточка: +надежда, −недовольство.',req:'o_patrol',fx:{}},
-  {id:'o_prison',cat:'order',n:'Гауптвахта',d:'Смутьяны под замком: −недовольство.',req:'o_radio',fx:{disc:-3}},
-  {id:'o_martial',cat:'order',n:'Военное положение',d:'Недовольство −10 сразу и меньше каждый день. Надежда понемногу падает.',req:'o_prison',fx:{disc:-10,hope:-4}},
-  {id:'o_new',cat:'order',n:'Новый порядок',d:'Финал пути. Недовольство падает и растёт вдвое медленнее.',req:'o_martial',fx:{disc:-25}},
-  {id:'f_hall',cat:'faith',n:'Вечерние собрания',d:'Дом собраний: +надежда.',fx:{hope:3}},
-  {id:'f_mutual',cat:'faith',n:'Взаимовыручка',d:'Голод убивает вдвое реже. +надежда.',req:'f_hall',fx:{hope:4}},
-  {id:'f_shrine',cat:'faith',n:'Часовня',d:'Здание: ещё больше надежды.',req:'f_mutual',fx:{}},
-  {id:'f_wardens',cat:'faith',n:'Хранители',d:'Добровольцы следят за порядком: −недовольство каждый день.',req:'f_shrine',fx:{disc:-5}},
-  {id:'f_new',cat:'faith',n:'Подземное братство',d:'Финал пути. Надежда не падает ниже 40.',req:'f_wardens',fx:{hope:25}},
+  {id:'child_labor',cat:'adapt',n:'Детский труд',d:'Дети работают на безопасных местах (вполсилы). Минус: недовольство +1 в день, надежда −0,5 в день, раз в 3 дня ребёнок заболевает.',ex:'child_shelter',fx:{disc:5},m:{h:-.5}},
+  {id:'child_shelter',cat:'adapt',n:'Детские приюты',d:'Здание «Детский приют»: ночью болеют на 15% меньше, надежда +1 в день, родители спокойны — производство +5%. Минус: еды уходит на 5% больше.',ex:'child_labor',fx:{hope:5},m:{food:1.05,prod:1.05}},
+  {id:'ext_shift',cat:'adapt',n:'Удлинённая смена',d:'Работа до 22:00 вместо 18:00. Минус: недовольство +2 в день, болеют на 15% чаще.',fx:{disc:4},m:{sick:1.15}},
+  {id:'soup',cat:'adapt',n:'Похлёбка',d:'Кухни дают на 25% больше пайков. Минус: баланда надоедает — недовольство +0,5 в день.',ex:'additives',fx:{disc:2},m:{d:.5}},
+  {id:'additives',cat:'adapt',n:'Опилки в пайках',d:'Кухни дают на 50% больше пайков. Минус: люди чаще болеют, недовольство +1,5 в день.',ex:'soup',fx:{disc:4}},
+  {id:'food_ration',cat:'adapt',n:'Урезанные пайки',d:'Каждый ест на 20% меньше. Минус: недовольство +1,5 в день, болеют на 10% чаще.',fx:{disc:4},m:{sick:1.1}},
+  {id:'cemetery',cat:'adapt',n:'Кладбище',d:'Здание «Кладбище»: смерти бьют по надежде втрое слабее, надежда +1 в день. Минус: уход за кладбищем — 1 дерево в день.',ex:'pit',fx:{hope:3},m:{wood:1}},
+  {id:'pit',cat:'adapt',n:'Тоннель мёртвых',d:'Тела уносят в заброшенный перегон: смерти бьют по надежде слабее, без здания. Минус: надежда −5, болеют на 10% чаще.',ex:'cemetery',fx:{hope:-5},m:{sick:1.1}},
+  {id:'radical',cat:'adapt',n:'Радикальное лечение',d:'Больные выздоравливают быстрее (75% вместо 50%). Минус: надежда −3, недовольство +1 в день.',ex:'overcrowd',fx:{hope:-3},m:{d:1}},
+  {id:'overcrowd',cat:'adapt',n:'Переполненные медпункты',d:'Коек в 1,5 раза больше. Минус: лечение медленнее (40% вместо 50%).',ex:'radical',fx:{}},
+  {id:'arena',cat:'adapt',n:'Бойцовская арена',d:'Здание: недовольство −4 в день. Минус: травмы — почти каждый день кто-то заболевает.',fx:{}},
+  {id:'moonshine',cat:'adapt',n:'Самогон',d:'Здание «Самогонный цех»: недовольство −4 в день. Минус: производство −5% (похмелье), иногда кто-то заболевает.',fx:{},m:{prod:.95}},
+  {id:'apprentice',cat:'adapt',n:'Ученичество',d:'Каждый день один ребёнок становится инженером (нужна мастерская). Минус: наука −5% (инженеры учат детей).',ex:'child_labor',fx:{hope:3},m:{sci:.95}},
+  {id:'mandatory',cat:'adapt',n:'Трудовая повинность',d:'Больные выходят на работу. Минус: недовольство +1,5 в день, больные чаще тяжелеют.',fx:{disc:5}},
+  {id:'communal',cat:'adapt',n:'Общие кухни',d:'Еды уходит на 15% меньше. Минус: недовольство +1 в день, из общего котла болеют на 10% чаще.',ex:'private',fx:{disc:3},m:{sick:1.1}},
+  {id:'private',cat:'adapt',n:'Личные пайки',d:'Надежда +1 в день, сытые работают лучше — производство +3%. Минус: еды уходит на 10% больше.',ex:'communal',fx:{hope:3},m:{prod:1.03}},
+  {id:'quarantine',cat:'adapt',n:'Карантин',d:'Болеют на 20% реже. Минус: изоляция — недовольство +1 в день, производство −3%.',fx:{disc:2},m:{prod:.97}},
+  {id:'crowding',cat:'adapt',n:'Уплотнение',d:'Мест в жилье в 1,5 раза больше. Минус: болеют на 15% чаще, надежда −1 в день.',fx:{hope:-3}},
+  {id:'recycling',cat:'adapt',n:'Сбор вторсырья',d:'С завалов собирают на 15% больше. Минус: недовольство +1 в день.',fx:{disc:2},m:{pile:1.15}},
+  {id:'norms',cat:'adapt',br:'ind',n:'Нормы выработки',d:'Все производства +10%. Минус: недовольство +0,6 в день, болеют на 5% чаще.',fx:{disc:3},m:{sick:1.05}},
+  {id:'standard',cat:'adapt',br:'ind',n:'Стандартизация',d:'Типовые чертежи: постройки на 15% дешевле. Минус: стройка на 15% дольше — узлы подгоняют на месте.',fx:{disc:1},m:{build:1.15}},
+  {id:'scrapdrive',cat:'adapt',br:'ind',n:'Сбор металлолома',d:'Каждое утро общий сбор приносит 6 металла. Минус: недовольство +0,4 в день, раз в 5 дней кто-то ранится и заболевает.',fx:{disc:2}},
+  {id:'techcourse',cat:'adapt',br:'ind',n:'Инженерные курсы',d:'Раз в 3 дня один рабочий становится инженером (нужна мастерская). Минус: недовольство +0,5 в день.',fx:{hope:1},m:{d:.5}},
+  {id:'restday',cat:'adapt',br:'care',n:'Выходной день',d:'Каждый 7-й день — отдых: надежда +6, недовольство −4. Минус: в этот день производство стоит.',fx:{hope:3}},
+  // идеологии: открываются, когда принято 85% доступных законов; путь один — Порядок или Вера
+  {id:'o_watch',cat:'order',n:'Добровольная стража',d:'Жители-добровольцы следят за порядком: недовольство −1 в день. Минус: производство −3%.',fx:{disc:-3},m:{d:-1,prod:.97}},
+  {id:'o_morning',cat:'order',n:'Утреннее собрание',d:'Поверка перед сменой: производство +5%. Минус: надежда −0,5 в день.',req:'o_watch',fx:{},m:{prod:1.05,h:-.5}},
+  {id:'o_patrol',cat:'order',n:'Патрули',d:'Здание «Пост патруля»: недовольство до −2 в день. Минус: на посту стоят 5 рабочих.',req:'o_morning',fx:{disc:-3}},
+  {id:'o_foreman',cat:'order',n:'Бригадиры',d:'Производство +10%. Минус: недовольство +1 в день.',req:'o_patrol',fx:{},m:{prod:1.1,d:1}},
+  {id:'o_force',cat:'order',n:'Силовое подавление',d:'Здание «Гауптвахта»: смутьяны под замком, недовольство −10 сразу и до −3 в день. Минус: надежда −1 в день, на гауптвахте 3 рабочих.',req:'o_foreman',fx:{disc:-10},m:{h:-1}},
+  {id:'o_agit',cat:'order',n:'Агитаторы',d:'Здание «Радиоточка» и речи на платформе: надежда +1 в день. Минус: наука −10% (инженеры заняты агитацией).',req:'o_force',fx:{hope:3},m:{h:1,sci:.9}},
+  {id:'o_pledge',cat:'order',cap:1,n:'Клятва верности',d:'Высший закон пути. Недовольство −20 сразу и растёт вдвое медленнее. Минус: надежда не поднимается выше 70.',fx:{disc:-20}},
+  {id:'f_prayer',cat:'faith',n:'Вечерняя молитва',d:'Надежда +1 в день. Минус: работа −3% — вечерами молятся.',fx:{hope:3},m:{h:1,prod:.97}},
+  {id:'f_shrines',cat:'faith',n:'Святилища',d:'Здание «Часовня»: надежда +3 в день. Минус: свечи и масло — 1 дерево в день.',req:'f_prayer',fx:{},m:{wood:1}},
+  {id:'f_temple',cat:'faith',n:'Храм',d:'Здание «Храм»: надежда +2 в день за уровень. Минус: наука −10% (инженеры служат в храме).',req:'f_shrines',fx:{hope:3},m:{sci:.9}},
+  {id:'f_penance',cat:'faith',n:'Публичное покаяние',d:'Провинившиеся каются на платформе: недовольство −10 сразу и −1 в день. Минус: надежда −1 в день.',req:'f_temple',fx:{disc:-10},m:{d:-1,h:-1}},
+  {id:'f_denounce',cat:'faith',n:'Поощрение доносов',d:'Недовольство растёт на 30% медленнее. Минус: надежда −1,5 в день, производство −5% (все следят друг за другом).',req:'f_penance',fx:{},m:{h:-1.5,prod:.95}},
+  {id:'f_protector',cat:'faith',cap:1,n:'Защитник учения',d:'Высший закон пути. Надежда +15 и не падает ниже 40. Минус: наука −15%.',fx:{hope:15},m:{sci:.85}},
 ];
 LAWS.push(
-  {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
-  {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
-  {id:'g_watch',cat:'adapt',br:'guard',n:'Ночной дозор',d:'Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',fx:{disc:2}},
-  {id:'g_repair',cat:'adapt',br:'guard',n:'Дежурные ремонтники',d:'Башни чинятся вдвое быстрее.',fx:{disc:1}},
-  {id:'g_bounty',cat:'adapt',br:'guard',n:'Награда за головы',d:'Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',fx:{}},
-  {id:'g_militia',cat:'adapt',br:'guard',n:'Ополчение',d:'Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',fx:{hope:-2}},
-  {id:'g_fort',cat:'adapt',br:'guard',cap:1,n:'Крепость',d:'Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',fx:{hope:5}},
-  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +25%, наука +10%. Недовольство растёт каждый день.',fx:{disc:5}});
+  {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Высший закон ветки. Все работают на 30% больше. Минус: надежда −15 сразу и −1 в день, болеют на 25% чаще.',fx:{hope:-15,disc:-10},m:{sick:1.25,h:-1}},
+  {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Минус: работа медленнее на 5%.',fx:{hope:15}},
+  {id:'g_watch',cat:'adapt',br:'guard',n:'Ночной дозор',d:'Стрелки дежурят посменно: все башни +20% урона. Минус: люди не высыпаются — недовольство +0,5 в день.',fx:{disc:2},m:{d:.5}},
+  {id:'g_repair',cat:'adapt',br:'guard',n:'Дежурные ремонтники',d:'Башни чинятся вдвое быстрее. Минус: 2 дерева в день на ремонт.',fx:{disc:1},m:{wood:2}},
+  {id:'g_bounty',cat:'adapt',br:'guard',n:'Награда за головы',d:'Трофеев с мутантов в 1,5 раза больше, каждое убийство чуть поднимает надежду (до +5 за ночь). Минус: охотники шумят — волны на 10% больше.',fx:{},m:{wave:1.1}},
+  {id:'g_militia',cat:'adapt',br:'guard',n:'Ополчение',d:'Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Минус: надежда −2, раненые — болеют на 5% чаще.',fx:{hope:-2},m:{sick:1.05}},
+  {id:'g_fort',cat:'adapt',br:'guard',cap:1,n:'Крепость',d:'Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5. Минус: недовольство +1 в день (станция как казарма).',fx:{hope:5},m:{d:1}},
+  {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +25%, наука +10%. Минус: недовольство +2 в день.',fx:{disc:5}});
+// постоянные модификаторы законов
+const lawMul=(s,k)=>{let m=1;for(const id of s.laws){const L=LAWBY[id];if(L&&L.m&&L.m[k]!=null)m*=L.m[k];}return m;};
+const lawSum=(s,k)=>{let v=0;for(const id of s.laws){const L=LAWBY[id];if(L&&L.m&&L.m[k])v+=L.m[k];}return v;};
+// идеологии: открываются, когда принято 85% законов из доступных игроку (несовместимые с уже принятыми не считаются)
+const IDEO_SHARE=.85;
+function ideoProg(s){const pool=LAWS.filter(L=>L.cat==='adapt'&&!L.cap);let have=0,avail=0;
+  for(const L of pool){if(has(s,L.id)){have++;avail++;continue;}const blocked=(L.ex&&has(s,L.ex))||s.laws.some(x=>LAWBY[x]&&LAWBY[x].ex===L.id);if(!blocked)avail++;}
+  return{have,need:Math.ceil(avail*IDEO_SHARE),open:have>=Math.ceil(avail*IDEO_SHARE)};}
 const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',food_ration:'harsh',pit:'harsh',radical:'harsh',communal:'harsh',crowding:'harsh',arena:'harsh',
   child_shelter:'care',soup:'care',cemetery:'care',overcrowd:'care',private:'care',quarantine:'care',apprentice:'care',moonshine:'care',
-  recycling:'ind',expedition:'ind',barter:'ind',mandatory:'ind',emergency:'ind'};
+  recycling:'ind',mandatory:'ind'};
 for(const L of LAWS)if(!L.br)L.br=LAW_BR[L.id]||L.cat;
 const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care:{n:'Человечность',c:'#7fc48a',need:5,cap:'cap_care'},ind:{n:'Промышленность',c:'#c08d5c',need:3,cap:'cap_ind'},
-  order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'},guard:{n:'Оборона',c:'#e0904a',need:4,cap:'g_fort'}};
+  order:{n:'Порядок',c:'#9fb3c4',need:6,cap:'o_pledge'},faith:{n:'Вера',c:'#e8c25a',need:5,cap:'f_protector'},guard:{n:'Оборона',c:'#e0904a',need:4,cap:'g_fort'}};
 // высший закон ветки открывается только когда приняты ВСЕ остальные законы этой ветки
 for(const k in BR)BR[k].need=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap).length;
 const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
-const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.25;if(d.rp)m*=1.1;}if(s.laws.includes('norms')&&d.prod)m*=1.1;return m;};
+const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.95;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.25;if(d.rp)m*=1.1;}if(s.laws.includes('norms')&&d.prod)m*=1.1;m*=lawMul(s,'prod');if(s.laws.includes('restday')&&s.day%7===0)m*=.05;return m;};
 const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -619,7 +630,7 @@ function buildGraph(){
 const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
-const EN=[["Станция выжила","The station survived"],["Станция пала","The station has fallen"],["Пережито","Survived"],["дней. Мороз отступил, станция живёт.","days. The frost retreated, the station lives."],["Недовольство дошло до бунта: вас выставили в тоннель.","Discontent turned into a revolt: you were thrown into the tunnel."],["Надежда угасла: люди разошлись по тоннелям.","Hope died out: people scattered into the tunnels."],["Режим «До первой смерти»: погиб человек.","“Until the first death” mode: a person died."],["Новый рекорд на сложности","New record on difficulty"],["Прошлый:","Previous:"],["победа","victory"],["Рекорд на","Record on"],["счёт","score"],["Итог","Summary"],["Дней продержались","Days survived"],["Сложность","Difficulty"],["Счёт","Score"],["Выжило","Survived"],["Умерло","Died"],["Причины смертей","Causes of death"],["Мороз","Frost"],["Болезнь","Illness"],["Мутанты","Mutants"],["Голод","Hunger"],["Другое","Other"],["Убито мутантов:","Mutants killed:"],["Хардкор: сохранение этой игры удалено.","Hardcore: this game's save was deleted."],["Новая игра","New game"],["В меню","To menu"],["Без паузы","No pause"],["До первой смерти","Until first death"],["дн.","d."],['днём','day'],['ночью','night'],["Прогноз","Forecast"],["Сегодня","Today"],["Завтра","Tomorrow"],["Послезавтра","Day after"],["Оттепель","Thaw"],["Буря","Storm"],["Метель","Blizzard"],["Атака идёт","Attack under way"],["ожидается атака","attack expected"],['дней','days'],['день','day'],["Журнал","Log"],["Весь журнал","Full log"],["Событий пока нет","No events yet"],["Все","All"],["Смерти","Deaths"],["Предупреждения","Warnings"],["Информация","Info"],["Умер житель","A resident died"],["Умерли жители","Residents died"],["обморожение","frostbite"],["жильё без утепления (нужно","housing not insulated (needs"],["нет крыши над головой","no roof overhead"],["Заболел житель","A resident fell ill"],["Заболели","Fell ill:"],["жителей","residents"],["мороз","frost"],["медпунктов","first-aid posts"],["из 3","of 3"],["без крыши","homeless"],["голод","hunger"],["опилки в пайках","sawdust in rations"],["слабость","weakness"],["без пайков","no rations for"],["чел. уже","people for"],["дня","days"],["Погибли","Killed:"],["взрыв котла — печь перегружена","boiler explosion — stove overloaded"],["Умер рабочий: травма — экстренная смена в","A worker died: injury — emergency shift at"],["Заболели 2 рабочих: переутомление — экстренная смена в","2 workers fell ill: exhaustion — emergency shift at"],["тяжёлая болезнь","severe illness"],["нет коек для тяжёлых (не хватило","no beds for the critically ill (short by"],["не помог лазарет","the infirmary could not help"],["Мутант убил жителя","A mutant killed a resident"],["Мутанты убили жителей","Mutants killed residents"],["прорыв на станцию","breach into the station"],["башни не удержали","towers did not hold"],["на пути нет башен","no towers on the way"],["Башня-пушка не стреляет: нет угля","Cannon tower is not firing: no coal"],["Атака: из тоннеля идут","Attack: coming from the tunnel —"],["мутантов","mutants"],["мутанты сломали башню","mutants broke the tower"],["Волна отбита: убито","Wave repelled: killed"],["прорвались","broke through"],["Огонь погас: кончился уголь — поставьте людей на угольные завалы","The fire went out: no coal — put people on coal piles"],["Исследовано:","Researched:"],["Подписан закон","Law signed"],["выживших","survivors"],["Построено:","Built:"],["Рабочие простаивают:","Workers idle:"],["без сырья — нужна сырая еда (фермы, охота)","no raw food — need farms or hunting"],["рядом нет завалов","no debris nearby"],["Простой: нет сырья","Idle: no raw food"],["Не стреляет: нет угля","Not firing: no coal"],["Холодно: нужно утепление","Cold: needs insulation"],["Показать на карте","Show on map"],['оч.','pts'],['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
+const EN=[["Добровольная стража","Neighbourhood watch"],["Жители-добровольцы следят за порядком: недовольство −1 в день. Минус: производство −3%.","Volunteers keep order: discontent −1 per day. Downside: production −3%."],["Утреннее собрание","Morning gathering"],["Поверка перед сменой: производство +5%. Минус: надежда −0,5 в день.","Roll call before the shift: production +5%. Downside: hope −0.5 per day."],["Патрули","Patrols"],["Здание «Пост патруля»: недовольство до −2 в день. Минус: на посту стоят 5 рабочих.","“Patrol post” building: discontent up to −2 per day. Downside: 5 workers stand guard."],["Бригадиры","Foremen"],["Производство +10%. Минус: недовольство +1 в день.","Production +10%. Downside: discontent +1 per day."],["Силовое подавление","Forceful persuasion"],["Здание «Гауптвахта»: смутьяны под замком, недовольство −10 сразу и до −3 в день. Минус: надежда −1 в день, на гауптвахте 3 рабочих.","“Guardhouse” building: troublemakers locked up, discontent −10 at once and up to −3 per day. Downside: hope −1 per day, 3 workers at the guardhouse."],["Агитаторы","Agitators"],["Здание «Радиоточка» и речи на платформе: надежда +1 в день. Минус: наука −10% (инженеры заняты агитацией).","“Radio point” building and speeches on the platform: hope +1 per day. Downside: research −10% (engineers busy agitating)."],["Клятва верности","Pledge of loyalty"],["Высший закон пути. Недовольство −20 сразу и растёт вдвое медленнее. Минус: надежда не поднимается выше 70.","Top law of the path. Discontent −20 at once and grows half as fast. Downside: hope cannot rise above 70."],["Вечерняя молитва","Evening prayers"],["Надежда +1 в день. Минус: работа −3% — вечерами молятся.","Hope +1 per day. Downside: work −3% — evenings go to prayer."],["Святилища","Shrines"],["Здание «Часовня»: надежда +3 в день. Минус: свечи и масло — 1 дерево в день.","“Chapel” building: hope +3 per day. Downside: candles and oil — 1 wood per day."],["Храм","The temple"],["Здание «Храм»: надежда +2 в день за уровень. Минус: наука −10% (инженеры служат в храме).","“Temple” building: hope +2 per day per level. Downside: research −10% (engineers serve in the temple)."],["Главный храм станции. +надежда.","The station's main temple. +hope."],["Публичное покаяние","Public penance"],["Провинившиеся каются на платформе: недовольство −10 сразу и −1 в день. Минус: надежда −1 в день.","Offenders repent on the platform: discontent −10 at once and −1 per day. Downside: hope −1 per day."],["Поощрение доносов","Righteous denunciation"],["Недовольство растёт на 30% медленнее. Минус: надежда −1,5 в день, производство −5% (все следят друг за другом).","Discontent grows 30% slower. Downside: hope −1.5 per day, production −5% (everyone watches everyone)."],["Защитник учения","Protector of the truth"],["Высший закон пути. Надежда +15 и не падает ниже 40. Минус: наука −15%.","Top law of the path. Hope +15 and never drops below 40. Downside: research −15%."],["Вера","Faith"],["Идеология откроется, когда будет принято 85% законов:","The ideology unlocks once 85% of laws are signed:"],["Дети работают на безопасных местах (вполсилы). Минус: недовольство +1 в день, надежда −0,5 в день, раз в 3 дня ребёнок заболевает.","Children work safe jobs (at half strength). Downside: discontent +1 per day, hope −0.5 per day, a child falls ill every 3 days."],["Здание «Детский приют»: ночью болеют на 15% меньше, надежда +1 в день, родители спокойны — производство +5%. Минус: еды уходит на 5% больше.","“Children's shelter” building: 15% fewer fall ill at night, hope +1 per day, calm parents — production +5%. Downside: 5% more food is eaten."],["Работа до 22:00 вместо 18:00. Минус: недовольство +2 в день, болеют на 15% чаще.","Work until 22:00 instead of 18:00. Downside: discontent +2 per day, 15% more illness."],["Кухни дают на 25% больше пайков. Минус: баланда надоедает — недовольство +0,5 в день.","Kitchens give 25% more rations. Downside: people tire of gruel — discontent +0.5 per day."],["Кухни дают на 50% больше пайков. Минус: люди чаще болеют, недовольство +1,5 в день.","Kitchens give 50% more rations. Downside: more illness, discontent +1.5 per day."],["Каждый ест на 20% меньше. Минус: недовольство +1,5 в день, болеют на 10% чаще.","Everyone eats 20% less. Downside: discontent +1.5 per day, 10% more illness."],["Здание «Кладбище»: смерти бьют по надежде втрое слабее, надежда +1 в день. Минус: уход за кладбищем — 1 дерево в день.","“Cemetery” building: deaths hurt hope three times less, hope +1 per day. Downside: upkeep — 1 wood per day."],["Тела уносят в заброшенный перегон: смерти бьют по надежде слабее, без здания. Минус: надежда −5, болеют на 10% чаще.","Bodies go to an abandoned tunnel: deaths hurt hope less, no building needed. Downside: hope −5, 10% more illness."],["Больные выздоравливают быстрее (75% вместо 50%). Минус: надежда −3, недовольство +1 в день.","The sick recover faster (75% instead of 50%). Downside: hope −3, discontent +1 per day."],["Коек в 1,5 раза больше. Минус: лечение медленнее (40% вместо 50%).","1.5× more beds. Downside: slower treatment (40% instead of 50%)."],["Здание: недовольство −4 в день. Минус: травмы — почти каждый день кто-то заболевает.","Building: discontent −4 per day. Downside: injuries — someone falls ill almost every day."],["Здание «Самогонный цех»: недовольство −4 в день. Минус: производство −5% (похмелье), иногда кто-то заболевает.","“Moonshine still” building: discontent −4 per day. Downside: production −5% (hangovers), sometimes someone falls ill."],["Каждый день один ребёнок становится инженером (нужна мастерская). Минус: наука −5% (инженеры учат детей).","Every day one child becomes an engineer (needs a workshop). Downside: research −5% (engineers teach children)."],["Больные выходят на работу. Минус: недовольство +1,5 в день, больные чаще тяжелеют.","The sick go to work. Downside: discontent +1.5 per day, the sick worsen more often."],["Еды уходит на 15% меньше. Минус: недовольство +1 в день, из общего котла болеют на 10% чаще.","15% less food is eaten. Downside: discontent +1 per day, 10% more illness from the shared pot."],["Надежда +1 в день. Минус: еды уходит на 10% больше.","Hope +1 per day, well-fed people work better — production +3%. Downside: 10% more food is eaten."],["Болеют на 20% реже. Минус: изоляция — недовольство +1 в день, производство −3%.","20% less illness. Downside: isolation — discontent +1 per day, production −3%."],["Мест в жилье в 1,5 раза больше. Минус: болеют на 15% чаще, надежда −1 в день.","1.5× more housing places. Downside: 15% more illness, hope −1 per day."],["С завалов собирают на 15% больше. Минус: недовольство +1 в день.","15% more is gathered from debris. Downside: discontent +1 per day."],["Все производства +10%. Минус: недовольство +0,6 в день, болеют на 5% чаще.","All production +10%. Downside: discontent +0.6 per day, 5% more illness."],["Типовые чертежи: постройки на 15% дешевле. Минус: стройка на 15% дольше — узлы подгоняют на месте.","Standard blueprints: buildings 15% cheaper. Downside: construction 15% slower — parts are fitted on site."],["Каждое утро общий сбор приносит 6 металла. Минус: недовольство +0,4 в день, раз в 5 дней кто-то ранится и заболевает.","Every morning a collection brings 6 steel. Downside: discontent +0.4 per day, every 5 days someone gets hurt and falls ill."],["Раз в 3 дня один рабочий становится инженером (нужна мастерская). Минус: недовольство +0,5 в день.","Every 3 days a worker becomes an engineer (needs a workshop). Downside: discontent +0.5 per day."],["Каждый 7-й день — отдых: надежда +6, недовольство −4. Минус: в этот день производство стоит.","Every 7th day is a rest day: hope +6, discontent −4. Downside: production stops that day."],["Высший закон ветки. Все работают на 30% больше. Минус: надежда −15 сразу и −1 в день, болеют на 25% чаще.","Top law of the branch. Everyone works 30% more. Downside: hope −15 at once and −1 per day, 25% more illness."],["Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Минус: работа медленнее на 5%.","Top law of the branch. Deaths hurt hope half as much, the sick recover faster, hope +15. Downside: work 5% slower."],["Стрелки дежурят посменно: все башни +20% урона. Минус: люди не высыпаются — недовольство +0,5 в день.","Shooters keep watch in shifts: all towers +20% damage. Downside: people lack sleep — discontent +0.5 per day."],["Башни чинятся вдвое быстрее. Минус: 2 дерева в день на ремонт.","Towers repair twice as fast. Downside: 2 wood per day for repairs."],["Трофеев с мутантов в 1,5 раза больше, каждое убийство чуть поднимает надежду (до +5 за ночь). Минус: охотники шумят — волны на 10% больше.","1.5× trophies from mutants, each kill raises hope a little (up to +5 per night). Downside: hunters make noise — waves 10% larger."],["Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Минус: надежда −2, раненые — болеют на 5% чаще.","If mutants break through, residents fight back: they kill half as often. Downside: hope −2, the wounded — 5% more illness."],["Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5. Минус: недовольство +1 в день (станция как казарма).","Top law of the branch. All towers: damage +25%, durability +50%. Hope +5. Downside: discontent +1 per day (the station feels like a barracks)."],["Высший закон ветки. Все производства +25%, наука +10%. Минус: недовольство +2 в день.","Top law of the branch. All production +25%, research +10%. Downside: discontent +2 per day."],["Закон:","Law:"],["Станция выжила","The station survived"],["Станция пала","The station has fallen"],["Пережито","Survived"],["дней. Мороз отступил, станция живёт.","days. The frost retreated, the station lives."],["Недовольство дошло до бунта: вас выставили в тоннель.","Discontent turned into a revolt: you were thrown into the tunnel."],["Надежда угасла: люди разошлись по тоннелям.","Hope died out: people scattered into the tunnels."],["Режим «До первой смерти»: погиб человек.","“Until the first death” mode: a person died."],["Новый рекорд на сложности","New record on difficulty"],["Прошлый:","Previous:"],["победа","victory"],["Рекорд на","Record on"],["счёт","score"],["Итог","Summary"],["Дней продержались","Days survived"],["Сложность","Difficulty"],["Счёт","Score"],["Выжило","Survived"],["Умерло","Died"],["Причины смертей","Causes of death"],["Мороз","Frost"],["Болезнь","Illness"],["Мутанты","Mutants"],["Голод","Hunger"],["Другое","Other"],["Убито мутантов:","Mutants killed:"],["Хардкор: сохранение этой игры удалено.","Hardcore: this game's save was deleted."],["Новая игра","New game"],["В меню","To menu"],["Без паузы","No pause"],["До первой смерти","Until first death"],["дн.","d."],['днём','day'],['ночью','night'],["Прогноз","Forecast"],["Сегодня","Today"],["Завтра","Tomorrow"],["Послезавтра","Day after"],["Оттепель","Thaw"],["Буря","Storm"],["Метель","Blizzard"],["Атака идёт","Attack under way"],["ожидается атака","attack expected"],['дней','days'],['день','day'],["Журнал","Log"],["Весь журнал","Full log"],["Событий пока нет","No events yet"],["Все","All"],["Смерти","Deaths"],["Предупреждения","Warnings"],["Информация","Info"],["Умер житель","A resident died"],["Умерли жители","Residents died"],["обморожение","frostbite"],["жильё без утепления (нужно","housing not insulated (needs"],["нет крыши над головой","no roof overhead"],["Заболел житель","A resident fell ill"],["Заболели","Fell ill:"],["жителей","residents"],["мороз","frost"],["медпунктов","first-aid posts"],["из 3","of 3"],["без крыши","homeless"],["голод","hunger"],["опилки в пайках","sawdust in rations"],["слабость","weakness"],["без пайков","no rations for"],["чел. уже","people for"],["дня","days"],["Погибли","Killed:"],["взрыв котла — печь перегружена","boiler explosion — stove overloaded"],["Умер рабочий: травма — экстренная смена в","A worker died: injury — emergency shift at"],["Заболели 2 рабочих: переутомление — экстренная смена в","2 workers fell ill: exhaustion — emergency shift at"],["тяжёлая болезнь","severe illness"],["нет коек для тяжёлых (не хватило","no beds for the critically ill (short by"],["не помог лазарет","the infirmary could not help"],["Мутант убил жителя","A mutant killed a resident"],["Мутанты убили жителей","Mutants killed residents"],["прорыв на станцию","breach into the station"],["башни не удержали","towers did not hold"],["на пути нет башен","no towers on the way"],["Башня-пушка не стреляет: нет угля","Cannon tower is not firing: no coal"],["Атака: из тоннеля идут","Attack: coming from the tunnel —"],["мутантов","mutants"],["мутанты сломали башню","mutants broke the tower"],["Волна отбита: убито","Wave repelled: killed"],["прорвались","broke through"],["Огонь погас: кончился уголь — поставьте людей на угольные завалы","The fire went out: no coal — put people on coal piles"],["Исследовано:","Researched:"],["Подписан закон","Law signed"],["выживших","survivors"],["Построено:","Built:"],["Рабочие простаивают:","Workers idle:"],["без сырья — нужна сырая еда (фермы, охота)","no raw food — need farms or hunting"],["рядом нет завалов","no debris nearby"],["Простой: нет сырья","Idle: no raw food"],["Не стреляет: нет угля","Not firing: no coal"],["Холодно: нужно утепление","Cold: needs insulation"],["Показать на карте","Show on map"],['оч.','pts'],['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
 ['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
@@ -1001,7 +1012,7 @@ function newGame(diff,survivor){
 const tile=(s,x,y)=>s.grid[y*GW+x];
 function place(s,type,x,y,instant){
   const t=tile(s,x,y);const d=B[type];
-  const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,lvl:0,ins:0,build:instant?0:Math.ceil(d.time*(has(s,'t_prefab')?.6:1))};
+  const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,lvl:0,ins:0,build:instant?0:Math.ceil(d.time*(has(s,'t_prefab')?.6:1)*lawMul(s,'build'))};
   s.bld.push(b);t.b=b.id;if(!instant){b.bw=0;takeBuilders(s,b,5);}return b;
 }
 const bById=(s,id)=>s.bld.find(b=>b.id===id);
@@ -1014,7 +1025,7 @@ function insCost(s,n,b){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1)*(b&&B[
 function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(B[b.type].house?2:1)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
 function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
-const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
+const dangerMul=s=>D_(s).danger;
 // журнал событий: тип (death/warn/info/good), причина в тексте, место на карте
 function ev(s,k,txt,at){if(!s)return;s.events=s.events||[];const e={d:s.day,h:s.hour,k,txt};if(at){e.x=at.x;e.y=at.y;if(at.id!=null)e.b=at.id;}
   const L=s.events[0];if(L&&L.txt===txt&&L.d===e.d&&L.h===e.h)L.n=(L.n||1)+1;else s.events.unshift(e);if(s.events.length>300)s.events.length=300;if(typeof ui!=='undefined')ui.evDirty=1;}
@@ -1151,7 +1162,7 @@ function hourTick(s){
   for(const b of s.bld)if(b.build>0){if((b.bw||0)<5)takeBuilders(s,b,5-(b.bw||0));if(!(b.bw>0))continue; // без строителей стройка стоит
     b.build--;if(!b.build){releaseBuilders(s,b);toast(s,`Построено: ${B[b.type].n}`,'good');ev(s,'info',`Построено: «${B[b.type].n}»`,b);onBuilt(s,b);}}
   // работа
-  for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');dcount(s,'other',1);toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');ev(s,'death',`Умер рабочий: травма — экстренная смена в «${B[b.type].n}»`,b);}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');ev(s,'warn',`Заболели 2 рабочих: переутомление — экстренная смена в «${B[b.type].n}»`,b);}}}
+  for(const b of s.bld)if(b.emerg>0)b.emerg--; // старые сохранения: смена просто заканчивается
   const wh=workHour(s);
   if(wh&&s.research)s.rp+=sciInfo(s).perH;
   {
@@ -1167,7 +1178,7 @@ function hourTick(s){
         let m=d.prod[k]*wf*eff;
         if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
         if(b.type==='condenser'&&has(s,'t_filter'))m*=1.5;
-        if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=tools*(has(s,'recycling')?1.1:1);
+        if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=tools;
         if(b.type==='coalmine'&&has(s,'t_drills'))m*=1.25;
         s.res[k]+=m;
       }
@@ -1182,12 +1193,12 @@ function hourTick(s){
     if(wh&&!deep)for(const t of s.grid)if(t.pile){
       const wf=workforce(t.pile.a);if(wf<=0)continue;
       if(t.pile.clear>0){const cl=Math.min(t.pile.clear,wf*(has(s,'t_drills')?1.5:1));t.pile.clear-=cl;s.res.stone+=cl*.8;if(!t.pile.clear)toast(s,`Залежь расчищена: ${RES[t.pile.r].n}`,'good');continue;}
-      const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));
+      const g=Math.min(t.pile.amt,wf*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')*(has(s,'t_drills')?1.25:1));
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
     }
     if(wh&&!deep)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
-      const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)/P.length;
+      const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')/P.length;
       for(const t of P){const g=Math.min(t.pile.amt,each);t.pile.amt-=g;s.res[t.pile.r]+=g;if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}}}
     if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');ev(s,'info',`Исследовано: «${T.n}»`);s.research=null;s.rp=0;}}
   }
@@ -1205,7 +1216,8 @@ function hourTick(s){
   if(s.promise){s.promise.left--;checkPromise(s);}
   for(const k in s.res)if(s.res[k]<0)s.res[k]=0;
   s.hope=clamp(s.hope,0,100);s.disc=clamp(s.disc,0,100);
-  if(has(s,'f_new'))s.hope=Math.max(40,s.hope);
+  if(has(s,'f_protector'))s.hope=Math.max(40,s.hope);
+  if(has(s,'o_pledge'))s.hope=Math.min(70,s.hope);
   checkEnd(s);
 }
 function onBuilt(s,b){
@@ -1219,11 +1231,11 @@ function genExplode(s){
   log(s,`Котёл взорвался. Погибли ${k}.`,'bad');dcount(s,'other',k);ev(s,'death',`Погибли ${k}: взрыв котла — печь перегружена`,FIRE_AT);
 }
 function meal(s){
-  const D=D_(s);const n=popTotal(s);const fm=(has(s,'communal')?.85:has(s,'private')?1.1:1)*(has(s,'food_ration')?.8:1);const need=n*.5*D.cons*fm;
+  const D=D_(s);const n=popTotal(s);const fm=(has(s,'communal')?.85:has(s,'private')?1.1:1)*(has(s,'food_ration')?.8:1)*lawMul(s,'food');const need=n*.5*D.cons*fm;
   if(s.res.food>=need){s.res.food-=need;s.unfed=0;s.unfedStreak=0;return;}
   const fed=Math.floor(s.res.food/(.5*D.cons*fm));s.res.food=0;s.unfed=n-fed;s.unfedStreak++;
   toast(s,`Голод: ${s.unfed} без еды`,'bad');
-  if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08*(has(s,'f_mutual')?.5:1)),'all');if(k){dcount(s,'hunger',k);log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');const kt=s.bld.find(b=>b.type==='kitchen'&&!b.build);ev(s,'death',`${k===1?'Умер житель':'Умерли жители ('+k+')'}: голод — без пайков ${s.unfed} чел. уже ${s.unfedStreak} ${ruDays(s.unfedStreak)}`,kt||FIRE_AT);}}
+  if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08),'all');if(k){dcount(s,'hunger',k);log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');const kt=s.bld.find(b=>b.type==='kitchen'&&!b.build);ev(s,'death',`${k===1?'Умер житель':'Умерли жители ('+k+')'}: голод — без пайков ${s.unfed} чел. уже ${s.unfedStreak} ${ruDays(s.unfedStreak)}`,kt||FIRE_AT);}}
 }
 function drink(s){s.thirsty=0;s.thirstStreak=0;} // воды в игре нет: снег топят у огня
 function homesHeat(s){
@@ -1243,6 +1255,7 @@ function nightSickness(s){
   if(s.unfed>0)n+=Math.round(s.unfed*.05);
   if(has(s,'child_shelter')&&s.bld.some(b=>b.type==='nursery'&&!b.build))n=Math.round(n*.85);
   if(has(s,'quarantine'))n=Math.round(n*.8);
+  n=Math.round(n*lawMul(s,'sick'));
   if(has(s,'crowding'))n=Math.round(n*1.15+.4);
   if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');
     if(k){const why=[];if(tier>=1)why.push(`мороз ${weatherAt(s.day)}°`+(medposts(s)<3?`, медпунктов ${medposts(s)} из 3`:''));const hl=homesHeat(s).homeless;if(tier>=1&&hl)why.push(`без крыши ${hl}`);if(s.unfed>0)why.push('голод');if(has(s,'additives'))why.push('опилки в пайках');
@@ -1266,7 +1279,7 @@ function morning(s){
     for(let i=0;i<n;i++){
       if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s._sdH=(s._sdH||0)+1;}}
       else if(beds>0){beds--;if(rnd()<.6){s.crit[t]--;s.ill[t]++;}}
-      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)*(has(s,'cap_harsh')?1.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;s._sdN=(s._sdN||0)+1;}
+      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;s._sdN=(s._sdN||0)+1;}
     }
   }
   if(s._sdH||s._sdN){const n=(s._sdH||0)+(s._sdN||0);dcount(s,'ill',n);const mp=s.bld.find(b=>(b.type==='medpost'||b.type==='hospital')&&!b.build);
@@ -1301,9 +1314,11 @@ function newDay(s){
   if(built('still').length)sicken(s,rnd()<.4?1:0);
   if(has(s,'apprentice')&&built('workshop').length&&s.pop.c-s.ill.c-s.crit.c>0){s.pop.c--;s.pop.e++;log(s,'Ученик стал инженером.','good');}
   if(has(s,'techcourse')&&s.day%3===0&&built('workshop').length&&s.pop.w-s.ill.w-s.crit.w>0){s.pop.w--;s.pop.e++;rebalance(s);log(s,'Рабочий закончил инженерные курсы.','good');}
-  if(has(s,'scrapdrive')){s.res.steel+=6;}
+  if(has(s,'scrapdrive')){s.res.steel+=6;if(s.day%5===0)sicken(s,1);}
+  if(has(s,'child_labor')&&s.day%3===0&&s.pop.c>0)sicken(s,1);
+  {const w=lawSum(s,'wood');if(w)s.res.wood=Math.max(0,s.res.wood-w);}
   if(has(s,'restday')&&s.day%7===0){s.hope=clamp(s.hope+6,0,100);s.disc=clamp(s.disc-4,0,100);toast(s,'Выходной день: люди отдохнули','good');}
-  if(has(s,'o_new'))dd=Math.min(dd,dd*.5);
+  if(has(s,'o_pledge')&&dd>0)dd*=.5;if(has(s,'f_denounce')&&dd>0)dd*=.7;
   s.disc=clamp(s.disc+dd*D.disc,0,100);
   s.hope=clamp(s.hope+dh,0,100);
   s.today={deaths:0};
@@ -1322,22 +1337,22 @@ function moodMods(s){
   const M=[],add=(n,h,d)=>{if(Math.abs(h)>.01||Math.abs(d)>.01)M.push({n,h,d});};
   const {per,homeless}=homesHeat(s),coldHomes=per[0]+per[1];
   const sickNow=s.ill.w+s.ill.e+s.ill.c+s.crit.w+s.crit.e+s.crit.c,{beds,hbeds}=bedCount(s),untreated=Math.max(0,sickNow-beds-hbeds);
-  add('Привычка: люди понемногу успокаиваются',0,-1.5);
+  add('Привычка: люди понемногу успокаиваются',0,-2);
   if(s.unfed===0)add('Все сыты',1,0);else add('Голод',-2,s.unfed*.1);
   if(homeless>0)add(`Без крыши: ${homeless} чел.`,-2,homeless*.08);
   if(coldHomes>0)add(`Мёрзнут в жилье: ${coldHomes} чел.`,coldHomes>popTotal(s)*.3?-1:0,coldHomes*.05);
   if(untreated>0)add(`Больные без коек: ${untreated}`,0,untreated*.08);
   const L=(id,n,h,d)=>{if(has(s,id))add(n,h,d);};
-  L('ext_shift','Закон: Удлинённая смена',0,3);L('child_labor','Закон: Детский труд',0,1.5);L('additives','Закон: Опилки в пайках',0,2);L('food_ration','Закон: Нормы воды',0,2.5);
-  L('mandatory','Закон: Трудовая повинность',0,2);L('norms','Закон: Нормы выработки',0,.6);L('scrapdrive','Закон: Сбор металлолома',0,.4);L('cap_ind','Закон: Индустриальный рывок',0,2);L('quarantine','Закон: Карантин',0,1);L('communal','Закон: Общие кухни',0,1);
-  L('private','Закон: Личные пайки',1,0);L('crowding','Закон: Уплотнение',-1,0);L('recycling','Закон: Сбор вторсырья',0,1);L('f_mutual','Закон: Взаимовыручка',1,0);L('f_wardens','Закон: Хранители',0,-2);L('o_martial','Закон: Военное положение',-1,-2);
+  L('ext_shift','Закон: Удлинённая смена',0,2);L('child_labor','Закон: Детский труд',0,1);L('additives','Закон: Опилки в пайках',0,1.5);L('food_ration','Закон: Урезанные пайки',0,1.5);
+  L('mandatory','Закон: Трудовая повинность',0,1.5);L('norms','Закон: Нормы выработки',0,.6);L('scrapdrive','Закон: Сбор металлолома',0,.4);L('cap_ind','Закон: Индустриальный рывок',0,2);L('quarantine','Закон: Карантин',0,1);L('communal','Закон: Общие кухни',0,1);
+  L('private','Закон: Личные пайки',1,0);L('crowding','Закон: Уплотнение',-1,0);L('recycling','Закон: Сбор вторсырья',0,1);for(const id of s.laws){const Lw=LAWBY[id];if(Lw&&Lw.m&&(Lw.m.h||Lw.m.d))add('Закон: '+Lw.n,Lw.m.h||0,Lw.m.d||0);}
   const built=t=>s.bld.filter(b=>b.type===t&&!b.build);
   if(built('arena').length)add('Бойцовская арена',0,-4);
   if(built('still').length)add('Самогонный цех',0,-4);
   {const v=built('patrol').reduce((a,b)=>a+2*Math.min(1,workforce(b.a)/5)*lvlMul(b),0);if(v)add('Посты патруля',0,-v);}
   if(built('radio').length)add('Радиоточка',1,-1);
   {const v=built('guardhouse').reduce((a,b)=>a+3*Math.min(1,workforce(b.a)/3),0);if(v)add('Гауптвахта',0,-v);}
-  {const v=built('hall').reduce((a,b)=>a+2*lvlMul(b),0);if(v)add('Дом собраний',v,0);}
+  {const v=built('hall').reduce((a,b)=>a+2*lvlMul(b),0);if(v)add('Храм',v,0);}
   {const v=built('shrine').reduce((a,b)=>a+3*lvlMul(b),0);if(v)add('Часовня',v,0);}
   if(built('nursery').length)add('Детский приют',1,0);
   if(built('cemetery').length)add('Кладбище',1,0);
@@ -1345,7 +1360,7 @@ function moodMods(s){
 }
 function tipHTML(kind){
   const s=S;if(!s)return'';const M=moodMods(s),D=D_(s);
-  const key=kind==='hope'?'h':'d',mul=kind==='hope'?1:D.disc*(has(s,'o_new')?.5:1);
+  const key=kind==='hope'?'h':'d',mul=kind==='hope'?1:D.disc*(has(s,'o_pledge')?.5:1)*(has(s,'f_denounce')?.7:1);
   const rows=M.filter(m=>Math.abs(m[key])>.01).sort((a,b)=>Math.abs(b[key])-Math.abs(a[key]));
   const tot=rows.reduce((a,m)=>a+m[key]*mul,0);
   const good=v=>kind==='hope'?v>0:v<0;
@@ -1353,7 +1368,7 @@ function tipHTML(kind){
   return`<div class="title" style="font-size:var(--fs-13);margin-bottom:4px">${kind==='hope'?'Надежда':'Недовольство'}: ${Math.round(kind==='hope'?s.hope:s.disc)} из 100</div>
    ${rows.map(m=>`<div class="trow"><span>${esc(m.n)}</span><b class="${good(m[key])?'up':'dn'}">${fmtv(m[key]*mul)}</b></div>`).join('')||'<div class="hint">Нет постоянных причин.</div>'}
    <div class="trow tot"><span>Итого за сутки</span><b class="${good(tot)?'up':'dn'}">${fmtv(tot)}</b></div>
-   <div class="hint">${kind==='hope'?'Смерти, события, обещания и законы меняют надежду сразу.':`Множитель сложности ×${D.disc}${has(s,'o_new')?', «Новый порядок» ×0,5':''}. События и законы меняют недовольство сразу.`}</div>`;
+   <div class="hint">${kind==='hope'?'Смерти, события, обещания и законы меняют надежду сразу.':`Множитель сложности ×${D.disc}${has(s,'o_pledge')?', «Клятва верности» ×0,5':''}${has(s,'f_denounce')?', «Поощрение доносов» ×0,7':''}. События и законы меняют недовольство сразу.`}</div>`;
 }
 // финал: победа на 91-й день, рекорды по сложностям, хардкор стирает сохранение
 const WIN_DAY=90;
@@ -1382,7 +1397,6 @@ function storyEvents(s){
   if(d===2)s.queue.push({id:'cold_tents'});
   if(d===3&&!has(s,'child_labor')&&!has(s,'child_shelter'))s.queue.push({id:'children'});
   if(d===4)newPromise(s);
-  if(d===5)s.queue.push({id:'purpose'});
   if(d===7)s.queue.push({id:'refugees'});
   if(d===9)newPromise(s);
   if(d===10)s.queue.push({id:'leavers'});
@@ -1428,7 +1442,7 @@ const EV={
     {t:'Пусть говорят. Убедим делом',h:'Нужна надежда ≥ 50 к 15-му дню',f:s=>{s.leavers=1;}},
     {t:'Запретить разговоры',h:'Недовольство +8, угроза снята',f:s=>{s.disc+=8;}},
     {t:'Отпустить желающих сейчас',h:'Уйдут 8 человек',f:s=>{kill(s,0);for(let i=0;i<8;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);s.hope-=3;}}]},
-  leavers_end:{t:'Решение Уходящих',x:s=>s.hope>=50||has(s,'o_new')||has(s,'f_new')?'Уходящие видят: на станции есть будущее. Они остаются.':'Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.',c:[{t:'Ясно',f:s=>{if(!(s.hope>=50||has(s,'o_new')||has(s,'f_new'))){const n=Math.round(popTotal(s)*.12);for(let i=0;i<n;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);log(s,`Ушли ${n} человек.`,'bad');}else s.hope+=5;s.leavers=0;}}]},
+  leavers_end:{t:'Решение Уходящих',x:s=>s.hope>=50||has(s,'o_pledge')||has(s,'f_protector')?'Уходящие видят: на станции есть будущее. Они остаются.':'Надежды мало. Уходящие забирают снаряжение и поднимаются по эскалатору. С ними уходят люди.',c:[{t:'Ясно',f:s=>{if(!(s.hope>=50||has(s,'o_pledge')||has(s,'f_protector'))){const n=Math.round(popTotal(s)*.12);for(let i=0;i<n;i++){const t=pickType(s,'healthy');if(t)s.pop[t]--;}rebalance(s);log(s,`Ушли ${n} человек.`,'bad');}else s.hope+=5;s.leavers=0;}}]},
   rumor_m2:{t:'Слухи о Метро-2',x:()=>'Старик-путеец клянётся: под центром есть секретная линия Д-6. Вход где-то у Боровицкой. Там склады, рассчитанные на войну.',c:[{t:'Отправить разведку к Боровицкой',f:s=>{s.st['Боровицкая'].k=Math.max(1,s.st['Боровицкая'].k);ui.open='map';}},{t:'Сказки',f:()=>{}}]},
   storm_warn:{t:'Прогноз',x:s=>`Термометры у вентшахт падают каждый час. Через пять дней придёт настоящий холод — до ${weatherAt(s.day+5)+D_(s).temp}° на станции.\n\nЗапасите уголь, утеплите жильё, поставьте и улучшите печь.`,c:[{t:'Готовиться',f:()=>{}}]},
   storm:{t:'Чёрный холод',x:()=>'Вентшахты обросли льдом. Холод спускается по эскалаторам. Продержитесь до конца месяца.',c:[{t:'Держаться',f:s=>{s.hope+=3;}}]},
@@ -1489,7 +1503,7 @@ function findPath(s,from,to){
   const p=[to];let c=to;while(c!==from){c=prev[c];p.unshift(c);}return p;
 }
 function edgeLen(a,b){const e=G.adj[a].find(e=>e.to===b);return e?e.len:Math.hypot(G.nodes[a].x-G.nodes[b].x,G.nodes[a].y-G.nodes[b].y);}
-function teamSpeed(s){return (has(s,'t_draisine')?60:38)*(has(s,'expedition')?1.3:1);}
+function teamSpeed(s){return has(s,'t_draisine')?60:38;}
 function moveTeams(s){
   if(sleepHour(s))return; // ночью отряды ставят лагерь и спят
   for(const tm of s.teams){
@@ -1592,7 +1606,7 @@ function sciInfo(s){
   const W=s.bld.filter(b=>(b.type==='workshop'||b.type==='lab')&&!b.build&&b.on&&workforce(b.a)>0).sort((a,c)=>(c.lvl||0)-(a.lvl||0)).slice(0,2);
   const pct=W.length?Math.min(300,100+(W.length>1?50:0)+25*W.reduce((a,b)=>a+Math.min(WS_MAXLV,b.lvl||0),0)):0;
   const staff=W.length?W.reduce((a,b)=>a+Math.min(1,workforce(b.a)/B[b.type].jobs)*bEff(s,b)/lvlMul(b)/capMul(s,b),0)/W.length:0;
-  const mult=(has(s,'t_research')?1.25:1)*(has(s,'cap_ind')?1.1:1);
+  const mult=(has(s,'t_research')?1.25:1)*(has(s,'cap_ind')?1.1:1)*lawMul(s,'sci');
   return{W,pct,staff,perH:RP_BASE*pct/100*staff*mult,mult};
 }
 function draftMul(s){const d=s.bld.filter(b=>b.type==='drafting'&&!b.build).sort((a,b)=>(b.lvl||0)-(a.lvl||0)).slice(0,3);return 1+d.reduce((a,b)=>a+.15*lvlMul(b),0);}
@@ -1611,7 +1625,7 @@ function canSign(s,id){
   const L=LAWBY[id];if(has(s,id))return false;if(s.lawCd>0)return false;
   if(L.ex&&has(s,L.ex))return false;if(s.laws.some(x=>LAWBY[x]&&LAWBY[x].ex===id))return false;if(L.req&&!has(s,L.req))return false;
   if(L.cap&&brCount(s,L.br)<BR[L.br].need)return false;
-  if(L.cat!=='adapt'){if(s.day<5&&!s.flags.purposeOpen)return false;if(s.path&&s.path!==L.cat)return false;}
+  if(L.cat!=='adapt'){if(!ideoProg(s).open)return false;if(s.path&&s.path!==L.cat)return false;}
   return true;
 }
 function signLaw(s,id,force){
@@ -1636,7 +1650,6 @@ function act(s,a){
     case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||b.upT>0||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='lvl';break;}
     case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=insCost(s,b.ins||0,b);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
     case 'taunt':{const b=bById(s,a.id);if(!b||b.type!=='catapult'||b.build||b.tauntCd>0)return;b.tauntCd=6;b.tauntOn=1;for(const z of s.zombies||[]){z.taunt=b.id;z.tauntT=1;z.att=null;}toast(s,`Таунт: мутанты идут на «${B[b.type].n}»`,'');break;}
-    case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
     case 'gen':{if(a.k==='on'){if(s.gen.broken)return;if(!s.gen.on&&s.res.coal<1)return;s.gen.on=!s.gen.on;if(!s.gen.on)s.gen.over=false;}
       if(a.k==='lvl')s.gen.lvl=clamp(s.gen.lvl+a.d,0,genMax(s));
@@ -1655,7 +1668,7 @@ function act(s,a){
     case 'trade':{const tm=s.teams.find(t=>t.id===a.team);const T=TRADE[a.i];if(!tm||!T)return;const st=s.st[tm.at];if(!st||st.t!=='trade')return;
       const have=(tm.cargo[T.give]||0)+(s.res[T.give]||0);if(have<T.gn)return;
       let need=T.gn;const fromCargo=Math.min(need,tm.cargo[T.give]||0);tm.cargo[T.give]=(tm.cargo[T.give]||0)-fromCargo;need-=fromCargo;s.res[T.give]-=need;
-      tm.cargo[T.get]=(tm.cargo[T.get]||0)+Math.round(T.n*(has(s,'barter')?1.5:1));break;}
+      tm.cargo[T.get]=(tm.cargo[T.get]||0)+Math.round(T.n);break;}
     case 'choose':{const e=s.queue[0];if(!e)return;const E=EV[e.id];const c=E.c[a.i];if(!c)return;if(c.ok&&!c.ok(s,e.p))return;
       s.queue.shift();c.f(s,e.p||{});if(e.id==='purpose')s.flags.purposeOpen=1;checkEnd(s);break;}
     case 'speed':{if(a.v===0&&s.survivor)return;s.paused=a.v===0;if(a.v)s.speed=a.v;break;}
@@ -3117,14 +3130,22 @@ function issueIcon(x,y,k,t){const I=ISSUE_IC[k]||ISSUE_IC.idle,p=1+.08*Math.sin(
   cx.fillStyle='rgba(16,18,22,.92)';cx.beginPath();cx.arc(0,0,11,0,7);cx.fill();cx.lineWidth=2.5;cx.strokeStyle=I.c;cx.stroke();
   cx.fillStyle=I.c;cx.font='bold 13px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(I.g,0,1);cx.restore();
   cx.font='11px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';}
+// состав работников здания: рабочие / инженеры / дети
+function crewOf(b){const d=B[b.type];if(b.build)return b.bw>0?{w:b.bw,e:0,c:0}:null;if(TOWER[b.type])return{w:b.crew||0,e:0,c:0};
+  if(!d.job)return null;const a=b.a||{w:0,e:0,c:0};return{w:a.w||0,e:a.e||0,c:a.c||0,max:d.jobs};}
+function crewText(c){const en=LANG==='en';const p=[`${en?'Wrk':'Раб'} ${c.w}`,`${en?'Eng':'Инж'} ${c.e}`,`${en?'Kids':'Дети'} ${c.c}`];return p.join(' · ')+(c.max?` / ${c.max}`:'');}
 function drawLabels(s,t){
-  if(!labelCache||t-labelT>600){labelT=t;const R=dayRates(s),occ=occupancy(s);labelCache=s.bld.map(b=>{const L=bLabel(s,b,R,occ);return L&&{b,...L};}).filter(Boolean);}
+  if(!labelCache||t-labelT>600){labelT=t;const R=dayRates(s),occ=occupancy(s);labelCache=s.bld.map(b=>{const L=bLabel(s,b,R,occ),cr=crewOf(b);return (L||cr)&&{b,t:'',k:'mute',...(L||{}),cr};}).filter(Boolean);}
   cx.font='11px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';
   const v=new THREE.Vector3();
   for(const L of labelCache){
     const g=R3.bmap.get(L.b.id);const hgt=g?new THREE.Box3().setFromObject(g.userData.body).max.y:0.8;
     v.set(wx(L.b.x),hgt+.15,wz(L.b.y)).project(R3.cam);if(v.z>1)continue;
-    const x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;const lt=tr(L.t);const w=cx.measureText(lt).width+12;
+    let x=(v.x+1)/2*VW,y=(1-v.y)/2*VH;
+    if(L.cr){const ct=crewText(L.cr);cx.font='11px "PT Mono", monospace';const cw=cx.measureText(ct).width+12,cy=L.t?y+17:y;
+      cx.fillStyle='rgba(12,16,20,.82)';cx.fillRect(x-cw/2,cy-8,cw,16);cx.fillStyle='#6fb6e0';cx.fillRect(x-cw/2,cy-8,2,16);
+      cx.fillStyle=L.cr.w+L.cr.e+L.cr.c?'#cfe3f2':'#8ea3b5';cx.fillText(ct,x+1,cy);cx.font='11px "PT Sans", Arial, sans-serif';if(!L.t){if(L.ic)issueIcon(x,y-22,L.ic,t);continue;}}
+    const lt=tr(L.t);const w=cx.measureText(lt).width+12;
     cx.fillStyle=L.k==='bad'?'rgba(70,20,16,.88)':'rgba(12,16,20,.82)';cx.fillRect(x-w/2,y-9,w,18);
     cx.fillStyle=L.k==='bad'?'#e06450':L.k==='ok'?'#b08a4e':'#3b4856';cx.fillRect(x-w/2,y-9,2,18);
     cx.fillStyle=L.k==='bad'?'#ffb4a6':L.k==='mute'?'#8ea3b5':'#e8dcc0';cx.fillText(lt,x+1,y);
@@ -3204,7 +3225,7 @@ const TECH_PIC={t_ammo:'bolt',t_heater:'flame',t_radius1:'radius',t_insul:'insul
   t_gather:'cart',t_saw:'saw',t_scrap:'wagon',t_coal:'pick',t_tools:'gear',t_barracks:'house',t_house:'houses',t_hospital:'cross',t_pharm:'pill',t_research:'book',
   t_draisine:'draisine',t_teams:'team',t_outpost:'flag',t_coldmat:'snow',t_heatpipes:'pipes',t_cook2:'kettle',t_seedbank:'seed',t_drills:'bolt',t_prefab:'blocks',
   t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route',t_watch1:'radius',t_xbow:'bolt',t_fire:'flame',t_braces:'blocks',t_light:'sun'};
-const LAW_PIC={g_watch:'alarm',g_repair:'hammer',g_bounty:'hand',g_militia:'fist',g_fort:'shield',cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',food_ration:'plateminus',cemetery:'grave',pit:'pit',radical:'knife',
+const LAW_PIC={o_watch:'shield',o_morning:'clock',o_patrol:'shield',o_foreman:'hammer',o_force:'bars',o_agit:'radio',o_pledge:'crown',f_prayer:'heart',f_shrines:'grave',f_temple:'house',f_penance:'hand',f_denounce:'mask',f_protector:'star',g_watch:'alarm',g_repair:'hammer',g_bounty:'hand',g_militia:'fist',g_fort:'shield',cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',food_ration:'plateminus',cemetery:'grave',pit:'pit',radical:'knife',
   overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',norms:'gear',standard:'blocks',scrapdrive:'recycle',techcourse:'school',restday:'sun',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
   recycling:'recycle',expedition:'compass',barter:'hand',o_patrol:'shield',o_radio:'radio',o_prison:'bars',o_martial:'star',o_new:'crown',
   f_hall:'candle',f_mutual:'hands',f_shrine:'church',f_wardens:'lantern',f_new:'sun'};
@@ -3224,14 +3245,14 @@ function bMult(s,b,k){
   let m=1;
   if(b.type==='farm'&&has(s,'t_farm2'))m*=1.5;
   if(b.type==='condenser'&&has(s,'t_filter'))m*=1.5;
-  if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=(has(s,'t_tools')?1.2:1)*(has(s,'recycling')?1.1:1);
+  if(['sawmill','scrapyard','coalmine'].includes(b.type))m*=(has(s,'t_tools')?1.2:1);
   if(b.type==='coalmine'&&has(s,'t_drills'))m*=1.25;
   return m;
 }
 function bEff(s,b){const d=B[b.type];const lv=lvlOf(heatAt(s,b.x,b.y));let eff=HEAT_EFF[lv];if(d.needHeat&&lv<d.needHeat&&!has(s,'t_seedbank'))eff*=.4;return eff*lvlMul(b)*capMul(s,b);}
 const workHoursPerDay=s=>has(s,'ext_shift')?14:10;
 const rationMult=s=>has(s,'additives')?3:has(s,'soup')?2.5:2;
-const foodPerPerson=s=>D_(s).cons*(has(s,'communal')?.85:has(s,'private')?1.1:1)*(has(s,'food_ration')?.8:1);
+const foodPerPerson=s=>D_(s).cons*(has(s,'communal')?.85:has(s,'private')?1.1:1)*(has(s,'food_ration')?.8:1)*lawMul(s,'food');
 const waterPerPerson=s=>D_(s).cons*(has(s,'water_ration')?.7:1);
 function dayRates(s){
   const H=workHoursPerDay(s),out={coal:0,wood:0,steel:0,raw:0,food:0,water:0,meds:0,cores:0,rp:0},per={};let kcap=0;
@@ -3241,8 +3262,8 @@ function dayRates(s){
     if(d.prod)for(const k in d.prod){const m=d.prod[k]*wf*eff*h*bMult(s,b,k);o[k]=m;out[k]+=m;}
     if(d.kitchen){const c=7.5*wf*eff*h*(has(s,'t_cook2')?1.5:1);o.kcap=c;kcap+=c;}
     if(d.rp){const SI=sciInfo(s);const r=SI.W.includes(b)?SI.perH*H/SI.W.length:0;o.rp=r;out.rp+=r;}}
-  for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);const P=gatherPiles(s,b);if(!wf||!P.length)continue;for(const t of P)out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)/P.length);}
-  for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));}
+  for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);const P=gatherPiles(s,b);if(!wf||!P.length)continue;for(const t of P)out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')/P.length);}
+  for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*lawMul(s,'pile')*(has(s,'t_drills')?1.25:1));}
   for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:25}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t==='meds'?'raw':o.t==='water'?'coal':o.t]+=g;}
   const cooked=Math.min(kcap,out.raw+s.res.raw);out.food+=cooked*rationMult(s);out.rawCooked=cooked;
   const n=popTotal(s);
@@ -3384,7 +3405,7 @@ function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=
   const dm=(has(s,'t_ammo')?1.3:1)*(ar&&has(s,'t_xbow')?1.4:1)*(has(s,'g_watch')?1.2:1)*(has(s,'g_fort')?1.25:1);
   const hm=(has(s,'t_braces')?1.5:1)*(has(s,'g_fort')?1.5:1),rm=(has(s,'t_braces')?1.5:1)*(has(s,'g_repair')?2:1);
   return{range:T.range+.3*(b.lvl||0)+(ar&&has(s,'t_watch1')?1:0),dps:T.dps*wf*(1+.3*(b.lvl||0))*dm,single:T.single,fire:ar&&has(s,'t_fire'),splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))*hm),regen:T.regen*((b.lvl||0)+1)*rm,tank:!!T.tank};}
-function waveSize(s,day){return Math.max(3,Math.round((10+2*(day-1))*(ZW[s.diff]||1)))+(s.waveBonus&&day===(s.hour>=22?s.day+1:s.day)?s.waveBonus:0);}
+function waveSize(s,day){return Math.max(3,Math.round((10+2*(day-1))*(ZW[s.diff]||1)*lawMul(s,'wave')))+(s.waveBonus&&day===(s.hour>=22?s.day+1:s.day)?s.waveBonus:0);}
 const waveHp=day=>40+6*(day-1);
 function scheduleWave(s){
   if(s.over)return;
@@ -3671,7 +3692,7 @@ function renderBar(){
   const list=Object.entries(B).filter(([k,d])=>d.cat===ui.cat);
   setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),bc=buildCost(s,k),af=canAfford(s,bc);
     const lock=!av?(d.max2&&s.bld.filter(b=>b.type===k).length>=2?'Максимум 2 мастерские — дальше улучшайте их':d.cat==='defense'&&k!=='raidhut'&&free(s,'w')<1?'Нужен свободный рабочий — он станет стрелком башни':d.max3&&s.bld.filter(b=>b.type===k).length>=3?'Максимум 3 башни этого типа':d.req10?'Нужны башня лучников и камнемётная башня 10-го уровня':k==='raidhut'?'Только в союзе станций':d.tech&&!has(s,d.tech)?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
-    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${costHTML(bc)}<span class="cst">${Math.ceil(d.time*(has(s,'t_prefab')?.6:1))} ч</span></span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
+    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${costHTML(bc)}<span class="cst">${Math.ceil(d.time*(has(s,'t_prefab')?.6:1)*lawMul(s,'build'))} ч</span></span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
 }
 function workCtrl(id,a,max,job,xy,safe){
   const s=S,tot=a.w+a.e+a.c,j={job,safe:!!safe};
@@ -3723,7 +3744,6 @@ function renderInfo(){
       const cs=c=>Object.keys(c).length?`<span style="display:inline-flex;gap:8px;color:var(--c-cost);font-family:var(--font-mono)">${costHTML(c)}</span>`:'бесплатно';
       if(canUpgrade(b)){const uc=upCost(s,b,b.lvl||0);h+=`<div class="row"><span>Уровень</span><span>${b.lvl||0} (+${(b.lvl||0)*20}%)</span></div><div class="ctrl"><button class="btn primary" data-upgrade="${b.id}" ${canAfford(s,uc)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='lvl'?`Улучшение: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:'Улучшить +20%'}</button><span class="hint">${cs(uc)}</span></div>${b.upT>0?`<div class="prog" style="margin:4px 0"><i style="width:${100-b.upT/UP_T*100}%"></i></div>`:''}`;}
       const ic=insCost(s,b.ins||0,b);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
-      if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
     }
     if(d.rp&&!b.build){const T=s.research&&TECHBY[s.research],rd=dayRates(s).out.rp;
       h+=T?`<div class="row"><span>Изучается</span><span>${T.n}</span></div><div class="row"><span>Прогресс</span><span>${Math.floor(s.rp)} / ${T.rp} (${Math.floor(s.rp/T.rp*100)}%)${rd>0?` · ≈ ${Math.ceil((T.rp-s.rp)/rd*24)} ч`:''}</span></div><div class="prog" style="margin:6px 0"><i style="width:${Math.min(100,s.rp/T.rp*100)}%"></i></div>`
@@ -3797,13 +3817,13 @@ function renderOverlay(){
   }
   if(ui.open==='laws'){
     el.hidden=false;el.className='overlay';
-    const purposeOpen=s.day>=5||s.flags.purposeOpen;
+    const IP=ideoProg(s),purposeOpen=IP.open;
     const lawBtn=L=>{const sig=has(s,L.id);const ok=canSign(s,L.id);const blocked=(L.ex&&has(s,L.ex))||s.laws.some(x=>LAWBY[x]&&LAWBY[x].ex===L.id&&!has(s,L.id));const col=BR[L.br]?BR[L.br].c:'#4a5560';
       const lock=L.cap&&!sig&&brCount(s,L.br)<BR[L.br].need?`Откроется, когда будут приняты все законы ветки «${BR[L.br].n}»: ${brCount(s,L.br)} из ${BR[L.br].need}`:'';
       return`<button class="tech withpic ${sig?'done':''} ${L.cap?'cap':''}" style="border-left-color:${col};${L.cap?`--capc:${col}`:''}" data-law="${L.id}" ${ok?'':'disabled'}>${pic(LAW_PIC[L.id]||'star',col)}<span class="tx"><span class="n">${L.n}${sig?' ✓':''}</span><span class="d">${L.d}</span>${lock?`<span class="c">${lock}</span>`:blocked?`<span class="c">Несовместим с «${LAWBY[L.ex].n}»</span>`:L.req&&!has(s,L.req)?`<span class="c">Сначала: ${LAWBY[L.req].n}</span>`:''}</span></button>`;};
     const scale=k=>{const b=BR[k],n=Math.min(b.need,brCount(s,k));return`<div class="scale"><div class="sh"><span style="color:${b.c}">${b.n}</span><span class="num">${n}/${b.need}</span></div><div class="sb">${Array.from({length:b.need},(_,i)=>`<i style="${i<n?`background:${b.c}`:''}"></i>`).join('')}<b style="border-color:${b.c};${has(s,b.cap)?`background:${b.c}`:''}" title="${LAWBY[b.cap].n}"></b></div><div class="hint">→ ${LAWBY[b.cap].n}</div></div>`;};
     const col=k=>{const list=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap),cap=LAWBY[BR[k].cap];
-      const locked=(k==='order'||k==='faith')&&!purposeOpen?'<span class="hint">Откроется на 5-й день.</span>':(k==='order'&&s.path==='faith')||(k==='faith'&&s.path==='order')?'<span class="hint">Выбран другой путь.</span>':'';
+      const locked=(k==='order'||k==='faith')&&!purposeOpen?`<span class="hint">Идеология откроется, когда будет принято 85% законов: ${IP.have} из ${IP.need}.</span>`:(k==='order'&&s.path==='faith')||(k==='faith'&&s.path==='order')?'<span class="hint">Выбран другой путь.</span>':'';
       return`<div class="col"><h4 style="color:${BR[k].c}">${BR[k].n}</h4>${locked||list.map(lawBtn).join('')+lawBtn(cap)}</div>`;};
     setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Устав станции</h2>
     <p class="lead">${s.lawCd?`Следующий закон можно подписать через ${s.lawCd} ч.`:'Можно подписать закон.'} Законы не отменяются. Каждый закон наполняет шкалу своей ветки; когда приняты все законы ветки, открывается её высший закон.</p>
@@ -3959,6 +3979,7 @@ async function coopJoin(code){
 /* ---------------------------- ЦИКЛ ---------------------------- */
 let last=performance.now(),uiT=0,rateT=0;
 function startGame(fromCoop){
+  if(S&&S.laws){S.laws=S.laws.filter(id=>LAWBY[id]);if(S.path&&!S.laws.some(id=>LAWBY[id].cat===S.path))S.path=null;}
   if(S){delete S.alarm;delete S.alarmTaken;for(const b of S.bld)if(TOWER[b.type]&&!b.crew)b.crew=1;}
   if(S){delete S.ally;ui.heatView=false;} // союз и кооператив пока отключены
   ui.mode='game';ui.sel=null;ui.cat=null;ui.open=null;$('overlay').hidden=true;

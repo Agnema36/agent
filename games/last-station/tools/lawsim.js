@@ -15,7 +15,7 @@ for(const ST of STRATS){all[ST]=[];
    const lawOf=c=>{const m=String(c.f).match(/signLaw\(s,'(\w+)'/);return m?m[1]:null;};
    const HARSH=LAWS.filter(L=>L.br==='harsh'||L.br==='order').map(L=>L.id);
    const SOFT=LAWS.filter(L=>L.br==='care'||L.br==='faith').map(L=>L.id);
-   const MIX=['soup','quarantine','cemetery','g_watch','standard','norms','restday','g_repair','private','overcrowd','child_shelter','apprentice','g_militia','g_bounty','recycling','f_hall','f_mutual','f_shrine','f_wardens','f_new','g_fort','techcourse','scrapdrive','emergency','cap_ind'];
+   const MIX=['soup','quarantine','cemetery','g_watch','standard','norms','restday','g_repair','ext_shift','private','overcrowd','child_shelter','apprentice','g_militia','g_bounty','recycling','techcourse','scrapdrive','mandatory','arena','crowding','food_ration','g_fort','cap_ind','f_prayer','f_shrines','f_temple','f_penance','f_denounce','f_protector'];
    const allow=id=>ST==='harsh'?HARSH.includes(id):ST==='soft'?SOFT.includes(id):ST==='mixed'?MIX.includes(id):ST==='random';
    const near=(type,cx,cy,maxd)=>{let best=null,bd=1e9;for(let y=1;y<GH-1;y++)for(let x=1;x<GW-1;x++){if(!canPlace(s,type,x,y))continue;const d=Math.hypot(x-cx,y-cy);if(d<bd&&d<=maxd){bd=d;best={x,y};}}return best;};
    const build=(type,cx=GX,cy=GY,md=12)=>{if(!buildAvail(s,type)||!canAfford(s,buildCost(s,type)))return false;const q=near(type,cx,cy,md);if(!q)return false;act(s,{t:'build',type,x:q.x,y:q.y});return true;};
@@ -53,7 +53,7 @@ for(const ST of STRATS){all[ST]=[];
      for(const tm of s.teams)if(tm.path.length<2&&!tm.explore&&!tm.rest){const k=Object.keys(s.st).filter(k=>s.st[k].k===1);if(k.length)act(s,{t:'send',team:tm.id,to:k[0]});}
      // законы по стратегии
      if(ST!=='none'&&s.lawCd<=0){let cand=LAWS.filter(L=>canSign(s,L.id)&&allow(L.id));
-       if(ST==='mixed')cand.sort((a,c)=>MIX.indexOf(a.id)-MIX.indexOf(c.id));
+       if(ST==='mixed'){const raises=L=>(L.fx.disc>0)||(L.m&&L.m.d>0)||['ext_shift','child_labor','additives','food_ration','mandatory','norms','scrapdrive','cap_ind','quarantine','communal','recycling'].includes(L.id);if(s.disc>55)cand=cand.filter(L=>!raises(L));cand.sort((a,c)=>MIX.indexOf(a.id)-MIX.indexOf(c.id));const calm=['moonshine','arena','restday','o_watch','o_patrol','f_penance'];if(s.disc>45){const cc=cand.filter(L=>calm.includes(L.id));if(cc.length)cand=cc.concat(cand.filter(L=>!calm.includes(L.id)));}}
        if(ST==='random')cand=cand.sort(()=>Math.random()-.5);
        if(cand.length){act(s,{t:'law',id:cand[0].id});if(has(s,cand[0].id))signed.push(cand[0].id+'@'+s.day);}}
      const days=s.res.coal/Math.max(1,[0,3,5,8,12][s.gen.lvl]*24);const cold=ambient(s);
@@ -61,7 +61,7 @@ for(const ST of STRATS){all[ST]=[];
      if(!s.gen.on&&s.res.coal>5)act(s,{t:'gen',k:'on'});
     }
    }
-   return {over:s.over,day:s.day,pop:popTotal(s),pop0,deaths:s.deaths,dc:s.dc||{},hope:Math.round(s.hope),disc:Math.round(s.disc),laws:s.laws.slice(),signed};
+   return {ideo:s.laws.filter(x=>LAWBY[x]&&LAWBY[x].cat!=='adapt').length,ideoDay:(signed.find(x=>/^[of]_/.test(x))||'').split('@')[1]||null,over:s.over,day:s.day,pop:popTotal(s),pop0,deaths:s.deaths,dc:s.dc||{},hope:Math.round(s.hope),disc:Math.round(s.disc),laws:s.laws.slice(),signed};
   },[ST,DAYS,MODE]);
   all[ST].push(res);process.stdout.write(`${ST}#${r} ${res.over||'alive'} d${res.day} deaths ${res.deaths} laws ${res.laws.length}\n`);
  }}
