@@ -1939,7 +1939,7 @@ function init3D(){
     const L=new T.TextureLoader();R3.spr={};
     const mk=(name,h,count)=>{const tex=L.load('sprites/'+name+'.png',t=>{const a=t.image.width/t.image.height;o.aspect=a;o.ready=true;});tex.encoding=T.sRGBEncoding;tex.anisotropy=4;
       const geo=new T.PlaneGeometry(1,1);geo.translate(0,.5,0);
-      const mat=new T.MeshStandardMaterial({map:tex,alphaTest:.45,side:T.DoubleSide,roughness:.95,metalness:0,emissive:0x1a1c20});
+      const mat=new T.MeshStandardMaterial({map:tex,alphaTest:.5,side:T.DoubleSide,roughness:1,metalness:0,emissive:0x0a0a0c,color:new T.Color(.82,.82,.85),fog:false});
       const im=new T.InstancedMesh(geo,mat,count);im.castShadow=true;im.customDepthMaterial=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking,map:tex,alphaTest:.45});
       im.instanceColor=new T.InstancedBufferAttribute(new Float32Array(count*3).fill(1),3);im.count=0;im.frustumCulled=false;sc.add(im);
       const o={im,h,aspect:.6,ready:false,n:0};return o;};
@@ -2676,12 +2676,20 @@ function render3D(t){
     for(const k in R3.zparts)cnt[k]=0;
     // новые погибшие → распад и пятно
     while(DFX.length){const d=DFX.shift();R3.corpses.push({...d,t0:now});}
-    if(R3.spr)sprBegin(ZKEYS);const camYaw2=Math.atan2(R3.cam.position.x,R3.cam.position.z);
+    if(R3.spr)sprBegin(ZKEYS);R3.zlast=R3.zlast||{};if(Object.keys(R3.zlast).length>600)R3.zlast={};const camYaw2=Math.atan2(R3.cam.position.x,R3.cam.position.z);
     const draw=(t,z,x,y,ang,k,ph,fl,dark,sink,fall)=>{
-      if(ART2D&&R3.spr){const o=R3.spr[t]||R3.spr.ghoul,jerk=t==='ghoul'?Math.sin(now/60+x)*.05:0;const flip=Math.sin(ang-camYaw2)<0;
-        const tilt=(fall?(flip?-1:1)*Math.min(1.4,fall):0)+(z.lg?(flip?.25:-.25):0)+Math.sin(ph)*.07+jerk;
+      if(ART2D&&R3.spr){const o=R3.spr[t]||R3.spr.ghoul;const flip=Math.sin(ang-camYaw2)<0,dir=flip?-1:1;
+        // идёт ли (по смещению с прошлого кадра) и фаза шага по реальному времени
+        const id=z.id!=null?z.id:'c'+x+y;const lp=R3.zlast[id];const mv=lp?Math.hypot(lp[0]-x,lp[1]-y)>1e-4:false;R3.zlast[id]=[x,y,now];
+        const per={dog:170,boar:230,brute:520,ghoul:330,shambler:460,bloat:150}[t]||350;const wp=mv?now/per*Math.PI:0;
+        const quad=t==='dog'||t==='boar'||t==='bloat';
+        const step=mv?Math.abs(Math.sin(wp)):0,sway=mv?Math.sin(wp):0;
+        const jerk=t==='ghoul'?(Math.sin(now/45+x*7)>.6?.18:0)*Math.sin(now/30):0;
+        const tilt=(fall?dir*Math.min(1.4,fall):0)+(z.lg?-dir*.3:0)+(quad?sway*.08:sway*.14)+jerk+(mv?-dir*.06:0);
+        const sy=mv?(1+(quad?Math.sin(wp*2)*.05:step*.06)):1+Math.sin(now/700+x)*.015,sx=mv?(1-(quad?Math.sin(wp*2)*.03:step*.04)):1;
         const c=fl>0?[1+fl*5,1+fl*5,1+fl*5]:dark>0?[1-dark*.8,1-dark*.85,1-dark*.85]:null;
-        sprPut(o,x,y,(Math.abs(Math.sin(ph))*.02)-sink,flip,tilt,(k/(ZT[t]||ZT.ghoul).k)*(t==='boar'?1.15:1),c);return;}
+        const ground=y>GH-1.45||x>GW-.6?-.47:0; // на путях — уровень рельсов
+        sprPut(o,x,y,ground+step*(quad?.025:.04)-sink,flip,tilt,(k/(ZT[t]||ZT.ghoul).k)*(t==='boar'?1.15:1),c,sx,sy);return;}
       const P=R3.zparts[t]||R3.zparts.ghoul,n=cnt[t];if(n>=160)return;cnt[t]++;
       base.makeRotationY(ang);if(fall){tmp.makeRotationX(fall);base.multiply(tmp);}const T_=ZT[t]||ZT.ghoul;tmp.makeScale(k*(T_.sx||1),k*(T_.sy||1),k*(T_.sz||1));base.multiply(tmp);base.setPosition(wx(x),-sink,wz(y));
       const M=[];for(let pi=0;pi<P.length;pi++){const pt=P[pi],r=pt.rot(z,ph,now);eu.set(r[0],r[1],r[2]);q.setFromEuler(eu);pv.set(pt.pivot[0],pt.pivot[1],pt.pivot[2]);tmp.compose(pv,q,one);
@@ -2747,11 +2755,12 @@ const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
 let ART2D=(()=>{try{return localStorage.getItem('ls_art2d')!=='0';}catch(e){return true;}})();
 let _bm,_bq,_bs,_bp,_bc,_be;
-function sprPut(o,x,y,yb,flip,tilt,scale,col){// x,y — клетки; yb — подъём; flip — зеркально; tilt — наклон (рад)
+function sprPut(o,x,y,yb,flip,tilt,scale,col,sx,sy){// x,y — клетки; yb — подъём; flip — зеркально; tilt — наклон (рад)
   if(!_bm){_bm=new THREE.Matrix4();_bq=new THREE.Quaternion();_bs=new THREE.Vector3();_bp=new THREE.Vector3();_bc=new THREE.Color();_be=new THREE.Euler();}
   if(!o)return;const i=o.n++;if(i>=o.im.instanceMatrix.count)return;
-  const cq=R3.cam.quaternion;_be.set(0,0,tilt||0);_bq.setFromEuler(_be);_bq.premultiply(cq);
-  const h=o.h*(scale||1);_bs.set(h*o.aspect*(flip?-1:1),h,1);_bp.set(wx(x),yb||0,wz(y));_bm.compose(_bp,_bq,_bs);o.im.setMatrixAt(i,_bm);
+  const px=wx(x),pz=wz(y),cp=R3.cam.position,yaw=Math.atan2(cp.x-px,cp.z-pz),lean=-(Math.PI/2-Math.atan2(cp.y-(yb||0),Math.hypot(cp.x-px,cp.z-pz)))*.45;
+  _be.set(lean,yaw,tilt||0,'YXZ');_bq.setFromEuler(_be);
+  const h=o.h*(scale||1);_bs.set(h*o.aspect*(flip?-1:1)*(sx||1),h*(sy||1),1);_bp.set(px,yb||0,pz);_bm.compose(_bp,_bq,_bs);o.im.setMatrixAt(i,_bm);
   _bc.setRGB(col?col[0]:1,col?col[1]:1,col?col[2]:1);o.im.setColorAt(i,_bc);}
 function sprBegin(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(o)o.n=0;}}
 function sprEnd(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(!o)continue;o.im.count=o.n;o.im.instanceMatrix.needsUpdate=true;o.im.instanceColor.needsUpdate=true;}}
