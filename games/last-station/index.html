@@ -1806,7 +1806,7 @@ function init3D(){
   R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso'||n==='skirt';m.userData.part=n;sc.add(m);return m;});
   {// шинели разных оттенков: бурые, хаки, серые, светлые
     const pal=[0x8a6e56,0x76704f,0x7a7672,0x9c9282,0x66563f,0x84745c].map(c=>new T.Color(c)),hp=[0x4a4a48,0x5a4c3c,0x3e4044].map(c=>new T.Color(c));
-    const sc_=[0x8a2a22,0x2a3e5a,0x5a5a52,0x6a4a22].map(c=>new T.Color(c));for(const m of R3.ppl){const n=m.userData.part;if(n==='scarf'){for(let i=0;i<60;i++)m.setColorAt(i,sc_[(i*3)%4]);m.instanceColor.needsUpdate=true;continue;}if(!['torso','skirt','armL','armR','hood'].includes(n))continue;for(let i=0;i<60;i++)m.setColorAt(i,n==='hood'?hp[(i*7)%3]:pal[(i*5)%pal.length]);m.instanceColor.needsUpdate=true;}}
+    const sc_=[0x8a2a22,0x2a3e5a,0x5a5a52,0x6a4a22].map(c=>new T.Color(c));for(const m of R3.ppl){const n=m.userData.part;if(n==='scarf'){for(let i=0;i<60;i++)m.setColorAt(i,sc_[(i*3)%4]);m.instanceColor.needsUpdate=true;continue;}if(!['torso','skirt','armL','armR','hood'].includes(n))continue;R3.palFor=(n,i)=>n==='hood'?hp[(i*7)%3]:pal[(i*5)%pal.length];for(let i=0;i<60;i++)m.setColorAt(i,n==='hood'?hp[(i*7)%3]:pal[(i*5)%pal.length]);m.instanceColor.needsUpdate=true;}}
   R3.pp=Object.fromEntries(R3.ppl.map(m=>[m.userData.part,m]));
   // иней в воздухе из вентшахт
   const N=1100,pos=new Float32Array(N*3);
@@ -2542,7 +2542,9 @@ const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer'
 const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
 function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
-  const want=Math.min(60,Math.ceil(popTotal(s)/2.5));
+  const humans=Math.min(60,Math.ceil(popTotal(s)/2.5)),bots=Math.min(60-humans,Math.min(12,s.robots||0)),want=humans+bots;
+  if(!R3.steel)R3.steel=new THREE.Color(0x8e979e);R3.isBot=R3.isBot||[];
+  for(let i=0;i<60;i++){const isb=i>=humans&&i<want;if(R3.isBot[i]!==isb){R3.isBot[i]=isb;for(const n of ['torso','skirt','armL','armR','hood']){R3.pp[n].setColorAt(i,isb?R3.steel:R3.palFor(n,i));R3.pp[n].instanceColor.needsUpdate=true;}}}
   while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
   walkers.length=want;
   const working=workHour(s),asleep=sleepHour(s);
@@ -2562,9 +2564,9 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
     m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));
     for(const n of ['torso','skirt','head','belt','bag','collar','mask','goggles'])R3.pp[n].setMatrixAt(i,m);
     {// разная одежда: каска (с фонарём у шахтёров), капюшон или ушанка; фартук, рюкзак со скаткой, шарф
-      const hat=i%3,P=R3.pp,put=(n,on)=>P[n].setMatrixAt(i,on?m:ZERO4);
-      put('helmet',hat===0);put('hood',hat===1);put('ushanka',hat===2);put('flaps',hat===2);put('lamp',hat===0&&(i%2===0||w.tool==='pick'));
-      const pack=i%4===3;put('pack',pack);put('roll',pack);put('bag',!pack&&i%4!==1);put('apron',i%5===2||w.tool==='bucket');put('scarf',i%2===1);put('mask',i%7!==4);}
+      const isb=R3.isBot[i],hat=isb?0:i%3,P=R3.pp,put=(n,on)=>P[n].setMatrixAt(i,on?m:ZERO4);
+      put('helmet',hat===0);put('hood',hat===1);put('ushanka',hat===2);put('flaps',hat===2);put('lamp',isb||(hat===0&&(i%2===0||w.tool==='pick')));
+      const pack=i%4===3;put('pack',pack);put('roll',pack);put('bag',!pack&&i%4!==1);put('apron',!isb&&(i%5===2||w.tool==='bucket'));put('scarf',!isb&&i%2===1);put('mask',!isb&&i%7!==4);if(isb){put('collar',false);put('pack',false);put('roll',false);put('bag',false);}}
     const lim=(n,x,y,a)=>{lm.makeTranslation(x,y,0);rm.makeRotationX(a);lm.multiply(rm);tm.multiplyMatrices(m,lm);R3.pp[n].setMatrixAt(i,tm);};
     lim('legL',-.02,.13,sw);lim('bootL',-.02,.13,sw);lim('legR',.02,.13,-sw);lim('bootR',.02,.13,-sw);
     const hit=busy?-1.35+Math.sin(w.sw)*1.05:null,aR=busy?hit:w.tool==='bucket'?sw*.3:sw*.8,aL=busy?hit*.85:-sw*.8;
@@ -3107,7 +3109,7 @@ function renderTop(){
   const {homeless}=homesHeat(s);const ill=s.ill.w+s.ill.e+s.ill.c,crit=s.crit.w+s.crit.e+s.crit.c;
   const {beds,hbeds}=bedCount(s);
   const pr=s.promise?`<span style="color:var(--amber)">Обещание: ${PROMISES.find(p=>p.k===s.promise.k).t} (${s.promise.left} ч)</span>`:'';
-  setHTML($('popline'),`<span>Жители <b>${popTotal(s)}</b></span><span>Рабочие <b>${free(s,'w')}/${s.pop.w}</b></span><span>Инженеры <b>${free(s,'e')}/${s.pop.e}</b></span><span>Дети <b>${s.pop.c}</b></span>${s.robots?`<span>Роботы <b>${s.robots}</b></span>`:''}<span>Больны <b>${ill}</b>${crit?` · тяжёлые <b style="color:var(--bad)">${crit}</b>`:''} · коек <b>${beds+hbeds}</b></span><span>Жильё <b>${housing(s)}</b>${homeless?` · без крыши <b style="color:var(--bad)">${homeless}</b>`:''}</span>${s.unfed?`<span style="color:var(--bad)">Голодают ${s.unfed}</span>`:''}${s.thirsty?`<span style="color:var(--bad)">Жажда ${s.thirsty}</span>`:''}${pr}`);
+  setHTML($('popline'),`<span>Жители <b>${popTotal(s)}</b></span><span>Рабочие <b>${free(s,'w')}/${s.pop.w+(s.robots||0)}</b></span><span>Инженеры <b>${free(s,'e')}/${s.pop.e}</b></span><span>Дети <b>${s.pop.c}</b></span>${s.robots?`<span>Роботы <b>${s.robots}</b></span>`:''}<span>Больны <b>${ill}</b>${crit?` · тяжёлые <b style="color:var(--bad)">${crit}</b>`:''} · коек <b>${beds+hbeds}</b></span><span>Жильё <b>${housing(s)}</b>${homeless?` · без крыши <b style="color:var(--bad)">${homeless}</b>`:''}</span>${s.unfed?`<span style="color:var(--bad)">Голодают ${s.unfed}</span>`:''}${s.thirsty?`<span style="color:var(--bad)">Жажда ${s.thirsty}</span>`:''}${pr}`);
 }
 function tripLeft(tm){if(tm.path.length<2)return 0;let L=0;for(let i=1;i<tm.path.length;i++)L+=edgeLen(tm.path[i-1],tm.path[i]);return Math.max(0,L-tm.prog*edgeLen(tm.path[0],tm.path[1]));}
 function canAct(s,k){
