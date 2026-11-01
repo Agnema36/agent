@@ -536,6 +536,7 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Стройка:','Construction:'],['строят','builders'],['Стройка стоит: нет свободных рабочих','Construction halted: no free workers'],
 ['Урезанные пайки','Cut rations'],['Каждый ест на 20% меньше. Недовольство растёт каждый день.','Everyone eats 20% less. Discontent grows every day.'],['Закон: Урезанные пайки','Law: Cut rations'],
 ['Голод убивает вдвое реже.','Hunger kills half as often.'],['Все сыты','Everyone is fed'],['Голод','Hunger'],['Котельная станции: запас угля.','The station boiler room: a coal stock.'],
 ['Скорость науки','Research speed'],['% из 300%','% of 300%'],
@@ -907,6 +908,7 @@ const tile=(s,x,y)=>s.grid[y*GW+x];
 function place(s,type,x,y,instant){
   const t=tile(s,x,y);const d=B[type];
   const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,lvl:0,ins:0,build:instant?0:Math.ceil(d.time*(has(s,'t_prefab')?.6:1))};
+  if(!instant)b.bw=Math.min(5,Math.max(0,free(s,'w')));
   s.bld.push(b);t.b=b.id;return b;
 }
 const bById=(s,id)=>s.bld.find(b=>b.id===id);
@@ -957,7 +959,7 @@ function jobsOf(s){
   for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile)L.push({o:t.pile,job:'w',max:t.pile.max||5,safe:!t.pile.clear,pile:1});}
   return L;
 }
-function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];if(t==='w')for(const b of s.bld)n+=b.crew||0;return n;}
+function assigned(s,t){let n=0;for(const j of jobsOf(s))n+=j.o.a[t];if(t==='w')for(const b of s.bld)n+=(b.crew||0)+(b.build>0?(b.bw||0):0);return n;}
 function free(s,t){return healthy(s,t)-assigned(s,t);}
 function addWorker(s,j){
   const a=j.o.a,tot=a.w+a.e+a.c;if(tot>=j.max)return false;
@@ -1031,7 +1033,8 @@ function hourTick(s){
   if(s.gen.stress<60)s.flags.stressWarn=0;
   for(const b of s.bld)if(b.type==='heater'&&!b.build&&b.on){if(s.res.coal>=1){s.res.coal-=1;b.fuelOk=true;}else b.fuelOk=false;}
   // стройка
-  for(const b of s.bld)if(b.build>0){b.build--;if(!b.build){toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
+  for(const b of s.bld)if(b.build>0){if((b.bw||0)<5){const add=Math.min(5-(b.bw||0),Math.max(0,free(s,'w')));b.bw=(b.bw||0)+add;}if(!(b.bw>0))continue; // без строителей стройка стоит
+    b.build--;if(!b.build){b.bw=0;toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
   // работа
   for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');}}}
   const wh=workHour(s);
@@ -2671,14 +2674,16 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   // экстренная смена: эти люди работают сразу, в любое время суток
   const EB=working?[]:s.bld.filter(b=>b.emerg>0&&!b.build&&workforce(b.a)>0),nEm=Math.min(walkers.length,Math.ceil(EB.reduce((a,b)=>a+workforce(b.a),0)/2.5));
+  const CB=s.bld.filter(b=>b.build>0&&b.bw>0),nCb=Math.min(walkers.length-nEm,CB.reduce((a,b)=>a+Math.min(2,Math.ceil(b.bw/2.5)),0));
   const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
-    const em=i<nEm,wkg=working||em,TG=em?EB:targets;
+    const cb=i>=nEm&&i<nEm+nCb,em=i<nEm||cb,wkg=working||em,TG=cb?CB:em?EB:targets;
+    {const role=cb?'c':em?'e':'n';if(w.role!==role){w.role=role;w.w=999;}}
     if(w.wk!==wkg){w.wk=wkg;w.w=999;}
     if(!em&&asleep&&Math.hypot(w.tx-w.x,w.ty-w.y)<.15){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;} // спят в жилье
-    if((Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!wkg)){if(w.w>500||!w.tool||!wkg)w.w=0;const tg=TG.length?TG[Math.floor(Math.random()*TG.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=wkg?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
+    if((Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!wkg)){if(w.w>500||!w.tool||!wkg)w.w=0;const tg=TG.length?TG[Math.floor(Math.random()*TG.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=cb?'hammer':wkg?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
     const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
     const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):w.tool&&w.face!=null?w.face:(w.ang||0);const busy=!moving&&w.tool&&w.tool!=='bucket'&&wkg;if(busy&&sp>0)w.sw=(w.sw||i)+sp*9;
@@ -2881,7 +2886,7 @@ function occupancy(s){
 function gatherR(s){return genRadius(s);}
 function gatherPiles(s,b){const R=gatherR(s),out=[];for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(!t.pile||t.pile.clear>0)continue;const x=i%GW,y=Math.floor(i/GW);if(Math.hypot(x-b.x,y-b.y)<=R)out.push(t);}return out;}
 function bLabel(s,b,R,occ){
-  const d=B[b.type];if(b.build)return{t:`Стройка: ${b.build} ч`,k:'mute'};
+  const d=B[b.type];if(b.build)return b.bw>0?{t:`Стройка: ${b.build} ч · строят ${b.bw}`,k:'mute'}:{t:'Стройка стоит: нет свободных рабочих',k:'bad'};
   if(b.upT>0)return{t:`${b.upK==='ins'?'Утепление':'Улучшение'}: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`,k:'mute'};
   if(d.house)return{t:`Жильцов ${occ[b.id]||0}/${capOf(s,b)}`,k:(occ[b.id]||0)>=capOf(s,b)?'ok':'mute'};
   if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
