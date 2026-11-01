@@ -254,6 +254,17 @@ body.inmenu .hud{display:none!important}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>if(!window.THREE)document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');</script>
 <script>if(!window.THREE)document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');</script>
+<!-- постобработка Three.js r128: EffectComposer, UnrealBloomPass, SSAOPass -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/MaskPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -602,7 +613,7 @@ const EN=[
 ['Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.','One player hosts the station; the other joins with a code and runs the same station. The second player needs edit access to this page.'],
 ['Создать кооператив','Host co-op'],['Подключиться','Join'],['КОД','CODE'],['Код кооператива','Co-op code'],
 ['Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.','Station alliance (everyone runs their own station and can send resources) — the "Alliance" button at the bottom during play.'],
-['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, H heat map, M metro map.'],
+['Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, M — карта метро.','Controls: drag to pan, right button or Q/E to rotate, wheel to zoom, Esc to cancel, Space to pause, 1–3 speed, F fullscreen, M metro map.'],
 ['Язык','Language'],['Тревога','Alarm'],['Отбой','Stand down'],['Клавиша A','Key A'],['Максимум 3 башни этого типа','Maximum 3 towers of this type'],['Стрелки приходят по тревоге.','Gunners arrive on alarm.'],
 ['ТРЕВОГА: стрелки на башнях.','ALARM: gunners are on the towers.'],['Когда пойдут мутанты — жмите «Тревога», чтобы рабочие заняли башни.','When mutants come, press “Alarm” so workers man the towers.'],['Ждёт тревоги · прочность','Awaiting alarm · durability'],
 ['Стрелки','Gunners'],['по тревоге','on alarm'],['Отбой тревоги','Stand down'],['Объявить тревогу','Sound the alarm'],['Объявлена тревога: рабочие заняли башни.','Alarm sounded: workers manned the towers.'],['Отбой тревоги: люди вернулись к работе.','Stand down: people returned to work.'],['Улучшение:','Upgrading:'],['с','s'],['Таунт:','Taunt:'],['мутанты идут на','mutants are heading to'],['Аура таунта','Taunt aura'],['перезарядка','cooldown'],['все мутанты бьют эту башню 1 ч','all mutants attack this tower for 1 h'],['Режим «До первой смерти»: игра заканчивается, как только погибнет первый житель','“Until the first death” mode: the game ends as soon as the first resident dies'],['Режим «До первой смерти»: на станции погиб человек. Игра окончена.','“Until the first death” mode: a resident has died. Game over.'],['Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями.','Damage: crossbows and bows, radius 4, single target. Place next to stone-thrower towers.'],
@@ -2414,6 +2425,26 @@ function makePile(r,amt,rich){
 // ---------- постобработка: свечение (bloom), цветокоррекция холод/тепло, виньетка ----------
 const POST={on:true,ok:false,ft:16,slow:0};
 function initPost(){
+  // основной путь: EffectComposer → SSAO (только ПК) → UnrealBloom → цветокоррекция/виньетка
+  try{const T=THREE,rd=R3.rd;
+    if(T.EffectComposer&&T.UnrealBloomPass&&T.ShaderPass&&T.RenderPass){
+      const gl2=rd.capabilities.isWebGL2,type=(gl2||rd.extensions.has('OES_texture_half_float'))?T.HalfFloatType:T.UnsignedByteType;
+      const rt=new T.WebGLRenderTarget(4,4,{minFilter:T.LinearFilter,magFilter:T.LinearFilter,format:T.RGBAFormat,type});
+      const comp=new T.EffectComposer(rd,rt);
+      let base;
+      if(innerWidth>760&&T.SSAOPass&&T.SSAOShader&&T.SimplexNoise){base=new T.SSAOPass(R3.sc,R3.cam,4,4);base.kernelRadius=.32;base.minDistance=.0004;base.maxDistance=.02;base.beautyRenderTarget.texture.type=type;POST.ssao=base;}
+      else base=new T.RenderPass(R3.sc,R3.cam);
+      comp.addPass(base);
+      const bloom=new T.UnrealBloomPass(new T.Vector2(256,256),1.15,.55,.92);comp.addPass(bloom);POST.bloom=bloom;
+      const grade=new T.ShaderPass({uniforms:{tDiffuse:{value:null},cold:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+        fragmentShader:`uniform sampler2D tDiffuse;uniform float cold;varying vec2 vUv;
+        vec3 aces(vec3 x){x*=.6;return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+        void main(){vec3 c=aces(texture2D(tDiffuse,vUv).rgb);
+          float l=dot(c,vec3(.299,.587,.114));vec3 tint=mix(vec3(.055,.10,.17),vec3(1.,.69,.44),smoothstep(.05,.75,l));c=mix(c,c*tint*1.9,.18);
+          float warm=clamp((c.r-c.b)*2.,0.,1.);c=mix(vec3(l),c,.88+warm*.18);c=mix(c,c*vec3(.9,.97,1.1),cold*.45);
+          vec2 q=vUv-.5;c*=1.-dot(q,q)*.75;c=pow(c,vec3(1./2.2));gl_FragColor=vec4(c,1.);}`});
+      comp.addPass(grade);POST.grade=grade;POST.comp=comp;POST.ok=true;POST.mode='composer';return;}
+  }catch(e){console.warn('composer',e);POST.comp=null;}
   try{const T=THREE,rd=R3.rd,gl2=rd.capabilities.isWebGL2;
     const opt={minFilter:T.LinearFilter,magFilter:T.LinearFilter,format:T.RGBAFormat,type:(gl2||rd.extensions.has('OES_texture_half_float'))?T.HalfFloatType:T.UnsignedByteType};
     POST.rt=gl2&&T.WebGLMultisampleRenderTarget?new T.WebGLMultisampleRenderTarget(4,4,opt):new T.WebGLRenderTarget(4,4,opt);
@@ -2433,10 +2464,11 @@ function initPost(){
     POST.ok=true;
   }catch(e){POST.ok=false;}
 }
-function postSize(){if(!POST.ok)return;const pr=R3.rd.getPixelRatio(),w=Math.max(4,VW*pr|0),h=Math.max(4,VH*pr|0);POST.rt.setSize(w,h);POST.a.setSize(w>>2,h>>2);POST.b.setSize(w>>2,h>>2);}
+function postSize(){if(!POST.ok)return;if(POST.comp){const pr=R3.rd.getPixelRatio();POST.comp.setPixelRatio(pr);POST.comp.setSize(VW,VH);return;}const pr=R3.rd.getPixelRatio(),w=Math.max(4,VW*pr|0),h=Math.max(4,VH*pr|0);POST.rt.setSize(w,h);POST.a.setSize(w>>2,h>>2);POST.b.setSize(w>>2,h>>2);}
 function postRender(sc,cam,cold){
   const rd=R3.rd,T=THREE;
   if(!POST.ok||!POST.on){rd.render(sc,cam);return;}
+  if(POST.comp){rd.toneMapping=T.NoToneMapping;rd.outputEncoding=T.LinearEncoding;POST.grade.uniforms.cold.value=cold||0;POST.comp.render();rd.toneMapping=T.ACESFilmicToneMapping;rd.outputEncoding=T.sRGBEncoding;return;}
   rd.toneMapping=T.NoToneMapping;rd.outputEncoding=T.LinearEncoding;
   rd.setRenderTarget(POST.rt);rd.clear();rd.render(sc,cam);
   POST.q.material=POST.bright;POST.bright.uniforms.t.value=POST.rt.texture;rd.setRenderTarget(POST.a);rd.render(POST.sc,POST.cam);
@@ -2448,7 +2480,7 @@ function postRender(sc,cam,cold){
 }
 function postWatch(dt){// слабое устройство: снижаем разрешение, затем выключаем свечение
   if(!(dt>0&&dt<500))return;POST.ft=POST.ft*.95+dt*.05;
-  if(POST.ft>34){POST.slow++;if(POST.slow>90){POST.slow=0;POST.ft=20;const pr=R3.rd.getPixelRatio();if(pr>1.01){R3.rd.setPixelRatio(Math.max(1,pr-.25));resize3D();}else if(POST.on)POST.on=false;}}else POST.slow=0;
+  if(POST.ft>34){POST.slow++;if(POST.slow>90){POST.slow=0;POST.ft=20;const pr=R3.rd.getPixelRatio();if(POST.ssao&&POST.ssao.enabled){POST.ssao.enabled=false;const rp=new THREE.RenderPass(R3.sc,R3.cam);POST.comp.passes[0]=rp;}else if(pr>1.01){R3.rd.setPixelRatio(Math.max(1,pr-.25));resize3D();}else if(POST.on)POST.on=false;}}else POST.slow=0;
 }
 function resize3D(){if(!R3.ok)return;if(!R3.camInit&&VW>0){R3.camInit=1;if(VW<VH)cam3.d=27;}R3.rd.setSize(VW,VH,false);R3.cam.aspect=VW/VH;R3.cam.updateProjectionMatrix();postSize();}
 function camUpdate(){
@@ -2670,7 +2702,7 @@ function overlay3D(t){
   vg.addColorStop(0,`rgba(0,0,0,${night*.3})`);vg.addColorStop(1,`rgba(2,4,8,${.5+night*.3})`);cx.fillStyle=vg;cx.fillRect(0,0,VW,VH);
   if(cold>.15){if(!frostTex)frostTex=makeFrost();cx.globalAlpha=clamp((cold-.15)*1.3,0,.95);cx.drawImage(frostTex,0,0,VW,VH);cx.globalAlpha=1;
     const fg=cx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.7);fg.addColorStop(0,'rgba(190,220,245,0)');fg.addColorStop(1,`rgba(190,220,245,${cold*.22})`);cx.fillStyle=fg;cx.fillRect(0,0,VW,VH);}
-  if(ui.labels!==false&&cam3.d<24)drawLabels(s,t);
+  if(cam3.d<24)drawLabels(s,t);
   if(R3.lair){const att=!!(s.wave||(s.zombies&&s.zombies.length)),p=Math.sin(t/(att?120:450))*.5+.5;R3.lair.rl.intensity=(att?2.5:.8)+p*(att?2:.6);R3.lair.halo.material.opacity=.35+p*.5;
     (R3.lairMarks||[]).forEach((m,i)=>m.material.opacity=.35+.65*Math.max(0,Math.sin(t/200-i*.9)));
     const v=new THREE.Vector3(wx(GW+.6),1.95,wz(GH-1)).project(R3.cam);
@@ -3206,7 +3238,7 @@ function barP(s,k){
 function renderBar(){
   const s=S;
   setHTML($('bar'),CATS.filter(([c])=>c!=='purpose'||s.path).map(([c,n])=>`<button data-cat="${c}" class="${ui.cat===c?'on':''}">${n}</button>`).join('')+
-    `<span class="sep"></span><button class="major pbar ${canAct(s,'tech')?'alert':''}" style="--p:${barP(s,'tech')}%" data-open="tech">Мастерская</button><button class="major pbar ${canAct(s,'laws')?'alert':''}" style="--p:${barP(s,'laws')}%" data-open="laws">Устав</button><button class="major pbar ${canAct(s,'map')?'alert':''}" style="--p:${barP(s,'map')}%" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?`<button class="major alert" data-act="evopen" title="Событие ждёт решения">Событие!${s.queue.length>1?' ('+s.queue.length+')':''}</button>`:''}<button data-open="ally">Союз</button><button data-open="log">Журнал</button><button data-act="heat" class="${ui.heatView?'on':''}">Тепло</button><button data-act="labels" class="${ui.labels!==false?'on':''}">Подписи</button>${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
+    `<span class="sep"></span><button class="major pbar ${canAct(s,'tech')?'alert':''}" style="--p:${barP(s,'tech')}%" data-open="tech">Мастерская</button><button class="major pbar ${canAct(s,'laws')?'alert':''}" style="--p:${barP(s,'laws')}%" data-open="laws">Устав</button><button class="major pbar ${canAct(s,'map')?'alert':''}" style="--p:${barP(s,'map')}%" data-open="map">Карта метро</button>${ui.evMin&&s.queue.length?`<button class="major alert" data-act="evopen" title="Событие ждёт решения">Событие!${s.queue.length>1?' ('+s.queue.length+')':''}</button>`:''}${ui.needsHidden?'<button data-act="needs">Нужды</button>':''}`);
   const cards=$('cards');
   if(!ui.cat){cards.hidden=true;return;}
   cards.hidden=false;
@@ -3375,12 +3407,8 @@ function renderMenu(){
   <div class="menurow"><button class="btn primary" data-act="new">Новая игра</button>${hasSave?'<button class="btn" data-act="load">Продолжить</button>':''}${S&&!S.over?'<button class="btn" data-act="resume">Вернуться в игру</button>':''}</div>
   <div class="title" style="color:var(--frost-dim);font-size:12px;margin-top:18px">Сохранения</div>
   <div class="slots">${slotsHTML()}</div>
-  <div class="title" style="color:var(--frost-dim);font-size:12px;margin-top:18px">Кооператив</div>
-  <p class="hint">Один игрок — хост: его станция живёт, второй подключается по коду и управляет той же станцией. Второму игроку нужен доступ к этой странице с правом редактирования.</p>
-  <div class="menurow"><button class="btn" data-act="host">Создать кооператив</button><input type="text" id="joincode" maxlength="6" placeholder="КОД" aria-label="Код кооператива"><button class="btn" data-act="join">Подключиться</button><span class="hint" id="coopmsg">${esc(coop.status)}</span></div>
-  <p class="hint">Союз станций (у каждого своя станция, можно пересылать ресурсы) — кнопка «Союз» внизу экрана во время игры.</p>
   <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
-  <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, H — карта тепла, M — карта метро.</p>
+  <p class="hint" style="margin-top:14px">Управление: перетаскивание — сдвиг, правая кнопка или Q/E — поворот, колесо — масштаб, Esc — отмена, пробел — пауза, 1–3 — скорость, F — весь экран, M — карта метро.</p>
   </div>`;
   trDOM(el);
 }
@@ -3439,7 +3467,7 @@ async function coopJoin(code){
 let last=performance.now(),uiT=0,rateT=0;
 function startGame(fromCoop){
   if(S){delete S.alarm;delete S.alarmTaken;for(const b of S.bld)if(TOWER[b.type]&&!b.crew)b.crew=1;}
-  if(S&&S.ally&&coop.role==='solo'&&!ally.on)allyConnect(S);
+  if(S){delete S.ally;ui.heatView=false;} // союз и кооператив пока отключены
   ui.mode='game';ui.sel=null;ui.cat=null;ui.open=null;$('overlay').hidden=true;
   if(S&&!fromCoop)syncTeams(S);
   if(S)prevRes={...S.res};
@@ -3529,7 +3557,6 @@ addEventListener('keydown',e=>{
   if(e.key==='Escape'){if(ui.buildType)ui.buildType=null;else if(ui.open)ui.open=null;else if(ui.cat)ui.cat=null;else ui.sel=null;ui.dirty=true;}
   if(e.key===' '){e.preventDefault();dispatch({t:'speed',v:S.paused?(S.speed||1):0});}
   if(e.key==='1'||e.key==='2'||e.key==='3'){const v=+e.key;if(!(S.survivor&&v>2))dispatch({t:'speed',v});}
-  if(e.key==='h'||e.key==='H'||e.key==='р'||e.key==='Р'){ui.heatView=!ui.heatView;ui.dirty=true;}
   if(e.key==='m'||e.key==='M'||e.key==='ь'||e.key==='Ь'){ui.open=ui.open==='map'?null:'map';ui.dirty=true;}
   if(e.key==='q'||e.key==='Q'||e.key==='й'||e.key==='Й')cam3.yaw+=.15;
   if(e.key==='e'||e.key==='E'||e.key==='у'||e.key==='У')cam3.yaw-=.15;
