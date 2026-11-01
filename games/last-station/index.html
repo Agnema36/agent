@@ -38,6 +38,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #res,#temp,#clock,#meters,#bar,#cards,#info>*{position:relative}
 #res,#temp,#clock,#meters,#bar,#cards{position:relative}
 .title{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+#danger{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(200,20,10,.6) 0%,rgba(160,10,0,.22) 9%,rgba(160,10,0,0) 20%,rgba(160,10,0,0) 80%,rgba(160,10,0,.22) 91%,rgba(200,20,10,.6) 100%)}
+#wavebanner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.96);z-index:60;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s,transform .25s;padding:14px 34px;background:rgba(40,8,6,.78);border:1px solid #c0392b;box-shadow:0 0 30px rgba(192,57,43,.45)}
+#wavebanner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#wavebanner .wb1{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:26px;color:#ffd9cf}
+#wavebanner .wb2{font-family:var(--mono);font-size:15px;color:#ff9b85;margin-top:4px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* top bar */
@@ -552,7 +557,7 @@ function buildGraph(){
 const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
-const EN=[
+const EN=[['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
 ['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
@@ -3147,7 +3152,13 @@ function scheduleWave(s){
   s.zombies=s.zombies||[];
   const n=waveSize(s,s.day);s.waveBonus=0;s.wave={left:n,cd:0,hp:waveHp(s.day),kills:0,loot:{},breach:0};
   toast(s,`Из тоннеля идут мутанты: ${n}`,'bad');log(s,`Ночная волна: ${n} мутантов.`,'bad');
+  waveBanner(n);
 }
+// крупное оповещение по центру экрана чуть выше середины, держится 2 секунды
+function waveBanner(n){if(typeof document==='undefined')return;let el=document.getElementById('wavebanner');
+  if(!el){el=document.createElement('div');el.id='wavebanner';document.body.appendChild(el);}
+  el.innerHTML=`<div class="wb1">${tr('Надвигаются мутанты')}</div><div class="wb2">${n} ${tr('мутантов')}</div>`;el.classList.remove('on');void el.offsetWidth;el.classList.add('on');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),2000);}
 function tauntR(s,b){return 3+.3*(b.lvl||0);}
 function waveTarget(s,z){
   if(z.taunt&&z.tauntT>0){const tb=bById(s,z.taunt);if(tb&&!tb.build)return tb;}
@@ -3170,13 +3181,9 @@ function combatStep(s,dt){
   // движение
   for(const z of Z){
     if(z.tauntT>0)z.tauntT-=dt;
-    const dawn=s.hour>=6&&s.hour<22&&!(w&&w.left>0);
-    if(dawn&&!z.flee)z.flee=1; // на рассвете уходят все уцелевшие, включая ещё не вышедших на платформу
+    if(z.flee){z.flee=0;z.fleeT=0;} // утром мутанты не уходят в тоннель: остаются, пока их не убьют
     let tx,ty,tg=null;
-    if(z.flee){// уходят: сначала спускаются на пути, потом по рельсам в тоннель; застрявшие исчезают
-      z.fleeT=(z.fleeT||0)+dt;if(z.x>GW+4.5||z.fleeT>3){z.gone=1;continue;}
-      if(Math.abs(z.y-(GH-1))>.25&&z.x<GW-.6){tx=Math.min(GW-1,z.x+.4);ty=GH-1;}else{tx=GW+8;ty=GH-1;}}
-    else if(!z.on&&z.x>GW-1.5&&Math.hypot(z.x-(GW-1.6),z.y-(GH-1))>.5){tx=GW-1.6;ty=GH-1;} // толпа у выхода из тоннеля не застревает: в радиусе .5 уже идёт в атаку
+    if(!z.on&&z.x>GW-1.5&&Math.hypot(z.x-(GW-1.6),z.y-(GH-1))>.5){tx=GW-1.6;ty=GH-1;} // толпа у выхода из тоннеля не застревает: в радиусе .5 уже идёт в атаку
     else if(z.inside&&!(z.tauntT>0)&&!s.bld.some(b=>b.type==='catapult'&&!b.build&&Math.hypot(b.x-z.x,b.y-z.y)<=tauntR(s,b))){// бродит от дома к дому
       let rt=z.rt!=null?bById(s,z.rt):null;if(!rt||rt.build){let bd=1e9;rt=null;for(const b of s.bld){if(b.build||TOWER[b.type]||b.id===z.lastRt)continue;const d=Math.hypot(b.x-z.x,b.y-z.y);if(d<bd){bd=d;rt=b;}}z.rt=rt?rt.id:null;}
       tg=rt||{x:GX,y:GY};tx=tg.x;ty=tg.y;}
@@ -3679,8 +3686,14 @@ function audioTick(t){// музыка по времени суток и атак
     GameAudio.updateAmbient({distToFire:s.gen.on?d:99,distToGenerator:s.gen.on&&sk?d:99});
     for(const z of s.zombies||[]){if(!z.gr&&z.x<GW+1){z.gr=1;GameAudio.growl(Math.hypot(wx(z.x)-cam3.tx,wz(z.y)-cam3.tz)+cam3.d*.35);}}}
 }
+// красный край экрана, когда до поражения близко: недовольство выше 70 или надежда ниже 25
+function dangerTick(t){let el=document.getElementById('danger');
+  const k=ui.mode==='game'&&S&&!S.over?Math.max(0,Math.min(1,Math.max((S.disc-70)/25,(25-S.hope)/20))):0;
+  if(!el){if(!k)return;el=document.createElement('div');el.id='danger';document.body.appendChild(el);}
+  el.style.opacity=k?(.25+.4*k)*(.8+.2*Math.sin(t/(700-300*k))):0;}
 function loop(t){
   audioTick(t);
+  dangerTick(t);
   const dt=Math.min(.1,(t-last)/1000);last=t;
   if(ui.mode==='game'&&S){
     const modal=S.queue.length>0&&!ui.evMin;
