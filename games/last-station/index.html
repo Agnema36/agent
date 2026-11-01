@@ -2744,9 +2744,10 @@ const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer'
 const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
 let ART2D=(()=>{try{return localStorage.getItem('ls_art2d')!=='0';}catch(e){return true;}})();
-const _bm=new THREE.Matrix4(),_bq=new THREE.Quaternion(),_bs=new THREE.Vector3(),_bp=new THREE.Vector3(),_bc=new THREE.Color(),_be=new THREE.Euler();
+let _bm,_bq,_bs,_bp,_bc,_be;
 function sprPut(o,x,y,yb,flip,tilt,scale,col){// x,y — клетки; yb — подъём; flip — зеркально; tilt — наклон (рад)
-  if(!o||o.n>=o.im.count+1000)return;const i=o.n++;if(i>=o.im.instanceMatrix.count)return;
+  if(!_bm){_bm=new THREE.Matrix4();_bq=new THREE.Quaternion();_bs=new THREE.Vector3();_bp=new THREE.Vector3();_bc=new THREE.Color();_be=new THREE.Euler();}
+  if(!o)return;const i=o.n++;if(i>=o.im.instanceMatrix.count)return;
   const cq=R3.cam.quaternion;_be.set(0,0,tilt||0);_bq.setFromEuler(_be);_bq.premultiply(cq);
   const h=o.h*(scale||1);_bs.set(h*o.aspect*(flip?-1:1),h,1);_bp.set(wx(x),yb||0,wz(y));_bm.compose(_bp,_bq,_bs);o.im.setMatrixAt(i,_bm);
   _bc.setRGB(col?col[0]:1,col?col[1]:1,col?col[2]:1);o.im.setColorAt(i,_bc);}
