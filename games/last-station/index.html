@@ -1,7 +1,7 @@
 <title>Последняя станция</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=PT+Sans:wght@400;700&family=PT+Mono&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=PT+Sans+Narrow:wght@700&family=PT+Sans:ital,wght@0,400;0,700;1,400&family=PT+Mono&display=swap">
 <style>
 /* Layout: full-bleed canvas colony view; HUD floats on top (resources top, hope/discontent bottom-centre, build bar bottom, info panel right). Single dark look: frostbitten steel + sodium-lamp amber. */
 :root{
@@ -14,12 +14,18 @@
   --amber:#f2a33a;       /* lamp light, accent */
   --amber-dim:#9a6522;
   --ok:#7fc48a; --warn:#e8c25a; --bad:#e06450; --cold:#6fb6e0;
-  --display:'Oswald','Arial Narrow',Impact,sans-serif;
-  --body:'PT Sans','Trebuchet MS',Arial,sans-serif;
-  --mono:'PT Mono',ui-monospace,Menlo,Consolas,monospace;
+  /* типографика: шрифты меняются только здесь (все с кириллицей, Google Fonts) */
+  --font-display:'Russo One','Arial Black',Impact,sans-serif;   /* акцент: название игры и заголовки окон */
+  --font-heading:'PT Sans Narrow','Arial Narrow',sans-serif;    /* заголовки, названия, кнопки (700, капс) */
+  --font-body:'PT Sans','Trebuchet MS',Arial,sans-serif;        /* описания */
+  --font-mono:'PT Mono',ui-monospace,Menlo,Consolas,monospace;  /* числа */
+  --fs-12:12px;--fs-13:13px;--fs-14:14px;--fs-16:16px;--fs-20:20px;--fs-28:28px;--fs-40:40px;
+  --ls-heading:.06em;
+  --c-title:#eef3f7;--c-desc:#9AA4B0;--c-cost:#f2a33a;--c-status:#7d8792;
+  --display:var(--font-heading);--body:var(--font-body);--mono:var(--font-mono);
   color-scheme:dark;
 }
-html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--frost);font:14px/1.4 var(--body)}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--frost);font:var(--fs-14)/1.4 var(--body)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -37,12 +43,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  linear-gradient(var(--brass),var(--brass)) right bottom/12px 2px no-repeat,linear-gradient(var(--brass),var(--brass)) right bottom/2px 12px no-repeat}
 #res,#temp,#clock,#meters,#bar,#cards,#info>*{position:relative}
 #res,#temp,#clock,#meters,#bar,#cards{position:relative}
-.title{font-family:var(--display);text-transform:uppercase;letter-spacing:.08em;font-weight:500}
+.title{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-weight:500}
 #danger{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(200,20,10,.6) 0%,rgba(160,10,0,.22) 9%,rgba(160,10,0,0) 20%,rgba(160,10,0,0) 80%,rgba(160,10,0,.22) 91%,rgba(200,20,10,.6) 100%)}
-#wavebanner{position:fixed;left:50%;top:30%;transform:translate(-50%,-50%) scale(.96);z-index:60;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s,transform .25s;padding:14px 34px;background:rgba(40,8,6,.78);border:1px solid #c0392b;box-shadow:0 0 30px rgba(192,57,43,.45)}
-#wavebanner.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
-#wavebanner .wb1{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;font-size:26px;color:#ffd9cf}
-#wavebanner .wb2{font-family:var(--mono);font-size:15px;color:#ff9b85;margin-top:4px}
+#wavebanner{position:fixed;left:50%;top:calc(6px + env(safe-area-inset-top,0px));display:flex;align-items:baseline;gap:14px;white-space:nowrap;transform:translate(-50%,0) scale(.96);z-index:18;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s,transform .25s;padding:6px 22px;background:rgba(40,8,6,.92);border:1px solid #c0392b;box-shadow:0 0 30px rgba(192,57,43,.45)}
+#wavebanner.on{opacity:1;transform:translate(-50%,0) scale(1);transition:none}
+#wavebanner .wb1{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-20);color:#ffd9cf}
+#wavebanner .wb2{font-family:var(--mono);font-size:var(--fs-14);color:#ff9b85}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* top bar */
@@ -51,26 +57,26 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .res{display:flex;align-items:center;gap:4px;padding:2px 5px;min-width:62px;border-right:1px solid rgba(255,255,255,.06)}
 .res:last-child{border-right:0}
 .res svg{width:26px;height:26px;flex:none;padding:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.35)}
-.res .v{font-family:var(--mono);font-size:13px}
-.res .d{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+.res .v{font-family:var(--mono);font-size:var(--fs-13)}
+.res .d{font-family:var(--mono);font-size:var(--fs-12);color:var(--frost-dim)}
 .res .d.neg{color:var(--bad)} .res .d.pos{color:var(--ok)}
 #clock{margin-left:auto;display:flex;align-items:center;gap:10px;padding:5px 10px}
-#clock .day{font-family:var(--display);font-size:18px;letter-spacing:.06em}
+#clock .day{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-20);letter-spacing:var(--ls-heading)}
 #warn{flex-basis:100%;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;pointer-events:none;margin-top:2px}
 #warn:empty{display:none}
-.zbest{display:flex;flex-wrap:wrap;gap:2px 6px;margin-top:5px}.zb{display:flex;flex-direction:column;align-items:center;width:44px;text-align:center}.zb small{font-size:9.5px;line-height:1.1;color:var(--frost-dim)}.zb.off{opacity:.45}
+.zbest{display:flex;flex-wrap:wrap;gap:2px 6px;margin-top:5px}.zb{display:flex;flex-direction:column;align-items:center;width:44px;text-align:center}.zb small{font-size:var(--fs-12);line-height:1.1;color:var(--frost-dim)}.zb.off{opacity:.45}
 @media (min-width:900px){#warn{padding-left:330px;padding-right:20px;justify-content:flex-start}body.noneeds #warn{padding-left:0;justify-content:center}}
-.wchip{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:12.5px;background:rgba(14,18,22,.9);border:1px solid #3b4856;border-left:3px solid #e8c25a;color:var(--frost);max-width:min(560px,92vw)}
+.wchip{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:var(--fs-12);background:rgba(14,18,22,.9);border:1px solid #3b4856;border-left:3px solid #e8c25a;color:var(--frost);max-width:min(560px,92vw)}
 .wchip.bad{border-left-color:#e06450;background:rgba(48,16,12,.92)}.wchip.cold{border-left-color:#7fb8e6;background:rgba(14,26,40,.92)}
-.wchip .wi{font-size:14px}
+.wchip .wi{font-size:var(--fs-14)}
 #temp{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 6px}
 #temp svg.gauge{width:84px;height:50px;flex:none}
-#temp .deg{font-family:var(--display);font-size:22px;color:var(--cold)}
-#temp .fc{display:flex;gap:6px;font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+#temp .deg{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-20);color:var(--cold)}
+#temp .fc{display:flex;gap:6px;font-family:var(--mono);font-size:var(--fs-12);color:var(--frost-dim)}
 .speed{display:flex;gap:2px}
-.speed button{width:30px;height:26px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--mono);font-size:12px}
+.speed button{width:30px;height:26px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--mono);font-size:var(--fs-12)}
 .speed button.on{background:var(--amber);color:#1b1206;border-color:var(--amber)}
-.iconbtn{height:30px;padding:0 10px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px}
+.iconbtn{height:30px;padding:0 10px;background:var(--steel);border:1px solid var(--rim);border-radius:2px;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-12)}
 .iconbtn:hover{border-color:var(--amber)}
 
 /* bottom */
@@ -84,18 +90,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .meter.hope.low .num{color:var(--bad)}
 .meter{cursor:help}
 #tip{position:fixed;z-index:30;width:300px;max-width:calc(100vw - 20px);padding:10px 12px;pointer-events:none}
-#tip .trow{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
+#tip .trow{display:flex;justify-content:space-between;gap:10px;font-size:var(--fs-12);padding:2px 0;border-bottom:1px dashed rgba(255,255,255,.07)}
 #tip .trow b{font-family:var(--mono);font-weight:400}#tip .up{color:var(--ok)}#tip .dn{color:var(--bad)}
-#tip .tot{border-bottom:0;border-top:1px solid var(--rim);margin-top:4px;padding-top:4px;font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
+#tip .tot{border-bottom:0;border-top:1px solid var(--rim);margin-top:4px;padding-top:4px;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading)}
 .meter.disc .fill{background:linear-gradient(90deg,#8a2d22,#f06a4a)}
-.meter .lbl{font-family:var(--display);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--frost-dim)}
+.meter .lbl{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-12);letter-spacing:var(--ls-heading);text-transform:uppercase;color:var(--frost-dim)}
 .meter svg{width:22px;height:22px;flex:none}
 .meter .bar{box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
 #resbox{display:flex;flex-direction:column;max-width:100%}
-#popline{font-family:var(--mono);font-size:12px;color:var(--frost-dim);display:flex;gap:4px 12px;flex-wrap:wrap;padding:3px 10px 4px;border-top:1px solid rgba(176,138,78,.25)}
+#popline{font-family:var(--mono);font-size:var(--fs-12);color:var(--frost-dim);display:flex;gap:4px 12px;flex-wrap:wrap;padding:3px 10px 4px;border-top:1px solid rgba(176,138,78,.25)}
 #popline b{color:var(--frost);font-weight:400}
 #bar{display:flex;gap:4px;padding:5px;max-width:100%;overflow-x:auto}
-#bar button{min-width:84px;height:40px;padding:0 12px;background:linear-gradient(180deg,#2c343c,#1a2026);border:1px solid #0a0d10;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.35);border-radius:1px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;white-space:nowrap}
+#bar button{min-width:84px;height:40px;padding:0 12px;background:linear-gradient(180deg,#2c343c,#1a2026);border:1px solid #0a0d10;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.35);border-radius:1px;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-12);white-space:nowrap}
 #bar button:hover{border-color:var(--amber);color:#ffd9a0}
 #bar button.on{border-color:var(--amber);color:var(--amber)}
 #bar .sep{width:1px;background:var(--rim);margin:0 4px}
@@ -109,29 +115,29 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .card{width:154px;flex:none;padding:8px 9px 8px 12px;background:linear-gradient(180deg,#252c33,#181d22);border:1px solid #0a0d10;border-left:3px solid #6b5432;border-radius:1px;text-align:left;display:flex;flex-direction:column;gap:3px}
 .card:hover:not([disabled]){border-color:var(--amber)}
 .card[disabled]{opacity:.45;cursor:not-allowed}
-.card .n{font-family:var(--display);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
-.card .c{font-family:var(--mono);font-size:11px;color:var(--amber)}
-.card .t{font-size:11px;color:var(--frost-dim);line-height:1.3}
+.card .n{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-13);letter-spacing:var(--ls-heading);text-transform:uppercase}
+.card .c{font-family:var(--mono);font-size:var(--fs-12);color:var(--amber)}
+.card .t{font-size:var(--fs-12);color:var(--frost-dim);line-height:1.3}
 
 /* side info */
 #info{right:max(10px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));width:290px;max-width:calc(100vw - 20px);max-height:calc(100% - 230px);overflow-y:auto;padding:12px}
-#info h3{margin:0 0 4px;font-family:var(--display);font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:17px}
-#info .sub{color:var(--frost-dim);font-size:12px;margin-bottom:8px}
-.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-size:13px}
+#info h3{margin:0 0 4px;font-family:var(--font-heading);font-weight:700;letter-spacing:var(--ls-heading);text-transform:uppercase;font-size:var(--fs-16)}
+#info .sub{color:var(--frost-dim);font-size:var(--fs-12);margin-bottom:8px}
+.row{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.07);font-size:var(--fs-13)}
 .row span:last-child{font-family:var(--mono);text-align:right}
 .ctrl{display:flex;gap:6px;align-items:center;margin:8px 0;flex-wrap:wrap}
-.btn{padding:5px 10px;background:linear-gradient(180deg,#2c343c,#1a2026);border:1px solid #0a0d10;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);border-radius:1px;font-size:12px;font-family:var(--display);letter-spacing:.06em;text-transform:uppercase}
+.btn{padding:5px 10px;background:linear-gradient(180deg,#2c343c,#1a2026);border:1px solid #0a0d10;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);border-radius:1px;font-size:var(--fs-12);font-family:var(--font-heading);font-weight:700;letter-spacing:var(--ls-heading);text-transform:uppercase}
 .btn:hover:not([disabled]){border-color:var(--amber)}
 .btn.primary{background:linear-gradient(180deg,#f6b452,#c97f22);color:#1b1206;border-color:#7a4a12;text-shadow:0 1px 0 rgba(255,255,255,.25)}
 .btn.danger{border-color:#6a2a22;color:#f3a090}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
-.pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:16px}
-.wrow .wn small{display:block;font-size:10px;color:var(--frost-dim);line-height:1.1}
-.wrow .btn:not(.pm){padding:3px 6px;font-size:11px}
+.pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:var(--fs-16)}
+.wrow .wn small{display:block;font-size:var(--fs-12);color:var(--frost-dim);line-height:1.1}
+.wrow .btn:not(.pm){padding:3px 6px;font-size:var(--fs-12)}
 .wrow{display:grid;grid-template-columns:minmax(64px,1fr) 26px 24px 26px auto auto;gap:6px;align-items:center;margin:4px 0}
 .wrow .num{text-align:center}
-.wrow .wn{font-size:13px}
-.closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:18px}
+.wrow .wn{font-size:var(--fs-13)}
+.closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:var(--fs-20)}
 .lvl0{color:#b8d8ff}.lvl1{color:#8ec0ea}.lvl2{color:#9fb3c4}.lvl3{color:#e8c25a}.lvl4{color:#f2a33a}
 
 /* toasts / log */
@@ -139,21 +145,21 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .need{display:flex;gap:8px;align-items:flex-start;padding:4px 6px 4px 4px;border-left:3px solid #7fc48a;background:rgba(0,0,0,.18)}
 .need.warn{border-left-color:#e8c25a}.need.bad{border-left-color:#e06450;background:rgba(224,100,80,.12)}
 .need svg{width:20px;height:20px;flex:none;margin-top:1px}
-.need .nm{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.need .nm{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-12);display:flex;justify-content:space-between;gap:8px}
 .need .nm b{font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;color:var(--frost)}
 .need.bad .nm b{color:#ff9a86}
-.need .nh{font-size:11.5px;color:var(--frost-dim);line-height:1.3}
+.need .nh{font-size:var(--fs-12);color:var(--frost-dim);line-height:1.3}
 .needhead{display:flex;justify-content:space-between;align-items:center}
 .pic{width:44px;height:44px;flex:none;padding:6px;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.4);border-radius:2px}
 .tech.withpic{flex-direction:row;gap:10px;align-items:flex-start}
 .tech.withpic .tx{display:flex;flex-direction:column;gap:3px;min-width:0}
-.tech .st{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
+.tech .st{font-family:var(--mono);font-size:var(--fs-12);color:var(--frost-dim)}
 .ally{padding:12px;margin:8px 0}
 .slots{display:flex;flex-direction:column;gap:4px;margin-top:6px}
 .slot{display:grid;grid-template-columns:22px 1fr auto auto auto;gap:6px;align-items:center;padding:4px 6px;background:rgba(0,0,0,.2)}
-.slot .sm{font-size:12.5px;color:var(--frost-dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .sm{font-size:var(--fs-12);color:var(--frost-dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .scales{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:4px 0 16px}
-.scale .sh{display:flex;justify-content:space-between;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.scale .sh{display:flex;justify-content:space-between;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-13)}
 .scale .sb{display:flex;gap:3px;margin:5px 0 3px;align-items:center}
 .scale .sb i{flex:1;height:9px;background:#0d1217;box-shadow:inset 0 0 0 1px #2a333c}
 .scale .sb b{width:16px;height:16px;transform:rotate(45deg);border:2px solid;margin-left:5px}
@@ -162,7 +168,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .tech.cap .n{color:var(--capc)}
 select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding:6px;border-radius:2px;font:inherit}
 #toasts{left:max(10px,env(safe-area-inset-left,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));top:auto;flex-direction:column-reverse;display:flex;flex-direction:column;gap:4px;width:300px;max-width:calc(100vw - 20px)}
-.toast{padding:7px 10px;font-size:12.5px;border-left:3px solid var(--amber);background:rgba(20,26,33,.92);animation:tin .25s ease-out}
+.toast{padding:7px 10px;font-size:var(--fs-12);border-left:3px solid var(--amber);background:rgba(20,26,33,.92);animation:tin .25s ease-out}
 .toast.bad{border-left-color:var(--bad)}.toast.good{border-left-color:var(--ok)}.toast.cold{border-left-color:var(--cold)}
 @keyframes tin{from{transform:translateX(-12px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.toast{animation:none}}
@@ -170,17 +176,17 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 /* overlays */
 .overlay{position:fixed;inset:0;z-index:20;background:rgba(5,7,10,.78);display:flex;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
 .sheet{position:relative;width:min(1100px,100%);max-height:100%;overflow:auto;padding:18px 20px}
-.sheet h2{margin:0 0 4px;font-family:var(--display);font-weight:500;font-size:26px;letter-spacing:.08em;text-transform:uppercase;text-wrap:balance}
+.sheet h2{margin:0 0 4px;font-family:var(--font-heading);font-weight:700;font-size:var(--fs-28);letter-spacing:var(--ls-heading);text-transform:uppercase;text-wrap:balance}
 .sheet .lead{color:var(--frost-dim);margin:0 0 14px;max-width:70ch}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
 .tech{padding:9px 10px;border:1px solid #0a0d10;border-left:3px solid #4a5560;background:linear-gradient(180deg,#232a31,#181d22);border-radius:1px;display:flex;flex-direction:column;gap:4px;text-align:left}
 .tech.done{background:linear-gradient(180deg,#1c2a20,#141d17);box-shadow:inset 0 0 0 1px rgba(127,196,138,.35)}
 .tech.active{border-left-color:var(--amber);box-shadow:inset 0 0 0 1px rgba(242,163,58,.4)}
 .tech[disabled]{opacity:.5}
-.tech .n{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
-.tech .d{font-size:12px;color:var(--frost-dim)}
-.tech .c{font-family:var(--mono);font-size:11px;color:var(--amber)}
-.col h4{margin:0 0 6px;font-family:var(--display);font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-size:13px}
+.tech .n{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading)}
+.tech .d{font-size:var(--fs-12);color:var(--frost-dim)}
+.tech .c{font-family:var(--mono);font-size:var(--fs-12);color:var(--amber)}
+.col h4{margin:0 0 6px;font-family:var(--font-heading);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);font-size:var(--fs-13)}
 .col{display:flex;flex-direction:column;gap:6px;min-width:0}
 .prog{height:6px;background:#0d1217;border:1px solid var(--rim)}
 .prog i{display:block;height:100%;background:var(--amber)}
@@ -201,49 +207,63 @@ select{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding
 #maptop{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));padding:10px 12px;width:min(560px,calc(100vw - 340px))}
 .team{padding:6px 8px;border:1px solid var(--rim);margin:4px 0;border-radius:2px;background:var(--steel);text-align:left;width:100%}
 .team.sel{border-color:var(--amber)}
-.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:11px;color:var(--frost-dim);margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:var(--fs-12);color:var(--frost-dim);margin-top:6px}
 .legend i{display:inline-block;width:14px;height:4px;vertical-align:middle;margin-right:4px}
 
 /* menu */
 #menu .sheet{width:min(760px,100%)}
-.logo{font-family:var(--display);font-size:clamp(34px,7vw,64px);line-height:1;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--frost);text-shadow:0 0 30px rgba(242,163,58,.25)}
+.logo{font-family:var(--font-heading);font-weight:700;font-size:clamp(34px,7vw,64px);line-height:1;letter-spacing:var(--ls-heading);text-transform:uppercase;margin:0;color:var(--frost);text-shadow:0 0 30px rgba(242,163,58,.25)}
 .logo span{color:var(--amber)}
 .logo::after{content:"";display:block;height:2px;margin-top:10px;background:linear-gradient(90deg,var(--amber),rgba(176,138,78,.2) 60%,transparent)}
 .overlay.menubg{background:radial-gradient(ellipse at center,rgba(6,9,13,.45),rgba(4,6,9,.85)),url('map_bg.jpg') center/cover no-repeat,#0b0e12;flex-direction:column}
 #msnow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
 .overlay.menubg>*:not(#msnow){position:relative;z-index:1}
 .mlang{position:fixed!important;top:calc(12px + env(safe-area-inset-top,0px));right:14px;display:flex;border:1px solid var(--rim);border-radius:2px;overflow:hidden}
-.mlang button{background:rgba(14,18,22,.8);border:0;color:var(--frost-dim);padding:4px 9px;font:12px var(--mono)}.mlang button.on{background:var(--amber);color:#14100a}
+.mlang button{background:rgba(14,18,22,.8);border:0;color:var(--frost-dim);padding:4px 9px;font:var(--fs-12) var(--mono)}.mlang button.on{background:var(--amber);color:#14100a}
 .mcol{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}.msub{color:var(--frost-dim);margin:4px 0 18px}
-.mbtns{display:flex;flex-direction:column;gap:8px;width:min(300px,80vw)}.btn.big{padding:12px 16px;font-size:15px;letter-spacing:.06em}
+.mbtns{display:flex;flex-direction:column;gap:8px;width:min(300px,80vw)}.btn.big{padding:12px 16px;font-size:var(--fs-14);letter-spacing:var(--ls-heading)}
 .mwide{width:min(900px,100%)}.mback{margin-bottom:8px}.diffs.four{grid-template-columns:repeat(4,1fr)}@media (max-width:700px){.diffs.four{grid-template-columns:1fr 1fr}}
-.diff small.dnum{display:block;margin-top:6px;color:var(--amber);font-family:var(--mono);font-size:11px;line-height:1.35}
+.diff small.dnum{display:block;margin-top:6px;color:var(--amber);font-family:var(--mono);font-size:var(--fs-12);line-height:1.35}
 .mods{display:flex;flex-direction:column;gap:6px;margin:10px 0 14px}.mods small{color:var(--frost-dim)}
-.btn.huge{width:100%;padding:14px;font-size:18px;letter-spacing:.1em}.hudvol{display:flex;align-items:center;gap:4px;font-size:13px}.hudvol input{width:80px;accent-color:var(--amber)}
+.btn.huge{width:100%;padding:14px;font-size:var(--fs-20);letter-spacing:.1em}.hudvol{display:flex;align-items:center;gap:4px;font-size:var(--fs-13)}.hudvol input{width:80px;accent-color:var(--amber)}
 .vol{display:flex;align-items:center;gap:12px;margin:6px 0;color:var(--frost-dim)}.vol input{flex:1;max-width:320px;accent-color:var(--amber)}
 .ctl{margin:6px 0 0 18px;color:var(--frost-dim);line-height:1.7}
 .diffs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:12px 0}
 .diff{padding:10px;border:1px solid var(--rim);background:var(--steel);text-align:left;border-radius:2px}
 .diff.on{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
-.diff b{display:block;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.diff b{display:block;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-weight:500}
 .diff small{color:var(--frost-dim)}
 .menurow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
 input[type=text]{background:#0d1217;border:1px solid var(--rim);color:var(--frost);padding:7px 9px;border-radius:2px;font-family:var(--mono);text-transform:uppercase;width:120px}
-label.chk{display:flex;gap:8px;align-items:center;font-size:13px}
-.coopbadge{padding:4px 8px;font-family:var(--mono);font-size:11px;color:var(--amber)}
-.hint{font-size:12px;color:var(--frost-dim)}
+label.chk{display:flex;gap:8px;align-items:center;font-size:var(--fs-13)}
+.coopbadge{padding:4px 8px;font-family:var(--mono);font-size:var(--fs-12);color:var(--amber)}
+.hint{font-size:var(--fs-12);color:var(--frost-dim)}
 body.inmenu .hud{display:none!important}
 @media (max-width:640px){
   #info{top:auto;bottom:212px;right:8px;left:8px;width:auto;max-height:36%}
   #toasts{display:none}
   #needs{top:auto;bottom:212px;max-height:30%;width:auto;right:10px}
-  #clock{gap:6px;flex-wrap:wrap}#clock .day{font-size:15px;white-space:nowrap}
+  #clock{gap:6px;flex-wrap:wrap}#clock .day{font-size:var(--fs-14);white-space:nowrap}
   #needs.min .need .nh{display:none}
   .meter .bar{width:70px}
-  .meter .lbl{font-size:11px}
+  .meter .lbl{font-size:var(--fs-12)}
   #mapside{top:auto;bottom:10px;left:10px;right:10px;width:auto;max-height:45%}
   #maptop{max-width:calc(100vw - 20px)}
 }
+
+/* ===== типографика: иерархия ===== */
+.logo,.sheet h2,.mtitle,#gameover h2,.menu h2{font-family:var(--font-display);font-weight:400;letter-spacing:.03em}
+.logo{font-size:var(--fs-40)}
+.sheet h2{font-size:var(--fs-28);color:var(--c-title)}
+.sheet .lead{font-size:var(--fs-14);color:var(--c-desc)}
+.col h4{font-size:var(--fs-14)}
+.tech .n,.card .n{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-16);letter-spacing:var(--ls-heading);text-transform:uppercase;color:var(--c-title)}
+.tech .d,.card .t{font-family:var(--font-body);font-size:var(--fs-14);color:var(--c-desc);line-height:1.35}
+.tech .c,.card .c{font-family:var(--font-mono);font-size:var(--fs-13);color:var(--c-cost);font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:2px 9px;align-items:center}
+.tech .st{font-family:var(--font-body);font-style:italic;font-size:var(--fs-13);color:var(--c-status)}
+.tech[disabled],.card[disabled]{opacity:.45}
+.num,.res .v,.res .d,.row span:last-child{font-variant-numeric:tabular-nums}
+.cst{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.cst svg{width:14px;height:14px;flex:none}
 </style>
 
 <canvas id="g3" aria-hidden="true"></canvas>
@@ -333,6 +353,7 @@ const ICON_C={
   meds:'<rect x="2" y="4" width="12" height="9.5" rx="1.5" fill="#e8e4dc"/><path d="M6 4V2.8h4V4" stroke="#8a8478" stroke-width="1.2" fill="none"/><path d="M8 6v5.5M5.2 8.75h5.6" stroke="#d6362a" stroke-width="2.4"/><path d="M2 12.5h12" stroke="#a8a298" stroke-width=".8"/>',
   cores:'<circle cx="8" cy="8" r="6" fill="#4a3e34"/><circle cx="8" cy="8" r="6" fill="none" stroke="#a07a3a" stroke-width="1.4"/><circle cx="8" cy="8" r="3.2" fill="#ffb347"/><circle cx="8" cy="8" r="1.6" fill="#fff2c0"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="#a07a3a" stroke-width="1.2"/>'
 };
+const costHTML=c=>Object.entries(c||{}).map(([r,n])=>`<span class="cst" title="${RES[r].n}">${ico(r)}${n}</span>`).join('');
 const ico=(k,col)=>!col&&ICON_C[k]?`<svg viewBox="0 0 16 16" aria-hidden="true">${ICON_C[k]}</svg>`:`<svg viewBox="0 0 16 16" style="color:${col||RES[k].c}" aria-hidden="true">${ICON[k]}</svg>`;
 
 const DIFF={
@@ -567,7 +588,7 @@ function buildGraph(){
 const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
-const EN=[['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
+const EN=[['оч.','pts'],['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
 ['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
@@ -1280,7 +1301,7 @@ function tipHTML(kind){
   const tot=rows.reduce((a,m)=>a+m[key]*mul,0);
   const good=v=>kind==='hope'?v>0:v<0;
   const fmtv=v=>(v>0?'+':'')+(Math.abs(v)<10?v.toFixed(1):Math.round(v));
-  return`<div class="title" style="font-size:13px;margin-bottom:4px">${kind==='hope'?'Надежда':'Недовольство'}: ${Math.round(kind==='hope'?s.hope:s.disc)} из 100</div>
+  return`<div class="title" style="font-size:var(--fs-13);margin-bottom:4px">${kind==='hope'?'Надежда':'Недовольство'}: ${Math.round(kind==='hope'?s.hope:s.disc)} из 100</div>
    ${rows.map(m=>`<div class="trow"><span>${esc(m.n)}</span><b class="${good(m[key])?'up':'dn'}">${fmtv(m[key]*mul)}</b></div>`).join('')||'<div class="hint">Нет постоянных причин.</div>'}
    <div class="trow tot"><span>Итого за сутки</span><b class="${good(tot)?'up':'dn'}">${fmtv(tot)}</b></div>
    <div class="hint">${kind==='hope'?'Смерти, события, обещания и законы меняют надежду сразу.':`Множитель сложности ×${D.disc}${has(s,'o_new')?', «Новый порядок» ×0,5':''}. События и законы меняют недовольство сразу.`}</div>`;
@@ -2056,13 +2077,13 @@ function buildStation3D(){
   // вывеска станции и плакаты общины
   R3.signs=R3.signs||[];
   const mkSign=()=>ctex(1024,110,(c,w,h)=>{c.fillStyle='#d9d2c0';c.fillRect(0,0,w,h);c.strokeStyle='#3a2f24';c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);
-    c.fillStyle='#1d2a5a';c.font='bold 72px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?'T E A T R A L N A Y A':'Т Е А Т Р А Л Ь Н А Я',w/2,h/2+4);});
+    c.fillStyle='#1d2a5a';c.font='bold 72px "PT Sans Narrow", Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?'T E A T R A L N A Y A':'Т Е А Т Р А Л Ь Н А Я',w/2,h/2+4);});
   const sign=new T.Mesh(new T.PlaneGeometry(5.2,.55),new T.MeshStandardMaterial({map:mkSign(),roughness:.7}));
   sign.position.set(.5,3.45,wz(0)+.02);sign.rotation.x=.45;sc.add(sign);R3.signs.push({m:sign,f:mkSign});
   const POST=[['ДЕРЖИСЬ','HOLD ON','#8a2a1e'],['ТЕПЛО — ЭТО ЖИЗНЬ','HEAT IS LIFE','#7a4a1a'],['НАВЕРХ НЕ ВЫХОДИТЬ','DO NOT GO UP','#2a3a5a'],['ЕДА ПО НОРМЕ','FOOD BY RATION','#2a4a3a'],['ВМЕСТЕ ВЫЖИВЕМ','TOGETHER WE SURVIVE','#6a2a2a'],['БЕРЕГИ УГОЛЬ','SAVE COAL','#3a3a3a']];
   for(let k=0;k<POST.length;k++){const [ru,en,bg]=POST[k];const mk=()=>{const txt=LANG==='en'?en:ru;return ctex(150,200,(c,w,h)=>{c.fillStyle='#cfc4a8';c.fillRect(0,0,w,h);c.fillStyle=bg;c.fillRect(8,8,w-16,h-16);
       c.fillStyle='#e8dcc0';c.beginPath();c.arc(w/2,70,30,0,7);c.fill();c.fillStyle=bg;c.beginPath();c.arc(w/2,70,18,0,7);c.fill();
-      c.fillStyle='#e8dcc0';c.font='bold 20px Oswald, Arial Narrow, sans-serif';c.textAlign='center';const ws=txt.split(' ');let y=130;for(let i=0;i<ws.length;i+=2){c.fillText(ws.slice(i,i+2).join(' '),w/2,y);y+=24;}
+      c.fillStyle='#e8dcc0';c.font='bold 20px "PT Sans Narrow", Arial Narrow, sans-serif';c.textAlign='center';const ws=txt.split(' ');let y=130;for(let i=0;i<ws.length;i+=2){c.fillText(ws.slice(i,i+2).join(' '),w/2,y);y+=24;}
       for(let i=0;i<40;i++){c.fillStyle=`rgba(60,40,20,${Math.random()*.25})`;c.fillRect(Math.random()*w,Math.random()*h,4,4);}});};
     const ps=new T.Mesh(new T.PlaneGeometry(.75,1),new T.MeshStandardMaterial({roughness:.9,map:mk()}));
     ps.position.set(-7.5+k*3.1,1.35,wz(0)-.82);ps.rotation.z=(k%2?.03:-.04);sc.add(ps);R3.signs.push({m:ps,f:mk});}
@@ -2215,7 +2236,7 @@ function buildEscalators(sx){
   const vault=mesh(new T.CylinderGeometry(2.2,2.2,run,24,1,true,0,Math.PI),kmat('stone',{color:0x8a8478,side:T.DoubleSide}),false);
   vault.rotation.z=Math.PI/2+sx*ang;vault.position.set(sx*len/2,rise/2+.1,0);vault.rotation.order='ZYX';g.add(vault);vault.material.side=T.BackSide;
   const arch=mesh(new T.TorusGeometry(2.25,.12,8,24,Math.PI),bronze);arch.rotation.y=Math.PI/2;arch.position.set(0,.1,0);g.add(arch);
-  const mkE=()=>ctex(512,72,(c,w,h)=>{c.fillStyle='#1d2a5a';c.fillRect(0,0,w,h);c.fillStyle='#e8e2d0';c.font='bold 40px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?(sx<0?'EXIT TO THE CITY':'TRANSFER'):(sx<0?'ВЫХОД В ГОРОД':'ПЕРЕХОД'),w/2,h/2+2);});
+  const mkE=()=>ctex(512,72,(c,w,h)=>{c.fillStyle='#1d2a5a';c.fillRect(0,0,w,h);c.fillStyle='#e8e2d0';c.font='bold 40px "PT Sans Narrow", Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(LANG==='en'?(sx<0?'EXIT TO THE CITY':'TRANSFER'):(sx<0?'ВЫХОД В ГОРОД':'ПЕРЕХОД'),w/2,h/2+2);});
   const sign=new T.Mesh(new T.PlaneGeometry(2.6,.36),new T.MeshBasicMaterial({toneMapped:false,map:mkE()}));
   sign.rotation.y=sx<0?Math.PI/2:-Math.PI/2;sign.position.set(-sx*.02,2.6,0);g.add(sign);(R3.signs=R3.signs||[]).push({m:sign,f:mkE});
   // стены шахты эскалаторов, пол под ними и верхний вестибюль — без пустот
@@ -2794,7 +2815,7 @@ function render3D(t){
     if(u.lv!==b.lvl||u.inz!==b.ins){u.lv=b.lvl;u.inz=b.ins;const sc=1+Math.min(.15,.03*(b.lvl||0));u.body.scale.x=u.body.scale.z=sc;
       if(u.badge){g.remove(u.badge);u.badge=null;}
       if(b.lvl||b.ins){const tx=ctex(128,48,(c,w,h)=>{c.fillStyle='rgba(20,24,28,.85)';c.fillRect(0,0,w,h);c.strokeStyle='#b08a4e';c.lineWidth=3;c.strokeRect(2,2,w-4,h-4);
-        c.font='bold 26px Oswald, Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2a33a';const t1=b.lvl?(LANG==='en'?'LV ':'УР ')+b.lvl:'',t2=b.ins?(LANG==='en'?'INS ':'УТ ')+b.ins:'';c.font='bold 22px Oswald, Arial Narrow, sans-serif';
+        c.font='bold 26px "PT Sans Narrow", Arial Narrow, sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#f2a33a';const t1=b.lvl?(LANG==='en'?'LV ':'УР ')+b.lvl:'',t2=b.ins?(LANG==='en'?'INS ':'УТ ')+b.ins:'';c.font='bold 22px "PT Sans Narrow", Arial Narrow, sans-serif';
         if(t1&&t2){c.fillText(t1,w*.3,h/2+1);c.fillStyle='#8fd0f5';c.fillText(t2,w*.72,h/2+1);}else{if(t2)c.fillStyle='#8fd0f5';c.fillText(t1||t2,w/2,h/2+1);}});
         const sp=new T.Sprite(new T.SpriteMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));sp.scale.set(.5,.19,1);sp.position.y=Math.max(1.25,(u.top||0)*(1+Math.min(.15,.03*(b.lvl||0)))+.18);g.add(sp);u.badge=sp;}}
     if(u.wheel&&lit)(u.wheel.geometry.type==='CylinderGeometry'?u.wheel.rotation.y+=.2:u.wheel.rotation.z+=.03);
@@ -3261,7 +3282,7 @@ function allyHTML(s){
     <p class="hint">${esc(ally.status)} Другу нужен доступ к этой странице с правом редактирования.</p>`;
   const peers=Object.entries(ally.peers);
   return`<p class="lead">Союз <b class="num">${esc(s.ally.code)}</b> · ваша станция «${esc(s.ally.name)}» · ${esc(ally.status)}. Код союза передайте другу.</p>
-   ${peers.length?peers.map(([id,p])=>`<div class="ally panel"><div class="title" style="font-size:16px">${esc(String(p.name).slice(0,30))}</div>
+   ${peers.length?peers.map(([id,p])=>`<div class="ally panel"><div class="title" style="font-size:var(--fs-16)">${esc(String(p.name).slice(0,30))}</div>
      <div class="hint">День ${+p.day||0} · жителей ${+p.pop||0} · надежда ${+p.hope||0}</div>
      <div class="hint">${RES_ORDER.map(k=>`${RES[k].n}: ${Math.floor(+(p.res||{})[k]||0)}`).join(' · ')}</div>
      <div class="menurow"><select id="ar-${esc(id)}" aria-label="Ресурс">${RES_ORDER.map(k=>`<option value="${k}">${RES[k].n} (у вас ${Math.floor(s.res[k])})</option>`).join('')}</select>
@@ -3528,10 +3549,10 @@ function renderTop(){
   setHTML($('warn'),warnings(s).map(([k,i,t])=>`<div class="wchip ${k}"><span class="wi">${i}</span><span>${t}</span></div>`).join(''));
   const nd=$('needs');nd.hidden=!!ui.needsHidden;
   {const rb=$('resbox');if(rb&&innerWidth>640){const y=rb.getBoundingClientRect().bottom+8;nd.style.top=y+'px';}else nd.style.top='';}
-  setHTML(nd,`<div class="needhead"><span class="title" style="font-size:13px;color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
+  setHTML(nd,`<div class="needhead"><span class="title" style="font-size:var(--fs-13);color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
   setHTML($('res'),RES_ORDER.map(k=>{if(k==='sick'){const il=s.ill.w+s.ill.e+s.ill.c,cr=s.crit.w+s.crit.e+s.crit.c;return`<div class="res" title="Больные (тяжёлые: ${cr})">${ico('meds')}<span class="v" style="${il+cr?'color:#ff9a8a':''}">${il+cr}</span>${cr?`<span class="d neg">${cr} тяж.</span>`:''}</div>`;}const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
   const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;return`<span>д${d}: ${weatherAt(d)+D_(s).temp}°</span>`;}).join('');
-  setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div></div>`);
+  setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:var(--fs-12);color:var(--frost-dim)">на станции</div></div>`);
   {const hv=$('hudvol');if(hv&&!hv._i&&window.GameAudio){hv._i=1;hv.value=GameAudio.settings.master;}}
   const hh=String(s.hour).padStart(2,'0');
   const sp=s.survivor?[1,2]:[0,1,2,3];
@@ -3569,7 +3590,7 @@ function renderBar(){
   const list=Object.entries(B).filter(([k,d])=>d.cat===ui.cat);
   setHTML(cards,list.map(([k,d])=>{const av=buildAvail(s,k),bc=buildCost(s,k),af=canAfford(s,bc);
     const lock=!av?(d.max2&&s.bld.filter(b=>b.type===k).length>=2?'Максимум 2 мастерские — дальше улучшайте их':d.cat==='defense'&&k!=='raidhut'&&free(s,'w')<1?'Нужен свободный рабочий — он станет стрелком башни':d.max3&&s.bld.filter(b=>b.type===k).length>=3?'Максимум 3 башни этого типа':d.req10?'Нужны башня лучников и камнемётная башня 10-го уровня':k==='raidhut'?'Только в союзе станций':d.tech&&!has(s,d.tech)?`Нужно исследование: ${TECHBY[d.tech].n}`:`Нужен закон: ${LAWBY[d.law].n}`):'';
-    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${Object.entries(bc).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')} · ${Math.ceil(d.time*(has(s,'t_prefab')?.6:1))} ч</span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
+    return`<button class="card" data-build="${k}" ${!av||!af?'disabled':''}><span class="n">${d.n}</span><span class="c">${costHTML(bc)}<span class="cst">${Math.ceil(d.time*(has(s,'t_prefab')?.6:1))} ч</span></span><span class="t">${lock||d.d}${d.job?` Работников: ${d.jobs} (${d.job==='e'?'инженеры':'рабочие'}).`:''}</span></button>`;}).join('')||'<span class="hint">Пусто</span>');
 }
 function workCtrl(id,a,max,job,xy,safe){
   const s=S,tot=a.w+a.e+a.c,j={job,safe:!!safe};
@@ -3585,7 +3606,7 @@ function renderInfo(){
   if(ui.sel.k==='gen'){
     const lv=s.gen.lvl;const fuel=[0,3,5,8,12][lv]*(s.gen.over?1.5:1)*D_(s).cons;
     const sk=stoveLvl(s),nc=sk<3?STOVE_COST[sk]:null,rq=sk<3?STOVE_REQ[sk]:null,rqOk=!rq||has(s,rq);
-    const cst=nc?Object.entries(nc).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · '):'';
+    const cst=nc?`<span class="c" style="display:inline-flex;gap:8px;color:var(--c-cost);font-family:var(--font-mono)">${costHTML(nc)}</span>`:'';
     const stoveCtl=s.gen.sb>0?`<div class="row"><span>${sk?'Улучшение печи':'Ставим печь'}</span><span>${Math.ceil(s.gen.sb/UP_T*15)} с</span></div><div class="prog"><i style="width:${(1-s.gen.sb/UP_T)*100}%;background:#7fc48a"></i></div>`
       :nc?`<div class="ctrl"><button class="btn primary" data-gen="stove" ${rqOk&&canAfford(s,nc)?'':'disabled'}>${sk?`Улучшить печь до ур. ${sk+1}`:'Поставить печь на костёр'}</button><span class="hint">${cst}</span></div>${rqOk?'':`<p class="hint">Нужна технология «${TECH.find(t=>t.id===rq).n}».</p>`}`
       :'<p class="hint">Печь улучшена до предела.</p>';
@@ -3618,7 +3639,7 @@ function renderInfo(){
     if(d.job&&!b.build){const eff=HEAT_EFF[lv];h+=`<div class="row"><span>Эффективность</span><span>${Math.round(eff*100*(d.needHeat&&lv<d.needHeat?.4:1))}%</span></div>`+workCtrl(b.id,b.a,d.jobs,d.job,'',d.safe);}
     if(d.beds)h+=`<div class="row"><span>Коек</span><span>${Math.floor(d.beds*lvlMul(b))}${d.heal?' · лечит тяжёлых':''}</span></div>`;
     if(!b.build){
-      const cs=c=>Object.entries(c).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(', ')||'бесплатно';
+      const cs=c=>Object.keys(c).length?`<span style="display:inline-flex;gap:8px;color:var(--c-cost);font-family:var(--font-mono)">${costHTML(c)}</span>`:'бесплатно';
       if(canUpgrade(b)){const uc=upCost(s,b,b.lvl||0);h+=`<div class="row"><span>Уровень</span><span>${b.lvl||0} (+${(b.lvl||0)*20}%)</span></div><div class="ctrl"><button class="btn primary" data-upgrade="${b.id}" ${canAfford(s,uc)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='lvl'?`Улучшение: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:'Улучшить +20%'}</button><span class="hint">${cs(uc)}</span></div>${b.upT>0?`<div class="prog" style="margin:4px 0"><i style="width:${100-b.upT/UP_T*100}%"></i></div>`:''}`;}
       const ic=insCost(s,b.ins||0,b);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
       if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
@@ -3654,7 +3675,7 @@ function renderOverlay(){
     ${cur?`<div class="prog" style="margin-bottom:12px"><i style="width:${Math.min(100,s.rp/cur.rp*100)}%"></i></div>`:''}
     <div class="grid3">${cats.map(c=>`<div class="col"><h4>${c}</h4>${TECH.filter(t=>t.cat===c).map(t=>{const done=has(s,t.id);const reqOk=!t.req||t.req.every(r=>has(s,r));const can=!done&&!s.research&&reqOk&&canAfford(s,t.cost);
       const st=done?'Изучено':s.research===t.id?'Идёт исследование':!reqOk?'Сначала: '+t.req.map(r=>TECHBY[r].n).join(', '):s.research?'Мастерская занята':!canAfford(s,t.cost)?'Не хватает ресурсов':rpDay>0?`≈ ${Math.ceil(t.rp/rpDay*24)} ч`:'Нет мастерских';
-      return`<button class="tech withpic ${done?'done':''} ${s.research===t.id?'active':''}" style="border-left-color:${PIC_COL[TECH_PIC[t.id]]||'#4a5560'}" data-research="${t.id}" ${can?'':'disabled'}>${pic(TECH_PIC[t.id])}<span class="tx"><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c">${t.rp} очков · ${Object.entries(t.cost).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(' · ')}</span><span class="st">${st}</span></span></button>`;}).join('')}</div>`).join('')}</div></div>`);
+      return`<button class="tech withpic ${done?'done':''} ${s.research===t.id?'active':''}" style="border-left-color:${PIC_COL[TECH_PIC[t.id]]||'#4a5560'}" data-research="${t.id}" ${can?'':'disabled'}>${pic(TECH_PIC[t.id])}<span class="tx"><span class="n">${t.n}${done?' ✓':''}</span><span class="d">${t.d}</span><span class="c"><span class="cst">${t.rp} ${tr('оч.')}</span>${costHTML(t.cost)}</span><span class="st">${st}</span></span></button>`;}).join('')}</div>`).join('')}</div></div>`);
     return;
   }
   if(ui.open==='laws'){
@@ -3689,7 +3710,7 @@ function renderOverlay(){
 }
 function renderMapSide(){
   const s=S;
-  setHTML($('maptop'),`<div class="title" style="font-size:18px">Карта метро</div><div class="hint">Колесо или щипок — масштаб, перетаскивание — сдвиг. Выберите отряд, затем станцию.</div>
+  setHTML($('maptop'),`<div class="title" style="font-size:var(--fs-20)">Карта метро</div><div class="hint">Колесо или щипок — масштаб, перетаскивание — сдвиг. Выберите отряд, затем станцию.</div>
    <div class="legend">${LINES.filter(L=>!L.secret||s.flags.metro2).map(L=>`<span><i style="background:${L.c}"></i>${L.n}</span>`).join('')}</div>
    <div class="ctrl"><button class="btn" data-act="closemap">Вернуться на станцию</button></div>`);
   let h=`<h3 class="title" style="margin:0 0 6px">Отряды</h3>`;
@@ -3748,7 +3769,7 @@ function renderMenu(){
     h=`<div class="sheet panel mwide">${back}<h2>${saving?'Сохранить':'Загрузить'}</h2>${saving&&S.oneSave?'<p class="hint">Режим «Одно сохранение»: слоты недоступны, игра сохраняется автоматически.</p>':''}<div class="slots">${slotsHTML(saving&&!S.oneSave)}</div></div>`;
   }else if(scr==='settings'){
     h=`<div class="sheet panel mwide">${back}<h2>Настройки</h2>
-      <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:12px">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
+      <div class="menurow"><span class="title" style="color:var(--frost-dim);font-size:var(--fs-12)">Язык / Language</span><button class="btn ${LANG==='ru'?'primary':''}" data-lang="ru">Русский</button><button class="btn ${LANG==='en'?'primary':''}" data-lang="en">English</button></div>
       <h3 style="margin-top:14px">Звук</h3>
       <label class="vol">Общая громкость <input type="range" id="mastervol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.master:1}"></label>
       <label class="vol">Музыка <input type="range" id="musvol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.music:.6}"></label>
