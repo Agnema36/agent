@@ -121,7 +121,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .btn.danger{border-color:#6a2a22;color:#f3a090}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 .pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:16px}
-.wrow{display:grid;grid-template-columns:78px 28px 26px 28px auto 1fr;gap:6px;align-items:center;margin:4px 0}
+.wrow{display:grid;grid-template-columns:78px 28px 26px 28px auto auto 1fr;gap:6px;align-items:center;margin:4px 0}
 .wrow .num{text-align:center}
 .wrow .wn{font-size:13px}
 .closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:18px}
@@ -538,6 +538,8 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Скорость науки','Research speed'],['% из 300%','% of 300%'],
+['Убрать','Remove'],['Убрать всех:','Remove all:'],
 ['Продержитесь как можно дольше: мороз будет только крепчать.','Hold out as long as you can: the frost will only get worse.'],['Лютый мороз','Deep frost'],[': дома нужно утеплить',': homes need insulation'],['раз(а), иначе люди замерзают насмерть; завалы не разбирают','time(s), or people freeze to death; no one clears debris'],
 ['Мороз −30°: люди болеют каждую ночь','Frost −30°: people fall ill every night'],[' — 3 медпункта справляются',' — 3 first-aid posts cope'],[' — нужны 3 работающих медпункта (сейчас',' — need 3 staffed first-aid posts (now'],
 ['Лютый мороз −40°: в неутеплённых домах и без крыши люди замерзают насмерть; завалы не разбирают — там только болеют','Deep frost −40°: people freeze to death in uninsulated homes and outdoors; no one clears debris — they only fall ill there'],
@@ -3270,7 +3272,7 @@ function renderBar(){
 function workCtrl(id,a,max,job,xy,safe){
   const s=S,tot=a.w+a.e+a.c,j={job,safe:!!safe};
   const rowW=(t,name)=>{if(!canTake(s,j,t)&&!a[t])return'';const can=canTake(s,j,t)&&tot<max&&free(s,t)>0;
-    return`<div class="wrow"><span class="wn">${name}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><button class="btn" data-work="${id}" data-who="${t}" data-n="${max}" ${xy} ${can?'':'disabled'}>Все</button><span class="hint">свободно ${Math.max(0,free(s,t))}</span></div>`;};
+    return`<div class="wrow"><span class="wn">${name}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><button class="btn" data-work="${id}" data-who="${t}" data-n="${max}" ${xy} ${can?'':'disabled'}>Все</button><button class="btn" data-work="${id}" data-who="${t}" data-n="-${max}" ${xy} ${a[t]?'':'disabled'} title="Убрать всех: ${name}">Убрать</button><span class="hint">свободно ${Math.max(0,free(s,t))}</span></div>`;};
   return`<div class="ctrl"><span class="num">Занято ${tot} / ${max}</span><button class="btn" data-work="${id}" data-n="${max}" ${xy}>Все</button><button class="btn" data-work="${id}" data-n="-${max}" ${xy}>0</button></div>
    ${rowW('w','Рабочие')}${rowW('e','Инженеры')}${rowW('c','Дети')}${job!=='e'&&!has(s,'child_labor')?'<p class="hint">Дети работают только по закону «Детский труд».</p>':''}`;
 }
@@ -3322,7 +3324,7 @@ function renderInfo(){
     if(d.rp&&!b.build){const T=s.research&&TECHBY[s.research],rd=dayRates(s).out.rp;
       h+=T?`<div class="row"><span>Изучается</span><span>${T.n}</span></div><div class="row"><span>Прогресс</span><span>${Math.floor(s.rp)} / ${T.rp} (${Math.floor(s.rp/T.rp*100)}%)${rd>0?` · ≈ ${Math.ceil((T.rp-s.rp)/rd*24)} ч`:''}</span></div><div class="prog" style="margin:6px 0"><i style="width:${Math.min(100,s.rp/T.rp*100)}%"></i></div>`
         :`<p class="hint">Ничего не изучается.</p>`;
-      h+=`<div class="row"><span>Ускорение бюро</span><span>+${Math.round((draftMul(s)-1)*100)}%</span></div><div class="ctrl"><button class="btn primary" data-open="tech">Открыть исследования</button></div>`;}
+      h+=`<div class="row"><span>Скорость науки</span><span>${sciInfo(s).pct}% из 300%</span></div><div class="ctrl"><button class="btn primary" data-open="tech">Открыть исследования</button></div>`;}
     if(TOWER[b.type])h+=`<div class="row"><span>Стрелок</span><span>${b.crew?'1 рабочий на посту':'нет'}</span></div>`;
     if(b.type==='catapult'&&!b.build)h+=`<div class="row"><span>Аура таунта</span><span>радиус ${tauntR(s,b).toFixed(1)}</span></div><div class="ctrl"><button class="btn primary" data-taunt="${b.id}" ${b.tauntCd>0?'disabled':''}>${b.tauntCd>0?`Таунт: перезарядка ${Math.ceil(b.tauntCd)} ч`:'Таунт: все мутанты бьют эту башню 1 ч'}</button></div>`;
     if(d.teams)h+=`<div class="row"><span>Отрядов</span><span>${teamSlots(s)}</span></div><div class="ctrl"><button class="btn primary" data-open="map">Открыть карту метро</button></div>`;
