@@ -45,6 +45,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #res,#temp,#clock,#meters,#bar,#cards{position:relative}
 .title{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-weight:500}
 #danger{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(200,20,10,.6) 0%,rgba(160,10,0,.22) 9%,rgba(160,10,0,0) 20%,rgba(160,10,0,0) 80%,rgba(160,10,0,.22) 91%,rgba(200,20,10,.6) 100%)}
+#evfeed{right:max(10px,env(safe-area-inset-right,0px));top:calc(206px + env(safe-area-inset-top,0px));width:300px;max-width:calc(100vw - 20px);padding:6px 8px;pointer-events:auto;display:flex;flex-direction:column;gap:2px}
+#evfeed[hidden]{display:none}
+.evh{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-13);color:var(--amber);padding:0 2px 3px}
+.evh button{background:none;border:1px solid var(--rim);color:var(--frost-dim);font:var(--fs-12) var(--font-heading);text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;cursor:pointer}
+.evr{display:flex;gap:7px;align-items:flex-start;width:100%;text-align:left;background:rgba(10,13,16,.55);border:0;border-left:3px solid var(--ec);padding:4px 6px;color:var(--frost);cursor:pointer;font:var(--fs-13)/1.3 var(--font-body)}
+.evr:hover{background:rgba(40,48,56,.8)}
+.evr svg{width:14px;height:14px;flex:none;margin-top:2px;color:var(--ec)}
+.evr .et{flex:1;min-width:0}.evr .tm{font:var(--fs-12) var(--font-mono);color:var(--c-status);white-space:nowrap;margin-left:4px}
+.evr.death .et{color:#ffc2b6}.evr.info .et{color:var(--c-desc)}
+.evf{display:flex;gap:6px;margin:0 0 10px;flex-wrap:wrap}.evf button.on{border-color:var(--amber);color:var(--amber)}
+.evlist{display:flex;flex-direction:column;gap:3px;max-height:60vh;overflow:auto}
+@media (max-width:760px){#evfeed{display:none}}
 #wavebanner{position:fixed;left:50%;top:calc(6px + env(safe-area-inset-top,0px));display:flex;align-items:baseline;gap:14px;white-space:nowrap;transform:translate(-50%,0) scale(.96);z-index:18;pointer-events:none;text-align:center;opacity:0;transition:opacity .25s,transform .25s;padding:6px 22px;background:rgba(40,8,6,.92);border:1px solid #c0392b;box-shadow:0 0 30px rgba(192,57,43,.45)}
 #wavebanner.on{opacity:1;transform:translate(-50%,0) scale(1);transition:none}
 #wavebanner .wb1{font-family:var(--font-heading);font-weight:700;text-transform:uppercase;letter-spacing:var(--ls-heading);font-size:var(--fs-20);color:#ffd9cf}
@@ -276,6 +288,7 @@ body.inmenu .hud{display:none!important}
   <div id="warn"></div>
 </div>
 <div id="needs" class="hud panel"></div>
+<div id="evfeed" class="hud panel"></div>
 <div id="toasts" class="hud"></div>
 <div id="tip" class="panel" hidden></div>
 <div id="info" class="hud panel" hidden></div>
@@ -588,7 +601,7 @@ function buildGraph(){
 const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
-const EN=[['оч.','pts'],['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
+const EN=[['дней','days'],['день','day'],["Журнал","Log"],["Весь журнал","Full log"],["Событий пока нет","No events yet"],["Все","All"],["Смерти","Deaths"],["Предупреждения","Warnings"],["Информация","Info"],["Умер житель","A resident died"],["Умерли жители","Residents died"],["обморожение","frostbite"],["жильё без утепления (нужно","housing not insulated (needs"],["нет крыши над головой","no roof overhead"],["Заболел житель","A resident fell ill"],["Заболели","Fell ill:"],["жителей","residents"],["мороз","frost"],["медпунктов","first-aid posts"],["из 3","of 3"],["без крыши","homeless"],["голод","hunger"],["опилки в пайках","sawdust in rations"],["слабость","weakness"],["без пайков","no rations for"],["чел. уже","people for"],["дня","days"],["Погибли","Killed:"],["взрыв котла — печь перегружена","boiler explosion — stove overloaded"],["Умер рабочий: травма — экстренная смена в","A worker died: injury — emergency shift at"],["Заболели 2 рабочих: переутомление — экстренная смена в","2 workers fell ill: exhaustion — emergency shift at"],["тяжёлая болезнь","severe illness"],["нет коек для тяжёлых (не хватило","no beds for the critically ill (short by"],["не помог лазарет","the infirmary could not help"],["Мутант убил жителя","A mutant killed a resident"],["Мутанты убили жителей","Mutants killed residents"],["прорыв на станцию","breach into the station"],["башни не удержали","towers did not hold"],["на пути нет башен","no towers on the way"],["Башня-пушка не стреляет: нет угля","Cannon tower is not firing: no coal"],["Атака: из тоннеля идут","Attack: coming from the tunnel —"],["мутантов","mutants"],["мутанты сломали башню","mutants broke the tower"],["Волна отбита: убито","Wave repelled: killed"],["прорвались","broke through"],["Огонь погас: кончился уголь — поставьте людей на угольные завалы","The fire went out: no coal — put people on coal piles"],["Исследовано:","Researched:"],["Подписан закон","Law signed"],["выживших","survivors"],["Построено:","Built:"],["Рабочие простаивают:","Workers idle:"],["без сырья — нужна сырая еда (фермы, охота)","no raw food — need farms or hunting"],["рядом нет завалов","no debris nearby"],["Простой: нет сырья","Idle: no raw food"],["Не стреляет: нет угля","Not firing: no coal"],["Холодно: нужно утепление","Cold: needs insulation"],["Показать на карте","Show on map"],['оч.','pts'],['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
 ['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
@@ -984,6 +997,12 @@ function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.
 function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
 const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
+// журнал событий: тип (death/warn/info/good), причина в тексте, место на карте
+function ev(s,k,txt,at){if(!s)return;s.events=s.events||[];const e={d:s.day,h:s.hour,k,txt};if(at){e.x=at.x;e.y=at.y;if(at.id!=null)e.b=at.id;}
+  const L=s.events[0];if(L&&L.txt===txt&&L.d===e.d&&L.h===e.h)L.n=(L.n||1)+1;else s.events.unshift(e);if(s.events.length>300)s.events.length=300;if(typeof ui!=='undefined')ui.evDirty=1;}
+const ruDays=n=>n%10===1&&n%100!==11?'день':n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'дня':'дней';
+function dcount(s,cause,n){if(!n)return;s.dc=s.dc||{};s.dc[cause]=(s.dc[cause]||0)+n;}
+const FIRE_AT={x:GX,y:GY};
 function log(s,txt,kind){s.log.unshift({d:s.day,h:s.hour,txt,k:kind||''});if(s.log.length>60)s.log.length=60;}
 
 /* ---------------------------- ТЕПЛО ---------------------------- */
@@ -1087,17 +1106,23 @@ function addPeople(s,n,sickFrac){
 /* ---------------------------- ЧАС СИМУЛЯЦИИ ---------------------------- */
 const sleepHour=s=>s.hour>=23||s.hour<6;
 function workHour(s){const end=has(s,'ext_shift')?22:18;return s.hour>=8&&s.hour<end;}
+// утренняя проверка простоя: люди стоят, а работать не с чем
+function idleCheck(s){for(const b of s.bld){if(b.build||!b.on)continue;const d=B[b.type];const w=d.job?workforce(b.a):0;if(!w)continue;
+  if(d.kitchen&&s.res.raw<1)ev(s,'warn',`Рабочие простаивают: «${d.n}» без сырья — нужна сырая еда (фермы, охота)`,b);
+  else if(d.gatherR&&!gatherPiles(s,b).length)ev(s,'warn',`Рабочие простаивают: «${d.n}» — рядом нет завалов`,b);}}
 function hourTick(s){
   if(s.over)return;
+  if(s._mk){ev(s,'death',`${s._mk===1?'Мутант убил жителя':'Мутанты убили жителей ('+s._mk+')'}: прорыв на станцию — ${s.bld.some(b=>TOWER[b.type]&&!b.build)?'башни не удержали':'на пути нет башен'}`,s._mkAt);s._mk=0;}
   const D=D_(s);
   s.hour++;
+  if(s.hour===9)idleCheck(s);
   if(s.hour>=24){s.hour=0;newDay(s);if(s.over)return;}
   computeHeat(s);
   // генератор
   if(s.gen.on&&s.gen.lvl>0){
     const fuel=[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D.cons;
     if(s.res.coal>=fuel)s.res.coal-=fuel;
-    else{s.gen.on=false;s.gen.over=false;toast(s,'Уголь кончился — огонь погас!','bad');log(s,'Огонь погас: нет угля.','bad');}
+    else{s.gen.on=false;s.gen.over=false;toast(s,'Уголь кончился — огонь погас!','bad');log(s,'Огонь погас: нет угля.','bad');ev(s,'warn','Огонь погас: кончился уголь — поставьте людей на угольные завалы',FIRE_AT);}
   }
   if(s.gen.over&&s.gen.on){s.gen.stress+=7;if(s.gen.stress>=100)genExplode(s);}
   else s.gen.stress=Math.max(0,s.gen.stress-4);
@@ -1106,9 +1131,9 @@ function hourTick(s){
   for(const b of s.bld)if(b.type==='heater'&&!b.build&&b.on){if(s.res.coal>=1){s.res.coal-=1;b.fuelOk=true;}else b.fuelOk=false;}
   // стройка
   for(const b of s.bld)if(b.build>0){if((b.bw||0)<5)takeBuilders(s,b,5-(b.bw||0));if(!(b.bw>0))continue; // без строителей стройка стоит
-    b.build--;if(!b.build){releaseBuilders(s,b);toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
+    b.build--;if(!b.build){releaseBuilders(s,b);toast(s,`Построено: ${B[b.type].n}`,'good');ev(s,'info',`Построено: «${B[b.type].n}»`,b);onBuilt(s,b);}}
   // работа
-  for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');}}}
+  for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');dcount(s,'other',1);toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');ev(s,'death',`Умер рабочий: травма — экстренная смена в «${B[b.type].n}»`,b);}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');ev(s,'warn',`Заболели 2 рабочих: переутомление — экстренная смена в «${B[b.type].n}»`,b);}}}
   const wh=workHour(s);
   if(wh&&s.research)s.rp+=sciInfo(s).perH;
   {
@@ -1146,7 +1171,7 @@ function hourTick(s){
     if(wh&&!deep)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
       const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)/P.length;
       for(const t of P){const g=Math.min(t.pile.amt,each);t.pile.amt-=g;s.res[t.pile.r]+=g;if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}}}
-    if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');s.research=null;s.rp=0;}}
+    if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');ev(s,'info',`Исследовано: «${T.n}»`);s.research=null;s.rp=0;}}
   }
   // еда, вода
   if(s.hour===7||s.hour===19)meal(s);
@@ -1173,14 +1198,14 @@ function genExplode(s){
   const k=kill(s,ri(4,9),'all');
   s.hope-=15;s.disc+=15;
   s.queue.push({id:'explosion',p:{k}});
-  log(s,`Котёл взорвался. Погибли ${k}.`,'bad');
+  log(s,`Котёл взорвался. Погибли ${k}.`,'bad');dcount(s,'other',k);ev(s,'death',`Погибли ${k}: взрыв котла — печь перегружена`,FIRE_AT);
 }
 function meal(s){
   const D=D_(s);const n=popTotal(s);const fm=(has(s,'communal')?.85:has(s,'private')?1.1:1)*(has(s,'food_ration')?.8:1);const need=n*.5*D.cons*fm;
   if(s.res.food>=need){s.res.food-=need;s.unfed=0;s.unfedStreak=0;return;}
   const fed=Math.floor(s.res.food/(.5*D.cons*fm));s.res.food=0;s.unfed=n-fed;s.unfedStreak++;
   toast(s,`Голод: ${s.unfed} без еды`,'bad');
-  if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08*(has(s,'f_mutual')?.5:1)),'all');if(k){log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');}}
+  if(s.unfedStreak>=3){const k=kill(s,Math.ceil(s.unfed*.08*(has(s,'f_mutual')?.5:1)),'all');if(k){dcount(s,'hunger',k);log(s,`От голода умерли ${k}.`,'bad');toast(s,`От голода умерли ${k}`,'bad');const kt=s.bld.find(b=>b.type==='kitchen'&&!b.build);ev(s,'death',`${k===1?'Умер житель':'Умерли жители ('+k+')'}: голод — без пайков ${s.unfed} чел. уже ${s.unfedStreak} ${ruDays(s.unfedStreak)}`,kt||FIRE_AT);}}
 }
 function drink(s){s.thirsty=0;s.thirstStreak=0;} // воды в игре нет: снег топят у огня
 function homesHeat(s){
@@ -1201,12 +1226,16 @@ function nightSickness(s){
   if(has(s,'child_shelter')&&s.bld.some(b=>b.type==='nursery'&&!b.build))n=Math.round(n*.85);
   if(has(s,'quarantine'))n=Math.round(n*.8);
   if(has(s,'crowding'))n=Math.round(n*1.15+.4);
-  if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');}
+  if(n>0){const k=sicken(s,n);if(k>=3)toast(s,`За ночь заболели ${k}`,'cold');
+    if(k){const why=[];if(tier>=1)why.push(`мороз ${weatherAt(s.day)}°`+(medposts(s)<3?`, медпунктов ${medposts(s)} из 3`:''));const hl=homesHeat(s).homeless;if(tier>=1&&hl)why.push(`без крыши ${hl}`);if(s.unfed>0)why.push('голод');if(has(s,'additives'))why.push('опилки в пайках');
+      const mp=s.bld.find(b=>(b.type==='medpost'||b.type==='hospital')&&!b.build);ev(s,'warn',`${k===1?'Заболел житель':'Заболели '+k+' жителей'}: ${why.join('; ')||'слабость'}`,mp||FIRE_AT);}}
   // −40: в неутеплённых домах и без крыши люди замерзают насмерть
   if(tier===2){const homes=s.bld.filter(b=>B[b.type].house&&!b.build).map(b=>({cap:capOf(s,b),ok:(b.ins||0)+((b.lvl||0)>=1?1:0)>=insNeed(s)})).sort((a,c)=>c.ok-a.ok);
     let left=pop,risk=0;for(const h of homes){const k=Math.min(left,h.cap);if(!h.ok)risk+=k;left-=k;}risk+=left;
     let d=0;for(let i=0;i<risk;i++)if(rnd()<(.05+deepK*.01)*D.sick)d++;
-    if(d>0){kill(s,d,'all');toast(s,`Лютый мороз: замёрзли насмерть ${d} — утеплите дома`,'bad');log(s,`Замёрзли насмерть: ${d}.`,'bad');}}
+    if(d>0){kill(s,d,'all');dcount(s,'cold',d);toast(s,`Лютый мороз: замёрзли насмерть ${d} — утеплите дома`,'bad');log(s,`Замёрзли насмерть: ${d}.`,'bad');
+      const ch=s.bld.find(b=>B[b.type].house&&!b.build&&(b.ins||0)+((b.lvl||0)>=1?1:0)<insNeed(s));
+      ev(s,'death',`${d===1?'Умер житель':'Умерли жители ('+d+')'}: обморожение — ${ch?`жильё без утепления (нужно ${insNeed(s)})`:'нет крыши над головой'}, ${weatherAt(s.day)}°`,ch||FIRE_AT);}}
 }
 function morning(s){
   const D=D_(s);
@@ -1217,11 +1246,13 @@ function morning(s){
   for(const t of ['w','e','c']){
     let n=s.crit[t];
     for(let i=0;i<n;i++){
-      if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
+      if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s._sdH=(s._sdH||0)+1;}}
       else if(beds>0){beds--;if(rnd()<.6){s.crit[t]--;s.ill[t]++;}}
-      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)*(has(s,'cap_harsh')?1.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
+      else if(rnd()<.3*(has(s,'t_prosth')?.5:1)*(has(s,'cap_harsh')?1.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;s._sdN=(s._sdN||0)+1;}
     }
   }
+  if(s._sdH||s._sdN){const n=(s._sdH||0)+(s._sdN||0);dcount(s,'ill',n);const mp=s.bld.find(b=>(b.type==='medpost'||b.type==='hospital')&&!b.build);
+    ev(s,'death',`${n===1?'Умер житель':'Умерли жители ('+n+')'}: тяжёлая болезнь — ${s._sdN?`нет коек для тяжёлых (не хватило ${s._sdN})`:'не помог лазарет'}`,mp||FIRE_AT);s._sdH=s._sdN=0;}
   let treat=beds+hbeds;
   for(const t of ['w','e','c']){
     const n=s.ill[t];
@@ -1451,7 +1482,7 @@ function moveTeams(s){
     let budget=26;
     while(budget>0&&g.path.length>=2){const L=edgeLen(g.path[0],g.path[1]);const need=(1-g.prog)*L;
       if(budget>=need){budget-=need;g.prog=0;g.path.shift();}else{g.prog+=budget/L;budget=0;}}
-    if(g.path.length<2){addPeople(s,g.n,g.sick);s.hope+=2;toast(s,`На станцию пришли ${g.n} выживших`,'good');log(s,`Пришли ${g.n} выживших.`,'good');g.done=1;}
+    if(g.path.length<2){addPeople(s,g.n,g.sick);s.hope+=2;toast(s,`На станцию пришли ${g.n} выживших`,'good');log(s,`Пришли ${g.n} выживших.`,'good');ev(s,'good',`Пришли ${g.n} выживших`,FIRE_AT);g.done=1;}
   }
   s.groups=s.groups.filter(g=>!g.done);
 }
@@ -1561,7 +1592,7 @@ function signLaw(s,id,force){
   const L=LAWBY[id];s.laws.push(id);s.lawCd=D_(s).law;
   if(L.cat!=='adapt')s.path=L.cat;
   if(L.fx.hope)s.hope+=L.fx.hope;if(L.fx.disc)s.disc+=L.fx.disc;
-  toast(s,`Закон подписан: ${L.n}`,'');log(s,`Подписан закон «${L.n}».`,'');
+  toast(s,`Закон подписан: ${L.n}`,'');log(s,`Подписан закон «${L.n}».`,'');ev(s,'info',`Подписан закон «${L.n}»`);
   rebalance(s);
 }
 function act(s,a){
@@ -3053,6 +3084,12 @@ function overlay3D(t){
     for(const z of s.zombies||[]){if(z.hp>=z.max)continue;const q=P(z.x,z.y,((ZT[z.t]||ZT.ghoul).h)*((ZT[z.t]||ZT.ghoul).k)+.1);if(!q.ok)continue;cx.fillStyle='rgba(0,0,0,.7)';cx.fillRect(q.x-11,q.y-3,22,4);cx.fillStyle='#e06450';cx.fillRect(q.x-11,q.y-3,22*Math.max(0,z.hp/z.max),4);}}
 }
 let labelCache=null,labelT=0;
+// значок причины над проблемным объектом
+const ISSUE_IC={cold:{c:'#6fb6e0',g:'❄'},coal:{c:'#e0603a',g:'⛏'},idle:{c:'#f2a33a',g:'!'},res:{c:'#f2a33a',g:'∅'}};
+function issueIcon(x,y,k,t){const I=ISSUE_IC[k]||ISSUE_IC.idle,p=1+.08*Math.sin(t/260);cx.save();cx.translate(x,y);cx.scale(p,p);
+  cx.fillStyle='rgba(16,18,22,.92)';cx.beginPath();cx.arc(0,0,11,0,7);cx.fill();cx.lineWidth=2.5;cx.strokeStyle=I.c;cx.stroke();
+  cx.fillStyle=I.c;cx.font='bold 13px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(I.g,0,1);cx.restore();
+  cx.font='11px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';}
 function drawLabels(s,t){
   if(!labelCache||t-labelT>600){labelT=t;const R=dayRates(s),occ=occupancy(s);labelCache=s.bld.map(b=>{const L=bLabel(s,b,R,occ);return L&&{b,...L};}).filter(Boolean);}
   cx.font='11px "PT Sans", Arial, sans-serif';cx.textAlign='center';cx.textBaseline='middle';
@@ -3064,6 +3101,7 @@ function drawLabels(s,t){
     cx.fillStyle=L.k==='bad'?'rgba(70,20,16,.88)':'rgba(12,16,20,.82)';cx.fillRect(x-w/2,y-9,w,18);
     cx.fillStyle=L.k==='bad'?'#e06450':L.k==='ok'?'#b08a4e':'#3b4856';cx.fillRect(x-w/2,y-9,2,18);
     cx.fillStyle=L.k==='bad'?'#ffb4a6':L.k==='mute'?'#8ea3b5':'#e8dcc0';cx.fillText(lt,x+1,y);
+    if(L.ic)issueIcon(x,y-24,L.ic,t);
   }
 }
 
@@ -3195,17 +3233,20 @@ function occupancy(s){
 function gatherR(s){return genRadius(s);}
 function gatherPiles(s,b){const R=gatherR(s),out=[];for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(!t.pile||t.pile.clear>0)continue;const x=i%GW,y=Math.floor(i/GW);if(Math.hypot(x-b.x,y-b.y)<=R)out.push(t);}return out;}
 function bLabel(s,b,R,occ){
-  const d=B[b.type];if(b.build)return b.bw>0?{t:`Стройка: ${b.build} ч · строят ${b.bw}`,k:'mute'}:{t:'Стройка стоит: нет свободных рабочих',k:'bad'};
+  const d=B[b.type];if(b.build)return b.bw>0?{t:`Стройка: ${b.build} ч · строят ${b.bw}`,k:'mute'}:{t:'Стройка стоит: нет свободных рабочих',k:'bad',ic:'idle'};
   if(b.upT>0)return{t:`${b.upK==='ins'?'Утепление':'Улучшение'}: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`,k:'mute'};
   if(d.house)return{t:`Жильцов ${occ[b.id]||0}/${capOf(s,b)}`,k:(occ[b.id]||0)>=capOf(s,b)?'ok':'mute'};
   if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
-  if(d.gatherR){const n=gatherPiles(s,b).length,w=workforce(b.a);return{t:w?`Сбор: ${n} завал(ов) в радиусе · ${Math.round(w)} чел.`:'Нет рабочих',k:w&&n?'ok':'bad'};}
-  if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
+  if(d.gatherR){const n=gatherPiles(s,b).length,w=workforce(b.a);return{t:w?`Сбор: ${n} завал(ов) в радиусе · ${Math.round(w)} чел.`:'Нет рабочих',k:w&&n?'ok':'bad',ic:w?'res':'idle'};}
+  if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad',ic:'idle'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
   if(d.teams)return{t:`Отрядов ${teamSlots(s)}`,k:'ok'};
-  if(TOWER[b.type]){const st=towerStats(s,b);return st.dps>0?{t:`${Math.round(st.dps)} урона/ч · радиус ${st.range.toFixed(1)} · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:b.hp!=null&&b.hp<st.hpMax*.4?'bad':'ok'}:{t:'Нет стрелков',k:'bad'};}
+  if(TOWER[b.type]&&TOWER[b.type].coal&&s.res.coal<1)return{t:'Не стреляет: нет угля',k:'bad',ic:'coal'};
+  if(d.house&&wTier(s)===2&&(b.ins||0)+((b.lvl||0)>=1?1:0)<insNeed(s))return{t:`Холодно: нужно утепление ${insNeed(s)}`,k:'bad',ic:'cold'};
+  if(TOWER[b.type]){const st=towerStats(s,b);return st.dps>0?{t:`${Math.round(st.dps)} урона/ч · радиус ${st.range.toFixed(1)} · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:b.hp!=null&&b.hp<st.hpMax*.4?'bad':'ok'}:{t:'Нет стрелков',k:'bad',ic:'idle'};}
   if(b.type==='raidhut')return{t:`Налётчиков ${Math.floor(s.raiders||0)}/${raiderCap(s)}`,k:'ok'};
   if(b.type==='drafting')return{t:`Наука +${Math.round((draftMul(s)-1)*100)}% всем мастерским`,k:'ok'};
-  const o=R.per[b.id];if(!o)return null;if(o.idle)return{t:'Нет работников',k:'bad'};
+  const o=R.per[b.id];if(!o)return null;if(o.idle)return{t:'Нет работников',k:'bad',ic:'idle'};
+  if(d.kitchen&&s.res.raw<1&&workforce(b.a)>0)return{t:'Простой: нет сырья',k:'bad',ic:'res'};
   if(o.raw!=null){const ppl=o.raw*rationMult(s)/foodPerPerson(s);return{t:`+${Math.round(o.raw)} еды/день · кормит ${Math.floor(ppl)} чел.`,k:'ok'};}
   if(o.water!=null)return{t:`+${Math.round(o.water)} воды/день · поит ${Math.floor(o.water/waterPerPerson(s))} чел.`,k:'ok'};
   if(o.kcap!=null)return{t:`Готовит до ${Math.round(o.kcap*rationMult(s))} пайков/день`,k:'ok'};
@@ -3322,7 +3363,7 @@ function scheduleWave(s){
   if(s.over)return;
   s.zombies=s.zombies||[];
   const n=waveSize(s,s.day);s.waveBonus=0;s.wave={left:n,cd:0,hp:waveHp(s.day),kills:0,loot:{},breach:0};
-  toast(s,`Из тоннеля идут мутанты: ${n}`,'bad');log(s,`Ночная волна: ${n} мутантов.`,'bad');
+  toast(s,`Из тоннеля идут мутанты: ${n}`,'bad');log(s,`Ночная волна: ${n} мутантов.`,'bad');ev(s,'warn',`Атака: из тоннеля идут ${n} мутантов`,{x:GW-1,y:GH-1});
   waveBanner(n);
 }
 // крупное оповещение по центру экрана чуть выше середины, держится 2 секунды
@@ -3367,9 +3408,9 @@ function combatStep(s,dt){
     if(LIT&&LIT.some(b=>Math.hypot(b.x-z.x,b.y-z.y)<=b.r))mul*=.75; // прожекторы
     const st=z.sp*dt*mul;
     if(z.on&&!z.flee&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*(z.dm||1)*(ZDMG[s.diff]||1)*dt;z.att=tg.id;
-        if(tg.hp<=0){tile(s,tg.x,tg.y).b=0;s.bld=s.bld.filter(x=>x!==tg);toast(s,`Мутанты сломали: ${B[tg.type].n}`,'bad');log(s,`Разрушено: ${B[tg.type].n}.`,'bad');computeHeat(s);}continue;}
+        if(tg.hp<=0){tile(s,tg.x,tg.y).b=0;s.bld=s.bld.filter(x=>x!==tg);toast(s,`Мутанты сломали: ${B[tg.type].n}`,'bad');log(s,`Разрушено: ${B[tg.type].n}.`,'bad');ev(s,'warn',`Разрушено: «${B[tg.type].n}» — мутанты сломали башню`,tg);computeHeat(s);}continue;}
       // дошёл до жилья: убивает людей, пока жив, затем идёт к следующему зданию
-      if(!z.flee){z.inside=1;z.bite=(z.bite||0)+dt*(z.dm||1);if(z.bite>=(has(s,'g_militia')?.6:.3)){z.bite=0;z.nb=(z.nb||0)+1;if(z.nb>=3){z.nb=0;z.lastRt=z.rt;z.rt=null;}const k=kill(s,1,'all');if(k){s.hope-=1;if(w)w.breach++;s.zombieKills=(s.zombieKills||0)+1;if(!s._bt||s.hour!==s._bt){s._bt=s.hour;toast(s,'Мутанты на станции убивают людей!','bad');}}}}
+      if(!z.flee){z.inside=1;z.bite=(z.bite||0)+dt*(z.dm||1);if(z.bite>=(has(s,'g_militia')?.6:.3)){z.bite=0;z.nb=(z.nb||0)+1;if(z.nb>=3){z.nb=0;z.lastRt=z.rt;z.rt=null;}const k=kill(s,1,'all');if(k){dcount(s,'mut',k);s._mk=(s._mk||0)+k;s._mkAt={x:Math.round(z.x),y:Math.round(z.y)};s.hope-=1;if(w)w.breach++;s.zombieKills=(s.zombieKills||0)+1;if(!s._bt||s.hour!==s._bt){s._bt=s.hour;toast(s,'Мутанты на станции убивают людей!','bad');}}}}
       continue;}
     {let ux=dx/d,uy=dy/d;if(z.t==='dog'&&d>1.2){const zz=Math.sin(z.cyc*5+z.id)*.75;const px=-uy,py=ux;ux+=px*zz;uy+=py*zz;const l=Math.hypot(ux,uy);ux/=l;uy/=l;}
      z.x+=ux*Math.min(st,d);z.y+=uy*Math.min(st,d);z.ph+=st*(z.t==='brute'?4:z.t==='bloat'?8:6)+(z.t==='ghoul'&&mul<.5?0:0);z.ang=Math.atan2(ux,uy);}
@@ -3382,14 +3423,14 @@ function combatStep(s,dt){
   s.fx=[];
   for(const b of s.bld){if(b.build||!b.on||!TOWER[b.type])continue;const S_=towerStats(s,b);if(S_.dps<=0)continue;
     const inR=Z.filter(z=>!z.dead&&Math.hypot(z.x-b.x,z.y-b.y)<=S_.range);if(!inR.length)continue;
-    if(S_.coal){const need=S_.coal*dt*D_(s).cons;if(s.res.coal<need)continue;s.res.coal-=need;}
+    if(S_.coal){const need=S_.coal*dt*D_(s).cons;if(s.res.coal<need){if(!b._nc){b._nc=1;ev(s,'warn','Башня-пушка не стреляет: нет угля',b);}continue;}b._nc=0;s.res.coal-=need;}
     inR.sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y));const t0=inR[0];
     const hit=(z,dmg)=>{z.hp-=dmg;z.ha=(z.ha||0)+dmg;if(z.ha>=z.max*.1){z.ha=0;z.fl=.05;const ax=z.x-b.x,ay=z.y-b.y,l=Math.hypot(ax,ay)||1;z.x+=ax/l*.12;z.y+=ay/l*.12;}};
     if(S_.single){hit(t0,S_.dps*dt);if(S_.fire)for(const z of Z)if(z!==t0&&!z.dead&&Math.hypot(z.x-t0.x,z.y-t0.y)<=.6)hit(z,S_.dps*dt*.4);s.fx.push({b:b.id,z:[t0.x,t0.y],k:'arrow'});}
     else{for(const z of Z)if(!z.dead&&Math.hypot(z.x-t0.x,z.y-t0.y)<=S_.splash)hit(z,S_.dps*dt);s.fx.push({b:b.id,z:[t0.x,t0.y],k:b.type==='steamgun'?'steam':'stone'});}
   }
   for(const z of Z){
-    if(z.hp<=0&&!z.dead){z.dead=1;DFX.push({x:z.x,y:z.y,t:z.t,ang:z.ang||0});if(w){w.kills++;zLoot(s,w);if(has(s,'g_bounty')){if(rnd()<.5)zLoot(s,w);if((w.bh||0)<5){w.bh=(w.bh||0)+.25;s.hope+=.25;}}if(z.t==='boar'||z.t==='dog'){const n=z.t==='boar'?ri(3,6):ri(1,2);s.res.food+=n;w.loot.food=(w.loot.food||0)+n;}}s.kills=(s.kills||0)+1;}
+    if(z.hp<=0&&!z.dead){z.dead=1;s.kt=s.kt||{};s.kt[z.t]=(s.kt[z.t]||0)+1;DFX.push({x:z.x,y:z.y,t:z.t,ang:z.ang||0});if(w){w.kills++;zLoot(s,w);if(has(s,'g_bounty')){if(rnd()<.5)zLoot(s,w);if((w.bh||0)<5){w.bh=(w.bh||0)+.25;s.hope+=.25;}}if(z.t==='boar'||z.t==='dog'){const n=z.t==='boar'?ri(3,6):ri(1,2);s.res.food+=n;w.loot.food=(w.loot.food||0)+n;}}s.kills=(s.kills||0)+1;}
     else if(z.gone&&!z.dead){z.dead=1;}
   }
   s.zombies=Z.filter(z=>!z.dead);
@@ -3397,7 +3438,7 @@ function combatStep(s,dt){
   if(w&&w.left<=0&&!s.zombies.length){
     const lt=Object.entries(w.loot).map(([k,n])=>`${n} ${RES[k].n.toLowerCase()}`).join(', ');
     toast(s,`Волна отбита: убито ${w.kills}${w.breach?`, прорвались ${w.breach}`:''}${lt?`. Трофеи: ${lt}`:''}`,w.breach?'bad':'good');
-    log(s,`Волна отбита. Убито ${w.kills}, прорвались ${w.breach}.`,w.breach?'bad':'good');
+    log(s,`Волна отбита. Убито ${w.kills}, прорвались ${w.breach}.`,w.breach?'bad':'good');ev(s,w.breach?'warn':'good',`Волна отбита: убито ${w.kills}${w.breach?`, прорвались ${w.breach}`:''}`,{x:GW-1,y:GH-1});
     if(!w.breach)s.hope+=1;s.wave=null;
   }
 }
@@ -3655,6 +3696,16 @@ function renderInfo(){
   }
   setHTML(el,`<button class="closex" data-act="unsel" aria-label="Закрыть">×</button>`+h);
 }
+const EV_IC={death:'<path d="M8 1.5a5.5 5.5 0 00-3.5 9.7V13h7v-1.8A5.5 5.5 0 008 1.5z" fill="currentColor"/><circle cx="6" cy="7" r="1.3" fill="#111"/><circle cx="10" cy="7" r="1.3" fill="#111"/><path d="M6 13v2M8 13v2M10 13v2" stroke="currentColor" stroke-width="1.2"/>',
+  warn:'<path d="M8 1.5L15 14H1z" fill="currentColor"/><path d="M8 6v4" stroke="#111" stroke-width="1.6"/><circle cx="8" cy="12" r=".9" fill="#111"/>',
+  info:'<circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7v4.5" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="4.8" r="1" fill="currentColor"/>',
+  good:'<circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 8.3l2 2 4-4.3" fill="none" stroke="currentColor" stroke-width="1.7"/>'};
+const EV_C={death:'#e06450',warn:'#f2a33a',info:'#8a94a0',good:'#7fc48a'};
+function evRow(e,i){return`<button class="evr ${e.k}" style="--ec:${EV_C[e.k]||'#8a94a0'}" data-ev="${i}" title="${e.x!=null?(LANG==='en'?'Show on map':'Показать на карте'):''}"><svg viewBox="0 0 16 16" aria-hidden="true">${EV_IC[e.k]||EV_IC.info}</svg><span class="et">${esc(e.txt)}${e.n>1?` ×${e.n}`:''}</span><span class="tm">${LANG==='en'?'D':'Д'}${e.d} ${String(e.h).padStart(2,'0')}:00</span></button>`;}
+function renderEvFeed(){const el=$('evfeed');if(!el)return;const s=S;const show=ui.mode==='game'&&s&&!ui.sel&&!ui.open;el.hidden=!show;if(!show)return;
+  const E=(s.events||[]).slice(0,5);setHTML(el,`<div class="evh"><span>Журнал</span><button data-open="journal">Весь журнал</button></div>${E.length?E.map(evRow).join(''):'<span class="hint">Событий пока нет</span>'}`);}
+function evGo(i){const e=S&&S.events&&S.events[i];if(!e)return;if(e.x!=null){cam3.tx=wx(e.x);cam3.tz=wz(e.y);cam3.d=Math.min(cam3.d,11);}
+  if(e.b!=null&&bById(S,e.b))ui.sel={k:'b',id:e.b};ui.open=null;ui.dirty=true;}
 function renderOverlay(){
   const s=S,el=$('overlay');
   // события в приоритете
@@ -3663,6 +3714,14 @@ function renderOverlay(){
     const e=s.queue[0];const E=EV[e.id];const p=e.p||{};
     el.hidden=false;el.className='overlay event';
     setHTML(el,`<div class="sheet panel" role="dialog" aria-modal="true"><button class="closex" data-act="evmin" aria-label="Закрыть" title="Закрыть — решить позже">×</button><h2>${esc(E.t)}</h2><p>${esc(E.x(s,p))}</p><div class="choices">${E.c.map((c,i)=>{const ok=!c.ok||c.ok(s,p);const hh=typeof c.h==='function'?c.h(s,p):c.h;return`<button data-choose="${i}" ${ok?'':'disabled'}>${esc(c.t)}${hh?`<small>${esc(hh)}</small>`:''}</button>`;}).join('')}</div>${coop.role==='guest'?'<p class="hint">Решение отправится хосту.</p>':''}</div>`);
+    return;
+  }
+  if(ui.open==='journal'){
+    el.hidden=false;el.className='overlay';const f=ui.evF||'all',E=(s.events||[]).map((e,i)=>[e,i]).filter(([e])=>f==='all'||e.k===f||(f==='info'&&e.k==='good'));
+    const fb=(k,n)=>`<button class="btn ${f===k?'on':''}" data-evf="${k}">${n}</button>`;
+    setHTML(el,`<div class="sheet panel"><button class="closex" data-act="close" aria-label="Закрыть">×</button><h2>Журнал</h2>
+      <div class="evf">${fb('all','Все')}${fb('death','Смерти')}${fb('warn','Предупреждения')}${fb('info','Информация')}</div>
+      <div class="evlist">${E.length?E.map(([e,i])=>evRow(e,i)).join(''):'<span class="hint">Событий пока нет</span>'}</div></div>`);
     return;
   }
   if(ui.open==='tech'){
@@ -3883,7 +3942,7 @@ function loop(t){
     else{$('mapwrap').hidden=true;draw(t);}
     uiT+=dt;rateT+=dt;
     if(rateT>=5&&prevRes){for(const k in S.res)resRate[k]=(S.res[k]-prevRes[k])/rateT*5*(S.paused?0:1);prevRes={...S.res};rateT=0;}
-    if(ui.dirty||uiT>.5){uiT=0;ui.dirty=false;renderTop();renderBar();renderInfo();if(ui.open==='map')renderMapSide();renderOverlay();}
+    if(ui.dirty||uiT>.5){uiT=0;ui.dirty=false;renderTop();renderBar();renderInfo();renderEvFeed();if(ui.open==='map')renderMapSide();renderOverlay();}
     if(ui.toMenu){ui.toMenu=false;if(S&&S.over)store('ls_save','');coopStop();ui.mode='menu';ui.menuScr='main';renderMenu();}
   }else if(ui.mode==='menu'){draw(t);}
   document.body.classList.toggle('inmenu',ui.mode!=='game');
@@ -3958,6 +4017,8 @@ addEventListener('keydown',e=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
   if(ds.speed!=null){dispatch({t:'speed',v:+ds.speed});}
+  else if(ds.ev!=null){evGo(+ds.ev);}
+  else if(ds.evf){ui.evF=ds.evf;ui.dirty=true;}
   else if(ds.cat){ui.cat=ui.cat===ds.cat?null:ds.cat;ui.buildType=null;}
   else if(ds.build){ui.buildType=ds.build;ui.sel=null;}
   else if(ds.open){ui.open=ui.open===ds.open?null:ds.open;ui.cat=null;if(ds.open==='map'&&S.teams.length&&!ui.team)ui.team=S.teams[0].id;}
