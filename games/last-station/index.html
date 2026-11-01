@@ -3105,60 +3105,43 @@ function slotLoad(i){const s=slotInfo(i);if(!s)return;coopStop();allyStop();S=s;
 const mc=$('mapc'),mx=mc.getContext('2d');const mcam={x:600,y:620,z:.8};
 function m2s(x,y){return{x:VW/2+(x-mcam.x)*mcam.z,y:VH/2+(y-mcam.y)*mcam.z};}
 function s2m(x,y){return{x:(x-VW/2)/mcam.z+mcam.x,y:(y-VH/2)/mcam.z+mcam.y};}
-let MAPBG=null;
-function mapBg(){// мёртвая Москва сверху: руины кварталов под снегом, замёрзшая река, дым и туман (рисуется один раз)
-  const S0=2048,O=-300,K=S0/1800,c=document.createElement('canvas');c.width=c.height=S0;const x=c.getContext('2d'),R=seeded(2033);
-  const P=(a,b)=>[(a-O)*K,(b-O)*K];
-  const g=x.createRadialGradient(S0/2,S0/2,100,S0/2,S0/2,S0*.7);g.addColorStop(0,'#2e3236');g.addColorStop(1,'#15181b');x.fillStyle=g;x.fillRect(0,0,S0,S0);
-  // река (Москва-река) — ломаная через центр
-  const riv=[[-300,420],[80,470],[250,610],[420,560],[560,700],[700,760],[800,650],[950,720],[1080,880],[1500,960]].map(([a,b])=>P(a,b));
-  const river=w=>{x.beginPath();riv.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.lineWidth=w;x.lineJoin=x.lineCap='round';x.stroke();};
-  x.strokeStyle='#9aa6ae';river(70);x.strokeStyle='#26323a';river(56);x.strokeStyle='rgba(180,200,215,.18)';x.setLineDash([18,26]);river(20);x.setLineDash([]);
-  const nearRiver=(a,b)=>{for(let i=1;i<riv.length;i++){const [x1,y1]=riv[i-1],[x2,y2]=riv[i];const dx=x2-x1,dy=y2-y1,t=Math.max(0,Math.min(1,((a-x1)*dx+(b-y1)*dy)/(dx*dx+dy*dy)));if(Math.hypot(a-x1-t*dx,b-y1-t*dy)<44)return true;}return false;};
-  // кварталы руин
-  for(let i=0;i<5200;i++){const a=R()*S0,b=R()*S0;if(nearRiver(a,b))continue;const w=8+R()*26,h=6+R()*20,an=(R()-.5)*.5+(R()<.5?0:Math.PI/2),v=48+R()*40|0;
-    x.save();x.translate(a,b);x.rotate(an);x.fillStyle='rgba(0,0,0,.35)';x.fillRect(-w/2+4,-h/2+4,w,h);x.fillStyle=`rgb(${v},${v+2},${v+6})`;x.fillRect(-w/2,-h/2,w,h);
-    x.fillStyle=`rgba(225,232,238,${.35+R()*.45})`;x.fillRect(-w/2,-h/2,w*(.3+R()*.7),h*(.2+R()*.5));
-    if(R()<.4){x.fillStyle='rgba(10,12,14,.8)';x.fillRect(-w/2+w*R()*.6,-h/2+h*R()*.6,w*.3,h*.3);}x.restore();}
-  // улицы-проспекты лучами от центра
-  x.strokeStyle='rgba(200,210,218,.10)';x.lineWidth=10;for(let k=0;k<12;k++){const an=k/12*Math.PI*2+.1;const [cx,cy]=P(600,620);x.beginPath();x.moveTo(cx,cy);x.lineTo(cx+Math.cos(an)*S0,cy+Math.sin(an)*S0);x.stroke();}
-  // ориентиры: стадион, градирня, колесо обозрения
-  {const [a,b]=P(250,980);x.strokeStyle='#5a5e62';x.lineWidth=16;x.beginPath();x.ellipse(a,b,70,50,0,0,7);x.stroke();x.fillStyle='#d8dee4';x.beginPath();x.ellipse(a,b,52,34,0,0,7);x.fill();}
-  {const [a,b]=P(1050,180);x.fillStyle='#3a3e42';x.beginPath();x.arc(a,b,34,0,7);x.fill();x.fillStyle='#14171a';x.beginPath();x.arc(a,b,22,0,7);x.fill();
-    for(let k=0;k<14;k++){x.fillStyle=`rgba(200,205,210,${.12-k*.007})`;x.beginPath();x.arc(a+k*14,b-k*18,26+k*6,0,7);x.fill();}}
-  {const [a,b]=P(60,700);x.strokeStyle='#4a4e52';x.lineWidth=3;x.beginPath();x.arc(a,b,40,0,7);x.stroke();for(let k=0;k<12;k++){x.beginPath();x.moveTo(a,b);x.lineTo(a+Math.cos(k/12*7)*40,b+Math.sin(k/12*7)*40);x.stroke();}}
-  // снежная крупа и туман по краям
-  for(let i=0;i<1600;i++){x.fillStyle=`rgba(230,236,242,${R()*.25})`;x.fillRect(R()*S0,R()*S0,2,2);}
-  for(let i=0;i<70;i++){const a=R()*S0,b=R()*S0,rr=80+R()*260,gg=x.createRadialGradient(a,b,0,a,b,rr);gg.addColorStop(0,'rgba(170,180,190,.16)');gg.addColorStop(1,'rgba(170,180,190,0)');x.fillStyle=gg;x.fillRect(a-rr,b-rr,rr*2,rr*2);}
-  const vg=x.createRadialGradient(S0/2,S0/2,S0*.3,S0/2,S0/2,S0*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(4,6,8,.75)');x.fillStyle=vg;x.fillRect(0,0,S0,S0);
-  return c;
+let MAPBG=null,MAPIMG=null;
+function mapBg(){
+  if(!MAPIMG){MAPIMG=new Image();MAPIMG.onload=()=>{MAPBG=null;ui.dirty=true;};MAPIMG.src='map_bg.png';}
+  if(MAPIMG.complete&&MAPIMG.naturalWidth)return MAPIMG;
+  // пока картинки нет — тёмная холодная подложка
+  const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');const g=x.createRadialGradient(128,128,20,128,128,180);g.addColorStop(0,'#2a3038');g.addColorStop(1,'#0e1115');x.fillStyle=g;x.fillRect(0,0,256,256);return c;
 }
 function renderMap(t){
-  const s=S;mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle='#101317';mx.fillRect(0,0,VW,VH);
-  if(!MAPBG)MAPBG=mapBg();{const a=m2s(-300,-300);mx.drawImage(MAPBG,a.x,a.y,1800*mcam.z,1800*mcam.z);}
-  // тёмная подложка под линиями, чтобы они читались на фоне города
-  for(const L of LINES){if(L.secret&&!s.flags.metro2)continue;const ids=G.lines[L.id];mx.strokeStyle='rgba(6,8,10,.85)';mx.lineWidth=Math.max(5,8*mcam.z);mx.lineJoin='round';mx.beginPath();ids.forEach((id,i)=>{const p=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y);});if(L.ring){const p=m2s(G.nodes[ids[0]].x,G.nodes[ids[0]].y);mx.lineTo(p.x,p.y);}mx.stroke();}
+  const s=S;mx.setTransform(DPR,0,0,DPR,0,0);mx.fillStyle='#0b0e12';mx.fillRect(0,0,VW,VH);
+  if(!MAPBG)MAPBG=mapBg();
+  {// фон растянут на всю область карты (−300…1500) с сохранением пропорций (cover)
+    const iw=MAPBG.naturalWidth||MAPBG.width,ih=MAPBG.naturalHeight||MAPBG.height,k=Math.max(1800/iw,1800/ih),w=iw*k,h=ih*k;const a=m2s(600-w/2,600-h/2);mx.drawImage(MAPBG,a.x,a.y,w*mcam.z,h*mcam.z);}
+  {// лёгкий подвижный туман поверх фона
+    const tt=(t||0)/1000;for(let k=0;k<7;k++){const cxm=(k*311%1200)+Math.sin(tt*.05+k)*160,cym=(k*577%1200)+Math.cos(tt*.04+k*1.7)*120,p=m2s(cxm,cym),rr=(260+k*30)*mcam.z;
+      const g=mx.createRadialGradient(p.x,p.y,0,p.x,p.y,rr);g.addColorStop(0,'rgba(200,208,218,.16)');g.addColorStop(1,'rgba(200,208,218,0)');mx.fillStyle=g;mx.fillRect(p.x-rr,p.y-rr,rr*2,rr*2);}}
   const vis=id=>s.st[id]!=null;
-  for(const L of LINES){
-    if(L.secret&&!s.flags.metro2)continue;
-    const ids=G.lines[L.id];mx.strokeStyle=L.c;mx.lineWidth=Math.max(2,4*mcam.z);mx.lineJoin='round';
-    mx.globalAlpha=.85;mx.beginPath();ids.forEach((id,i)=>{const p=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y);});
-    if(L.ring){const p=m2s(G.nodes[ids[0]].x,G.nodes[ids[0]].y);mx.lineTo(p.x,p.y);}
-    if(L.secret)mx.setLineDash([8,6]);mx.stroke();mx.setLineDash([]);mx.globalAlpha=1;
-  }
+  const path=L=>{const ids=G.lines[L.id];mx.beginPath();ids.forEach((id,i)=>{const p=m2s(G.nodes[id].x,G.nodes[id].y);i?mx.lineTo(p.x,p.y):mx.moveTo(p.x,p.y);});if(L.ring){const p=m2s(G.nodes[ids[0]].x,G.nodes[ids[0]].y);mx.lineTo(p.x,p.y);}};
+  mx.lineJoin=mx.lineCap='round';
+  for(const L of LINES){if(L.secret&&!s.flags.metro2)continue;const dbl=L.id==='14';
+    if(L.secret)mx.setLineDash([10,7]);
+    path(L);mx.strokeStyle='#07090c';mx.lineWidth=dbl?14:10;mx.stroke();                       // тёмная обводка 2px
+    mx.save();mx.shadowColor=dbl?'#ff5a6e':L.c;mx.shadowBlur=10;path(L);mx.strokeStyle=dbl?'#e0566a':L.c;mx.lineWidth=dbl?10:6;mx.stroke();mx.restore(); // линия + свечение
+    if(dbl){path(L);mx.strokeStyle='#07090c';mx.lineWidth=2.5;mx.stroke();}                  // двойная линия кольца
+    mx.setLineDash([]);}
   // пересадки
   mx.strokeStyle='rgba(220,230,240,.35)';mx.lineWidth=Math.max(1,2*mcam.z);
   for(const a in G.adj)for(const e of G.adj[a])if(e.kind!=='t'&&a<e.to&&vis(a)&&vis(e.to)){const p=m2s(G.nodes[a].x,G.nodes[a].y),q=m2s(G.nodes[e.to].x,G.nodes[e.to].y);mx.setLineDash(e.kind==='secret'?[3,4]:[]);mx.beginPath();mx.moveTo(p.x,p.y);mx.lineTo(q.x,q.y);mx.stroke();}
   mx.setLineDash([]);
   // туман: темнота вдали от изученного
   // станции
-  const r=Math.max(3,6*mcam.z);
+  const r=Math.max(4,6*mcam.z);
   for(const id in G.nodes){
     if(!vis(id))continue;const n=G.nodes[id];const st=s.st[id];const p=m2s(n.x,n.y);
     if(p.x<-50||p.y<-50||p.x>VW+50||p.y>VH+50)continue;
     mx.beginPath();mx.arc(p.x,p.y,r,0,7);
     mx.fillStyle=st.k===2?'#cfe3f2':st.k===1?'#7d8f9e':'#141a20';mx.fill();
-    mx.lineWidth=1.5;mx.strokeStyle=st.k===0?'#56677a':'#0b0e12';mx.stroke();
+    mx.lineWidth=2.5;mx.strokeStyle='#07090c';mx.stroke();
     if(st.o){mx.strokeStyle='#7fc48a';mx.lineWidth=2;mx.strokeRect(p.x-r-3,p.y-r-3,2*r+6,2*r+6);}
     if(st.t==='trade'&&st.k===2){mx.fillStyle='#c48a4a';mx.beginPath();mx.arc(p.x,p.y,r*.45,0,7);mx.fill();}
     if(id===HUB){mx.strokeStyle='#f2a33a';mx.lineWidth=3;mx.beginPath();mx.arc(p.x,p.y,r+5,0,7);mx.stroke();}
@@ -3172,6 +3155,7 @@ function renderMap(t){
   for(const g of s.groups){const q=posOn(g);mx.fillStyle='#e8e8e8';for(let i=0;i<3;i++){mx.beginPath();mx.arc(q.x+i*4-4,q.y+8,2,0,7);mx.fill();}}
   for(const x of s.teams){const q=posOn(x);mx.save();mx.translate(q.x,q.y);mx.rotate(Math.PI/4);mx.fillStyle=x.rest?'#e06450':'#f2a33a';mx.fillRect(-6,-6,12,12);mx.restore();
     mx.fillStyle='#0b0e12';mx.font='bold 10px PT Mono, monospace';mx.fillText(x.id,q.x-3,q.y+4);}
+  {const g=mx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.35,VW/2,VH/2,Math.max(VW,VH)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(2,4,6,.7)');mx.fillStyle=g;mx.fillRect(0,0,VW,VH);}
 }
 function posOn(o){
   const a=G.nodes[o.path&&o.path.length>=2?o.path[0]:(o.at||HUB)];
