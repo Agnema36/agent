@@ -425,7 +425,12 @@ const TECH=[
   {id:'t_coreworks',cat:'Ресурсы',n:'Сборка энергоблоков',rp:150,cost:{steel:60,cores:1},req:['t_tools'],d:'Здание: цех энергоблоков.'},
   {id:'t_antibio',cat:'Жильё и медицина',n:'Антибиотики из плесени',rp:70,cost:{wood:10,steel:15},req:['t_hospital'],d:'Лечение быстрее, тяжёлые чаще выживают.'},
   {id:'t_prosth',cat:'Жильё и медицина',n:'Протезы',rp:80,cost:{steel:30},req:['t_hospital'],d:'Тяжелобольные умирают вдвое реже.'},
-  {id:'t_ammo',cat:'Ресурсы',n:'Наконечники и снаряды',rp:70,cost:{steel:20,stone:20},d:'Все башни наносят на 30% больше урона.'},
+  {id:'t_ammo',cat:'Оборона',n:'Наконечники и снаряды',rp:70,cost:{steel:20,stone:20},d:'Все башни наносят на 30% больше урона.'},
+  {id:'t_watch1',cat:'Оборона',n:'Высокие вышки',rp:45,cost:{wood:30},d:'Башни лучников бьют на 1 клетку дальше.'},
+  {id:'t_xbow',cat:'Оборона',n:'Тяжёлые арбалеты',rp:80,cost:{wood:15,steel:25},req:['t_watch1'],d:'Башни лучников наносят на 40% больше урона.'},
+  {id:'t_fire',cat:'Оборона',n:'Зажигательные болты',rp:110,cost:{steel:30,coal:20},req:['t_xbow'],d:'Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.'},
+  {id:'t_braces',cat:'Оборона',n:'Укреплённые срубы',rp:60,cost:{wood:40,stone:20},d:'Все башни: прочность и починка +50%.'},
+  {id:'t_light',cat:'Оборона',n:'Прожекторы',rp:90,cost:{steel:25,coal:15},req:['t_watch1'],d:'В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.'},
   {id:'t_logistics',cat:'Разведка и наука',n:'Логистика Кольца',rp:70,cost:{wood:20,steel:20},req:['t_outpost'],d:'Аванпосты шлют на 50% больше.'},
 ];
 const TECHBY=Object.fromEntries(TECH.map(t=>[t.id,t]));
@@ -472,13 +477,18 @@ const LAWS=[
 LAWS.push(
   {id:'cap_harsh',cat:'adapt',br:'harsh',cap:1,n:'Закон выживания',d:'Высший закон ветки. Все работают на 30% больше. Тяжёлые без лечения умирают в 1,5 раза чаще. Надежда −15, недовольство −10 (страх).',fx:{hope:-15,disc:-10}},
   {id:'cap_care',cat:'adapt',br:'care',cap:1,n:'Каждая жизнь',d:'Высший закон ветки. Смерти бьют по надежде вдвое слабее, больные выздоравливают быстрее, надежда +15. Работа медленнее на 10%.',fx:{hope:15}},
+  {id:'g_watch',cat:'adapt',br:'guard',n:'Ночной дозор',d:'Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',fx:{disc:2}},
+  {id:'g_repair',cat:'adapt',br:'guard',n:'Дежурные ремонтники',d:'Башни чинятся вдвое быстрее.',fx:{disc:1}},
+  {id:'g_bounty',cat:'adapt',br:'guard',n:'Награда за головы',d:'Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',fx:{}},
+  {id:'g_militia',cat:'adapt',br:'guard',n:'Ополчение',d:'Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',fx:{hope:-2}},
+  {id:'g_fort',cat:'adapt',br:'guard',cap:1,n:'Крепость',d:'Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',fx:{hope:5}},
   {id:'cap_ind',cat:'adapt',br:'ind',cap:1,n:'Индустриальный рывок',d:'Высший закон ветки. Все производства +25%, наука +10%. Недовольство растёт каждый день.',fx:{disc:5}});
 const LAW_BR={child_labor:'harsh',ext_shift:'harsh',additives:'harsh',food_ration:'harsh',pit:'harsh',radical:'harsh',communal:'harsh',crowding:'harsh',arena:'harsh',
   child_shelter:'care',soup:'care',cemetery:'care',overcrowd:'care',private:'care',quarantine:'care',apprentice:'care',moonshine:'care',
   recycling:'ind',expedition:'ind',barter:'ind',mandatory:'ind',emergency:'ind'};
 for(const L of LAWS)if(!L.br)L.br=LAW_BR[L.id]||L.cat;
 const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care:{n:'Человечность',c:'#7fc48a',need:5,cap:'cap_care'},ind:{n:'Промышленность',c:'#c08d5c',need:3,cap:'cap_ind'},
-  order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'}};
+  order:{n:'Порядок',c:'#9fb3c4',need:4,cap:'o_new'},faith:{n:'Братство',c:'#e8c25a',need:4,cap:'f_new'},guard:{n:'Оборона',c:'#e0904a',need:4,cap:'g_fort'}};
 // высший закон ветки открывается только когда приняты ВСЕ остальные законы этой ветки
 for(const k in BR)BR[k].need=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap).length;
 const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
@@ -557,7 +567,7 @@ function buildGraph(){
 const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
-const EN=[['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
+const EN=[['Оборона',"Defence"],['Высокие вышки',"Tall watchtowers"],['Башни лучников бьют на 1 клетку дальше.',"Archer towers reach 1 tile further."],['Тяжёлые арбалеты',"Heavy crossbows"],['Башни лучников наносят на 40% больше урона.',"Archer towers deal 40% more damage."],['Зажигательные болты',"Incendiary bolts"],['Выстрел лучников поджигает: 40% урона по всем мутантам рядом с целью.',"Archer shots ignite: 40% damage to all mutants near the target."],['Укреплённые срубы',"Reinforced log frames"],['Все башни: прочность и починка +50%.',"All towers: durability and repair +50%."],['Прожекторы',"Searchlights"],['В зоне работающей башни мутанты ослеплены и идут на 25% медленнее.',"Inside a manned tower's range mutants are blinded and move 25% slower."],['Ночной дозор',"Night watch"],['Стрелки дежурят посменно: все башни +20% урона. Люди устают — недовольство +2.',"Shooters stand watch in shifts: all towers +20% damage. People get tired: discontent +2."],['Дежурные ремонтники',"Repair crews on duty"],['Башни чинятся вдвое быстрее.',"Towers repair twice as fast."],['Награда за головы',"Bounty for heads"],['Трофеев с мутантов в 1,5 раза больше. Каждое убийство чуть поднимает надежду (до +5 за ночь).',"1.5× trophies from mutants. Each kill raises hope a little (up to +5 per night)."],['Ополчение',"Militia"],['Если мутанты прорвались, жители отбиваются: убивают их вдвое реже. Надежда −2.',"If mutants break through, residents fight back: they kill half as often. Hope −2."],['Крепость',"Fortress"],['Высший закон ветки. Все башни: урон +25%, прочность +50%. Надежда +5.',"Top law of the branch. All towers: damage +25%, durability +50%. Hope +5."],['Надвигаются мутанты','Mutants are coming'],['мутантов','mutants'],
 ['Громкость','Volume'],['Общая громкость','Master volume'],
 ['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
@@ -2970,8 +2980,8 @@ const PIC={
 const TECH_PIC={t_ammo:'bolt',t_heater:'flame',t_radius1:'radius',t_insul:'insul',t_power1:'boiler',t_radius2:'radius',t_power2:'core',t_farm2:'mushroom',t_filter:'filter',t_hydro:'sprout',t_well:'drill',
   t_gather:'cart',t_saw:'saw',t_scrap:'wagon',t_coal:'pick',t_tools:'gear',t_barracks:'house',t_house:'houses',t_hospital:'cross',t_pharm:'pill',t_research:'book',
   t_draisine:'draisine',t_teams:'team',t_outpost:'flag',t_coldmat:'snow',t_heatpipes:'pipes',t_cook2:'kettle',t_seedbank:'seed',t_drills:'bolt',t_prefab:'blocks',
-  t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route'};
-const LAW_PIC={cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',food_ration:'plateminus',cemetery:'grave',pit:'pit',radical:'knife',
+  t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route',t_watch1:'radius',t_xbow:'bolt',t_fire:'flame',t_braces:'blocks',t_light:'sun'};
+const LAW_PIC={g_watch:'alarm',g_repair:'hammer',g_bounty:'hand',g_militia:'fist',g_fort:'shield',cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',food_ration:'plateminus',cemetery:'grave',pit:'pit',radical:'knife',
   overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',norms:'gear',standard:'blocks',scrapdrive:'recycle',techcourse:'school',restday:'sun',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
   recycling:'recycle',expedition:'compass',barter:'hand',o_patrol:'shield',o_radio:'radio',o_prison:'bars',o_martial:'star',o_new:'crown',
   f_hall:'candle',f_mutual:'hands',f_shrine:'church',f_wardens:'lantern',f_new:'sun'};
@@ -3144,7 +3154,10 @@ function zIcon(k,c){return`<svg viewBox="0 0 32 32" width="22" height="22" fill=
 function zBestiary(s,day){return`<div class="zbest">${Object.entries(ZT).map(([k,t])=>{const on=day>=t.d;return`<span class="zb ${on?'':'off'}" title="${t.n}: здоровье ×${t.hp}, скорость ×${t.sp}, урон ×${t.dm}${on?'':` — с ${t.d}-го дня`}">${zIcon(k,on?'#e8c0a8':'#4a5560')}<small>${t.n}</small></span>`;}).join('')}</div>`;}
 function zPick(s){const L=Object.entries(ZT).filter(([k,t])=>s.day>=t.d);let x=rnd()*L.reduce((a,[k,t])=>a+t.w,0);for(const [k,t] of L){x-=t.w;if(x<=0)return k;}return 'ghoul';}
 const ZDMG={easy:.7,normal:1,hard:1.25,extreme:1.5,extremeplus:1.75,hardcore:2};
-function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=1?1:0;return{range:T.range+.3*(b.lvl||0),dps:T.dps*wf*(1+.3*(b.lvl||0))*(has(s,'t_ammo')?1.3:1),single:T.single,splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))),regen:T.regen*((b.lvl||0)+1),tank:!!T.tank};}
+function towerStats(s,b,full){const T=TOWER[b.type];const wf=full||(b.crew||0)>=1?1:0;const ar=b.type==='archer';
+  const dm=(has(s,'t_ammo')?1.3:1)*(ar&&has(s,'t_xbow')?1.4:1)*(has(s,'g_watch')?1.2:1)*(has(s,'g_fort')?1.25:1);
+  const hm=(has(s,'t_braces')?1.5:1)*(has(s,'g_fort')?1.5:1),rm=(has(s,'t_braces')?1.5:1)*(has(s,'g_repair')?2:1);
+  return{range:T.range+.3*(b.lvl||0)+(ar&&has(s,'t_watch1')?1:0),dps:T.dps*wf*(1+.3*(b.lvl||0))*dm,single:T.single,fire:ar&&has(s,'t_fire'),splash:T.splash||0,coal:T.coal||0,hpMax:Math.round(T.hp*(1+.1*(b.lvl||0))*hm),regen:T.regen*((b.lvl||0)+1)*rm,tank:!!T.tank};}
 function waveSize(s,day){return Math.max(3,Math.round((10+2*(day-1))*(ZW[s.diff]||1)))+(s.waveBonus&&day===(s.hour>=22?s.day+1:s.day)?s.waveBonus:0);}
 const waveHp=day=>40+6*(day-1);
 function scheduleWave(s){
@@ -3179,6 +3192,7 @@ function combatStep(s,dt){
   if(w&&w.left>0){w.cd-=dt;if(w.cd<=0){w.cd=.04;w.left--;const zt=zPick(s),T_=ZT[zt];s.zid=(s.zid||0)+1;Z.push({id:s.zid,t:zt,x:GW+7+rnd()*1.5,y:GH-1+(rnd()-.5)*.3,hp:w.hp*T_.hp,max:w.hp*T_.hp,dm:T_.dm,sp:2.4*T_.sp*(s.diff==='hardcore'?1.2:1)*(.85+rnd()*.3),ph:0});}}
   for(const b of s.bld)if(b.tauntCd>0)b.tauntCd=Math.max(0,b.tauntCd-dt);
   // движение
+  const LIT=has(s,'t_light')?s.bld.filter(b=>!b.build&&b.on&&TOWER[b.type]&&(b.crew||0)>=1).map(b=>({x:b.x,y:b.y,r:towerStats(s,b).range})):null;
   for(const z of Z){
     if(z.tauntT>0)z.tauntT-=dt;
     if(z.flee){z.flee=0;z.fleeT=0;} // утром мутанты не уходят в тоннель: остаются, пока их не убьют
@@ -3192,11 +3206,12 @@ function combatStep(s,dt){
     // стиль движения: упырь дёргается, секач рывками, пёс зигзагом; перед атакой — рывок
     let mul=1;if(z.t==='ghoul')mul=Math.sin(z.cyc*9+z.id)>-.3?1.35:.1;else if(z.t==='boar')mul=(z.cyc%.6)<.32?1.9:.08;
     z.lg=z.on&&!z.flee&&d<1.1&&d>.65?1:0;if(z.lg)mul*=2.6;if(z.flee)mul=Math.max(3,7/(z.sp||1)); // отходят бегом: не медленнее 7 клеток/ч у любого типа
+    if(LIT&&LIT.some(b=>Math.hypot(b.x-z.x,b.y-z.y)<=b.r))mul*=.75; // прожекторы
     const st=z.sp*dt*mul;
     if(z.on&&!z.flee&&d<.65){if(tg&&tg.id&&TOWER[tg.type]){const mx=towerStats(s,tg).hpMax;if(tg.hp==null)tg.hp=mx;tg.hp-=Z_DMG*(z.dm||1)*(ZDMG[s.diff]||1)*dt;z.att=tg.id;
         if(tg.hp<=0){tile(s,tg.x,tg.y).b=0;s.bld=s.bld.filter(x=>x!==tg);toast(s,`Мутанты сломали: ${B[tg.type].n}`,'bad');log(s,`Разрушено: ${B[tg.type].n}.`,'bad');computeHeat(s);}continue;}
       // дошёл до жилья: убивает людей, пока жив, затем идёт к следующему зданию
-      if(!z.flee){z.inside=1;z.bite=(z.bite||0)+dt*(z.dm||1);if(z.bite>=.3){z.bite=0;z.nb=(z.nb||0)+1;if(z.nb>=3){z.nb=0;z.lastRt=z.rt;z.rt=null;}const k=kill(s,1,'all');if(k){s.hope-=1;if(w)w.breach++;s.zombieKills=(s.zombieKills||0)+1;if(!s._bt||s.hour!==s._bt){s._bt=s.hour;toast(s,'Мутанты на станции убивают людей!','bad');}}}}
+      if(!z.flee){z.inside=1;z.bite=(z.bite||0)+dt*(z.dm||1);if(z.bite>=(has(s,'g_militia')?.6:.3)){z.bite=0;z.nb=(z.nb||0)+1;if(z.nb>=3){z.nb=0;z.lastRt=z.rt;z.rt=null;}const k=kill(s,1,'all');if(k){s.hope-=1;if(w)w.breach++;s.zombieKills=(s.zombieKills||0)+1;if(!s._bt||s.hour!==s._bt){s._bt=s.hour;toast(s,'Мутанты на станции убивают людей!','bad');}}}}
       continue;}
     {let ux=dx/d,uy=dy/d;if(z.t==='dog'&&d>1.2){const zz=Math.sin(z.cyc*5+z.id)*.75;const px=-uy,py=ux;ux+=px*zz;uy+=py*zz;const l=Math.hypot(ux,uy);ux/=l;uy/=l;}
      z.x+=ux*Math.min(st,d);z.y+=uy*Math.min(st,d);z.ph+=st*(z.t==='brute'?4:z.t==='bloat'?8:6)+(z.t==='ghoul'&&mul<.5?0:0);z.ang=Math.atan2(ux,uy);}
@@ -3212,11 +3227,11 @@ function combatStep(s,dt){
     if(S_.coal){const need=S_.coal*dt*D_(s).cons;if(s.res.coal<need)continue;s.res.coal-=need;}
     inR.sort((a,c)=>Math.hypot(a.x-b.x,a.y-b.y)-Math.hypot(c.x-b.x,c.y-b.y));const t0=inR[0];
     const hit=(z,dmg)=>{z.hp-=dmg;z.ha=(z.ha||0)+dmg;if(z.ha>=z.max*.1){z.ha=0;z.fl=.05;const ax=z.x-b.x,ay=z.y-b.y,l=Math.hypot(ax,ay)||1;z.x+=ax/l*.12;z.y+=ay/l*.12;}};
-    if(S_.single){hit(t0,S_.dps*dt);s.fx.push({b:b.id,z:[t0.x,t0.y],k:'arrow'});}
+    if(S_.single){hit(t0,S_.dps*dt);if(S_.fire)for(const z of Z)if(z!==t0&&!z.dead&&Math.hypot(z.x-t0.x,z.y-t0.y)<=.6)hit(z,S_.dps*dt*.4);s.fx.push({b:b.id,z:[t0.x,t0.y],k:'arrow'});}
     else{for(const z of Z)if(!z.dead&&Math.hypot(z.x-t0.x,z.y-t0.y)<=S_.splash)hit(z,S_.dps*dt);s.fx.push({b:b.id,z:[t0.x,t0.y],k:b.type==='steamgun'?'steam':'stone'});}
   }
   for(const z of Z){
-    if(z.hp<=0&&!z.dead){z.dead=1;DFX.push({x:z.x,y:z.y,t:z.t,ang:z.ang||0});if(w){w.kills++;zLoot(s,w);if(z.t==='boar'||z.t==='dog'){const n=z.t==='boar'?ri(3,6):ri(1,2);s.res.food+=n;w.loot.food=(w.loot.food||0)+n;}}s.kills=(s.kills||0)+1;}
+    if(z.hp<=0&&!z.dead){z.dead=1;DFX.push({x:z.x,y:z.y,t:z.t,ang:z.ang||0});if(w){w.kills++;zLoot(s,w);if(has(s,'g_bounty')){if(rnd()<.5)zLoot(s,w);if((w.bh||0)<5){w.bh=(w.bh||0)+.25;s.hope+=.25;}}if(z.t==='boar'||z.t==='dog'){const n=z.t==='boar'?ri(3,6):ri(1,2);s.res.food+=n;w.loot.food=(w.loot.food||0)+n;}}s.kills=(s.kills||0)+1;}
     else if(z.gone&&!z.dead){z.dead=1;}
   }
   s.zombies=Z.filter(z=>!z.dead);
