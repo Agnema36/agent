@@ -43,7 +43,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 /* top bar */
 #top{top:env(safe-area-inset-top,0px);left:0;right:0;display:flex;gap:8px;padding:8px max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));align-items:flex-start;flex-wrap:wrap}
 #res{display:flex;flex-wrap:wrap;gap:2px;padding:4px 6px;max-width:100%}
-.res{display:flex;align-items:center;gap:5px;padding:3px 7px;min-width:72px;border-right:1px solid rgba(255,255,255,.06)}
+.res{display:flex;align-items:center;gap:4px;padding:2px 5px;min-width:62px;border-right:1px solid rgba(255,255,255,.06)}
 .res:last-child{border-right:0}
 .res svg{width:26px;height:26px;flex:none;padding:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.35)}
 .res .v{font-family:var(--mono);font-size:13px}
@@ -86,7 +86,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .meter .lbl{font-family:var(--display);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--frost-dim)}
 .meter svg{width:22px;height:22px;flex:none}
 .meter .bar{box-shadow:inset 0 1px 3px rgba(0,0,0,.6)}
-#popline{font-family:var(--mono);font-size:12px;color:var(--frost-dim);display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+#resbox{display:flex;flex-direction:column;max-width:100%}
+#popline{font-family:var(--mono);font-size:12px;color:var(--frost-dim);display:flex;gap:4px 12px;flex-wrap:wrap;padding:3px 10px 4px;border-top:1px solid rgba(176,138,78,.25)}
 #popline b{color:var(--frost);font-weight:400}
 #bar{display:flex;gap:4px;padding:5px;max-width:100%;overflow-x:auto}
 #bar button{min-width:84px;height:40px;padding:0 12px;background:linear-gradient(180deg,#2c343c,#1a2026);border:1px solid #0a0d10;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.35);border-radius:1px;font-family:var(--display);text-transform:uppercase;letter-spacing:.06em;font-size:12px;white-space:nowrap}
@@ -275,7 +276,7 @@ const RES={
   stone:{n:'Камень',c:'#b9b3a6'},raw:{n:'Сырая еда',c:'#a9b86a'},food:{n:'Пайки',c:'#e8b85c'},water:{n:'Вода',c:'#6fb6e0'},
   meds:{n:'Медикаменты',c:'#ef8a7a'},cores:{n:'Энергоблоки',c:'#ffb347'}
 };
-const RES_ORDER=['coal','wood','steel','stone','raw','food','water','meds','cores'];
+const RES_ORDER=['coal','wood','steel','stone','raw','food','water','sick','cores'];
 const ICON={
   coal:'<path d="M3 13l3-6 4 2 3-5 2 9z" fill="currentColor"/>',
   wood:'<rect x="2" y="5" width="12" height="3" rx="1.5" fill="currentColor"/><rect x="3" y="9" width="11" height="3" rx="1.5" fill="currentColor" opacity=".8"/>',
@@ -293,7 +294,7 @@ const ICON_C={
   wood:'<rect x="1.5" y="8" width="11" height="4" rx="2" fill="#7a4e2a"/><rect x="3.5" y="4" width="11" height="4" rx="2" fill="#94603a"/><circle cx="12.5" cy="10" r="2" fill="#d9b07a"/><circle cx="12.5" cy="10" r="1" fill="none" stroke="#9a6a3a" stroke-width=".6"/><circle cx="14.5" cy="6" r="2" fill="#e4bd86"/><circle cx="14.5" cy="6" r="1" fill="none" stroke="#a87444" stroke-width=".6"/><path d="M3.5 6.5h8M2 10.5h8" stroke="#5a361c" stroke-width=".6"/>',
   steel:'<path d="M1.5 11.5l2-2h7l2 2v2h-11z" fill="#6c7884"/><path d="M1.5 11.5h11v2h-11z" fill="#4a5560"/><path d="M4.5 7.5l2-2h7l2 2v2h-11z" fill="#9aa8b6"/><path d="M4.5 7.5h11v2h-11z" fill="#6a7886"/><path d="M6.6 5.6h6.8" stroke="#dfe8f0" stroke-width=".8"/><path d="M3.6 9.6h6.8" stroke="#c8d2dc" stroke-width=".7"/>',
   stone:'<path d="M1.5 13l1.5-5 4-2.5 3.5 1.5 1 6z" fill="#8a867e"/><path d="M3 8l4-2.5 1 3-4 1.5z" fill="#aba69c"/><path d="M9 13l2-5.5 3.5 1.5.5 4z" fill="#77736c"/><path d="M11 7.5l3.5 1.5-1.5 1.2z" fill="#9c978d"/>',
-  raw:'<path d="M4 6c0-1 1-2 4-2s4 1 4 2l1 7c0 1-2 1.8-5 1.8S3 14 3 13z" fill="#a88a5a"/><path d="M5 4.5c1-1.4 5-1.4 6 0" stroke="#6a5030" stroke-width="1.3" fill="none"/><path d="M4.5 8c2 .6 5 .6 7 0" stroke="#7a6038" stroke-width=".7" fill="none"/><circle cx="8" cy="3.2" r="1" fill="#6a5030"/>',
+  raw:'<path d="M9.6 9.6l3.4 3.4" stroke="#efe4d2" stroke-width="2.2" stroke-linecap="round"/><circle cx="13.9" cy="12.6" r="1.35" fill="#efe4d2"/><circle cx="12.6" cy="13.9" r="1.35" fill="#efe4d2"/><ellipse cx="6.6" cy="6.6" rx="5.4" ry="4" transform="rotate(-45 6.6 6.6)" fill="#c0392b"/><ellipse cx="6.6" cy="6.6" rx="5.4" ry="4" transform="rotate(-45 6.6 6.6)" fill="none" stroke="#f3d6c8" stroke-width=".9"/><path d="M4 5.6c1.2-1.4 3-2 4.4-1.6" stroke="#ff8a7a" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M5.2 8.8c1.4.4 3 0 4-1" stroke="#f3d6c8" stroke-width=".8" fill="none" stroke-linecap="round"/>',
   food:'<rect x="3" y="4" width="10" height="9.5" rx="1.2" fill="#9aa4ac"/><rect x="3" y="6.5" width="10" height="4.5" fill="#b8402e"/><ellipse cx="8" cy="4" rx="5" ry="1.4" fill="#c8d0d6"/><path d="M5 8.8h6" stroke="#f0d9a0" stroke-width="1"/><path d="M3.5 13.2h9" stroke="#5a6268"/>',
   water:'<path d="M8 1.5C6 5 3.3 7.6 3.3 10.6a4.7 4.7 0 009.4 0C12.7 7.6 10 5 8 1.5z" fill="#3f8fd8"/><path d="M8 3.5C6.6 6 5 7.8 5 10.3" stroke="#bfe3ff" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M5.5 12.5a3.5 3.5 0 005 0" stroke="#1d5a9a" stroke-width=".8" fill="none"/>',
   meds:'<rect x="2" y="4" width="12" height="9.5" rx="1.5" fill="#e8e4dc"/><path d="M6 4V2.8h4V4" stroke="#8a8478" stroke-width="1.2" fill="none"/><path d="M8 6v5.5M5.2 8.75h5.6" stroke="#d6362a" stroke-width="2.4"/><path d="M2 12.5h12" stroke="#a8a298" stroke-width=".8"/>',
@@ -330,9 +331,10 @@ const B={
   workshop:{n:'Мастерская',cat:'tech',cost:{wood:20},time:4,job:'e',jobs:5,rp:1,max2:1,h:.9,col:'#6f5a3a',d:'Инженеры ведут исследования днём. 1 мастерская — 100% скорости, 2 — 150%. Каждое улучшение (до 3-го ур.) +25%. Предел — 300%: 2 мастерские 3-го уровня.'},
   lab:{n:'Лаборатория',cat:'hidden',cost:{wood:30,steel:30},time:6,job:'e',jobs:5,rp:1.6,h:1,col:'#5a5f6a',tech:'t_research',d:'Инженеры исследуют в 1,6 раза быстрее, чем в мастерской.'},
   drafting:{n:'Чертёжное бюро',cat:'hidden',cost:{wood:25,steel:10},time:4,h:.8,col:'#6a5a48',d:'Ускоряет все мастерские и лаборатории на 15% (действуют до трёх бюро).'},
-  medpost:{n:'Медпункт',cat:'med',cost:{wood:15,steel:5},time:3,job:'e',jobs:2,beds:5,h:.7,col:'#7c6262',d:'5 коек. Тяжёлым нужны медикаменты. Медики работают круглосуточно.'},
+  medpost:{n:'Медпункт',cat:'med',cost:{wood:15,steel:5},time:3,job:'e',jobs:2,beds:5,h:.7,col:'#7c6262',d:'5 коек. Лечит больных и тяжёлых. Медики работают круглосуточно.'},
   hospital:{n:'Лазарет',cat:'med',cost:{wood:30,steel:20},time:8,job:'e',jobs:5,beds:10,heal:1,h:1.1,col:'#836868',tech:'t_hospital',d:'10 коек. Лечит тяжёлых без лекарств. Медики работают круглосуточно.'},
-  pharmacy:{n:'Аптека',cat:'med',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
+  pharmacy:{n:'Аптека',cat:'hidden',cost:{wood:20,steel:20},time:6,job:'e',jobs:3,prod:{meds:.15},h:.8,col:'#8a5c5c',tech:'t_pharm',d:'Производит медикаменты.'},
+  gather:{n:'Пост сбора',cat:'res',cost:{wood:15,steel:5},time:3,job:'w',jobs:20,gatherR:1,h:1,col:'#5a4a38',d:'Рабочие сами разбирают все завалы в радиусе (как радиус огня печи). До 20 человек.'},
   depot:{n:'Дрезинное депо',cat:'scout',cost:{wood:15,steel:10},time:4,teams:1,h:.9,col:'#61584a',d:'Отряд разведчиков для экспедиций по тоннелям.'},
   coreworks:{n:'Цех энергоблоков',cat:'res',cost:{wood:40,steel:60},time:10,job:'e',jobs:5,prod:{cores:.01},h:1.1,col:'#6a5a4a',tech:'t_coreworks',d:'Инженеры собирают энергоблоки. Медленно.'},
   archer:{n:'Башня лучников',cat:'defense',cost:{wood:30,steel:5},time:3,h:1.4,max3:1,col:'#5a4a3a',d:'Урон: арбалеты и луки, радиус 4, по одной цели. Ставьте рядом с камнемётными башнями. Стоит 1 рабочего.'},
@@ -371,7 +373,6 @@ const TECH=[
   {id:'t_barracks',cat:'Жильё и медицина',n:'Бараки',rp:30,cost:{wood:20},d:'Тёплое жильё.'},
   {id:'t_house',cat:'Жильё и медицина',n:'Жилые блоки',rp:70,cost:{wood:40,steel:20},req:['t_barracks'],d:'Лучшее жильё.'},
   {id:'t_hospital',cat:'Жильё и медицина',n:'Лазарет',rp:60,cost:{wood:20,steel:15},d:'Лечит тяжелобольных.'},
-  {id:'t_pharm',cat:'Жильё и медицина',n:'Аптека',rp:70,cost:{steel:20},req:['t_hospital'],d:'Производство лекарств.'},
   {id:'t_research',cat:'Разведка и наука',n:'Чертёжные столы',rp:40,cost:{wood:25},d:'Исследования +25%.'},
   {id:'t_draisine',cat:'Разведка и наука',n:'Мотодрезины',rp:50,cost:{steel:20},d:'Отряды быстрее в 1,6 раза.'},
   {id:'t_teams',cat:'Разведка и наука',n:'Второй отряд',rp:60,cost:{wood:20,steel:10},d:'+1 отряд на каждое депо.'},
@@ -519,6 +520,8 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Пост сбора','Gathering post'],['Рабочие сами разбирают все завалы в радиусе (как радиус огня печи). До 20 человек.','Workers clear every debris pile within the radius (same as the stove’s heat radius). Up to 20 people.'],
+['Сбор:','Gathering:'],['завал(ов) в радиусе ·','pile(s) in range ·'],['чел.','ppl'],
 ['Нормы выработки','Output quotas'],['Все производства +10%. Недовольство понемногу растёт каждый день.','All production +10%. Discontent creeps up every day.'],
 ['Стандартизация','Standardisation'],['Типовые чертежи: постройка зданий на 15% дешевле.','Standard blueprints: buildings cost 15% less.'],
 ['Сбор металлолома','Scrap drive'],['Каждое утро общий сбор приносит 6 металла. Людям не нравится.','Every morning a common drive brings 6 metal. People dislike it.'],
@@ -575,7 +578,7 @@ const EN=[
 ['конденсатор(а).','more condenser(s).'],['в час','per hour'],['огонь погас','fire is out'],['Хватит на','Lasts'],['ч. Добыча','h. Mined'],['/день при расходе','/day vs use'],
 ['Поставьте людей на угольные завалы или постройте забой.','Put people on coal piles or build a coal mine.'],['Разожгите огонь, иначе люди замёрзнут.','Light the fire or people will freeze.'],
 ['под крышей','under a roof'],['Без крыши','Homeless:'],['чел. Нужно ещё ≈','people. Build ≈'],['палаток (по 10 мест).','more tents (10 places each).'],['Свободных мест:','Free places:'],
-['Здоровье','Health'],['больных ·','sick ·'],[', тяжёлых',', critical'],['(нужны медикаменты или лазарет)','(need medicine or an infirmary)'],['Тяжёлых','Critical:'],
+['Здоровье','Health'],['больных ·','sick ·'],[', тяжёлых',', critical'],['(нужны койки медпункта или лазарет)','(need first-aid beds or an infirmary)'],['Тяжёлых','Critical:'],
 ['Люди','People'],[': рабочих',': workers'],[', инженеров',', engineers'],[', детей',', children'],['Без дела: рабочих','Idle: workers'],
 ['Здесь инженеры придумывают новое. Мастерские дают очки науки: сейчас','Engineers invent new things here. Workshops produce research points: now'],
 ['в день (','per day ('],['мастерских с инженерами).','workshops with engineers).'],['Постройте мастерскую (вкладка «Наука») и поставьте туда инженеров.','Build a workshop (Science tab) and assign engineers.'],
@@ -635,7 +638,7 @@ const EN=[
 ['Игра не найдена или нет доступа','Game not found or no access'],['Кооператив работает только на странице claude.ai','Co-op works only on the claude.ai page'],['Кооператив недоступен: нужен вход в claude.ai и доступ к странице','Co-op unavailable: sign in to claude.ai and get access to the page'],
 ['Не удалось создать:','Could not create:'],['ошибка','error'],['Решение отправится хосту.','The decision will be sent to the host.'],['Браузер не разрешил полноэкранный режим','The browser refused fullscreen'],
 // ресурсы
-['Уголь','Coal'],['Дерево','Wood'],['Металл','Steel'],['Сырая еда','Raw food'],['Пайки','Rations'],['Вода','Water'],['Медикаменты','Medicine'],['Энергоблоки','Power cores'],
+['Уголь','Coal'],['Дерево','Wood'],['Металл','Steel'],['Сырая еда','Raw food'],['Пайки','Rations'],['Вода','Water'],['Медикаменты','Medicine'],['Больные (тяжёлые:','Sick (critical:'],['тяж.','crit.'],['Лечит больных и тяжёлых. Медики работают круглосуточно.','Treats the sick and critical. Medics work around the clock.'],['Склад пайков и инструментов почти цел.','The ration and tool store is almost intact.'],['Энергоблоки','Power cores'],
 ['уголь','coal'],['дерево','wood'],['металл','steel'],['сырая еда','raw food'],['пайки','rations'],['вода','water'],['медикаменты','medicine'],['энергоблоки','power cores'],
 // сложность
 ['Лёгкий','Easy'],['Мягкий холод, щедрые запасы. Для первой партии.','Mild cold, generous supplies. For your first game.'],['Нормальный','Normal'],['Как задумано. Каждое решение чего-то стоит.','As intended. Every decision costs something.'],
@@ -706,7 +709,7 @@ const EN=[
 // события
 ['Последняя станция','Last Station'],['Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.','For three weeks a nuclear winter has gripped the surface. The city is dead, the radio silent.'],
 ['На «Театральной» собрались','Gathered at Teatralnaya:'],['человек. У вас костёр посреди платформы, немного запасов и тоннели во все стороны.','people. You have a bonfire in the middle of the platform, some supplies and tunnels in every direction.'],
-['Цель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.','There is one goal — survive. Keep people warm, fed, watered and treated. Send scouts along the lines — there is coal, steel, medicine and survivors out there. The forecast is grim: real cold comes by the end of the month.'],
+['Цель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, еда и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.','There is one goal — survive. Keep people warm, fed, watered and treated. Send scouts along the lines — there is coal, steel, food and survivors out there. The forecast is grim: real cold comes by the end of the month.'],
 ['Начать','Begin'],['Ночь в палатках','A night in the tents'],['Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к огню теплее.','People complain: in the tents at the platform edge their hands freeze at night. It is warmer near the fire.'],
 ['Стройте жильё в кольце тепла и исследуйте бараки.','Build housing inside the heat ring and research barracks.'],['Понятно','Understood'],['Дети без дела','Idle children'],
 ['Двадцать детей сидят у огня. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.','Twenty children sit by the fire. Some suggest putting them to light work, others want a shelter for them.'],
@@ -746,14 +749,14 @@ const EN=[
 ['Под тремя вокзалами — сотни людей. Кто-то согласен идти с вами.','Hundreds of people under the three railway stations. Some agree to come with you.'],['Свинарник и грибные плантации ушедшей общины.','A pigsty and mushroom beds of a departed community.'],
 ['Ящики семян и лампы досветки из оранжерей.','Crates of seeds and grow lamps from the greenhouses.'],['Лаборатория агроакадемии: споры, субстрат, записи опытов.','The agricultural academy lab: spores, substrate, experiment notes.'],
 ['Хранители архива пускают к книгам. Инженеры возвращаются с чертежами.','The Archive Keepers let you to the books. Engineers return with blueprints.'],['За гермодверью — служебный ход вниз. Схема на стене: «Д-6».','Behind a blast door is a service passage down. A diagram on the wall: "D-6".'],
-['Бункер гражданской обороны. Склад медикаментов почти цел.','A civil defence bunker. The medicine store is almost intact.'],['Цех завода: среди хлама — целый энергоблок.','A factory hall: amid the junk, an intact power core.'],
+['Бункер гражданской обороны. Склад пайков и инструментов почти цел.','A civil defence bunker. The ration and tool store is almost intact.'],['Цех завода: среди хлама — целый энергоблок.','A factory hall: amid the junk, an intact power core.'],
 ['Депо Сокольники. Две рабочие мотодрезины и запчасти.','Sokolniki depot. Two working motor draisines and spare parts.'],['Факультетская аптека и лаборатории.','A faculty pharmacy and labs.'],['Глубокая тёплая станция. Люди устали ждать помощи.','A deep, warm station. People are tired of waiting for help.'],
 ['Рынок Кольцевого товарищества. Здесь можно меняться.','The Ring Fellowship market. You can trade here.'],['Перевалочный пост Кольцевого товарищества.','A Ring Fellowship transit post.'],['Склады Кольцевого товарищества. Торгуют охотно.','Ring Fellowship warehouses. They trade willingly.'],
 ['Красная коммуна делится зерном, если вы поддержите их порядок.','The Red Commune shares grain if you support their order.'],['Оружейный склад. Металла много, патронов нет.','An armoury. Lots of steel, no ammunition.'],
-['Резервный склад правительства. Консервы, лекарства, энергоблоки.','A government reserve store. Canned food, medicine, power cores.'],['Архив и узел связи. Инженеры уносят схемы.','An archive and comms node. Engineers carry off schematics.'],
+['Резервный склад правительства. Консервы, металл, энергоблоки.','A government reserve store. Canned food, metal, power cores.'],['Архив и узел связи. Инженеры уносят схемы.','An archive and comms node. Engineers carry off schematics.'],
 ['Подземный город на десятки тысяч мест. Пусто. Запасы — нет.','An underground city for tens of thousands. Empty. The supplies are not.'],['Ход к аэродрому. Наверху — лёд и тишина. Отсюда видно небо.','A passage to the airfield. Up top: ice and silence. You can see the sky from here.'],
 ['Брошенный угольный склад у ремонтного тупика.','An abandoned coal store by a repair siding.'],['Штабеля шпал и ящиков.','Stacks of sleepers and crates.'],['Ржавые вагоны и рельсы.','Rusty carriages and rails.'],['Консервы и мешки с сухим пайком.','Canned food and sacks of dry rations.'],
-['Резервуары технической воды.','Service water tanks.'],['Медпункт станции. Аптечки на месте.','The station first-aid room. The kits are still there.'],['В подсобке — целый энергоблок.','An intact power core in the back room.'],
+['Резервуары технической воды.','Service water tanks.'],['Медпункт станции: консервы из запасов и инструменты.','The station first-aid room: canned stores and tools.'],['В подсобке — целый энергоблок.','An intact power core in the back room.'],
 ['Обжитая и брошенная станция. Есть чем поживиться.','A lived-in, abandoned station. Plenty to scavenge.'],['Грибные фермы теперь дают больше (как исследование «Субстрат»).','Mushroom farms now yield more (like the "Substrate" research).'],
 ['Отряды двигаются быстрее.','Teams move faster.'],['Пока отряд на станции, можно обменять груз (карта → станция).','While a team is at the station, you can trade cargo (map → station).'],['В вестибюле живут люди. Они видели ваш свет.','People live in the vestibule. They saw your light.'],
 ['Перегон затоплен по пояс. Вода ледяная.','The tunnel is flooded waist-deep. The water is icy.'],['Счётчик трещит: радиоактивная пыль из вентшахты.','The counter is clicking: radioactive dust from a vent shaft.'],['Свод тоннеля просел, крепь трещит.','The tunnel roof has sagged, the supports are cracking.'],
@@ -797,7 +800,7 @@ const SPECIAL={
   'Тимирязевская':{t:'seeds',txt:'Лаборатория агроакадемии: споры, субстрат, записи опытов.'},
   'Библиотека им. Ленина':{t:'archive',txt:'Хранители архива пускают к книгам. Инженеры возвращаются с чертежами.'},
   'Боровицкая':{t:'metro2',txt:'За гермодверью — служебный ход вниз. Схема на стене: «Д-6».'},
-  'Таганская':{t:'bunker',txt:'Бункер гражданской обороны. Склад медикаментов почти цел.'},
+  'Таганская':{t:'bunker',txt:'Бункер гражданской обороны. Склад пайков и инструментов почти цел.'},
   'Электрозаводская':{t:'cores',txt:'Цех завода: среди хлама — целый энергоблок.'},
   'Сокольники':{t:'draisine',txt:'Депо Сокольники. Две рабочие мотодрезины и запчасти.'},
   'Университет':{t:'meds',txt:'Факультетская аптека и лаборатории.',amt:[25,40]},
@@ -807,7 +810,7 @@ const SPECIAL={
   'Павелецкая':{t:'trade',txt:'Склады Кольцевого товарищества. Торгуют охотно.'},
   'Красносельская':{t:'commune',txt:'Красная коммуна делится зерном, если вы поддержите их порядок.'},
   'Партизанская':{t:'steel',txt:'Оружейный склад. Металла много, патронов нет.',amt:[120,180]},
-  'Объект «Кремль»':{t:'vault',txt:'Резервный склад правительства. Консервы, лекарства, энергоблоки.'},
+  'Объект «Кремль»':{t:'vault',txt:'Резервный склад правительства. Консервы, металл, энергоблоки.'},
   'Бункер Генштаба':{t:'archive',txt:'Архив и узел связи. Инженеры уносят схемы.'},
   'Объект «Раменки»':{t:'vault',txt:'Подземный город на десятки тысяч мест. Пусто. Запасы — нет.'},
   'Объект «Внуково»':{t:'end',txt:'Ход к аэродрому. Наверху — лёд и тишина. Отсюда видно небо.'},
@@ -1039,6 +1042,9 @@ function hourTick(s){
       t.pile.amt-=g;s.res[t.pile.r]+=g;
       if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}
     }
+    if(wh)for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);if(wf<=0)continue;
+      const P=gatherPiles(s,b);if(!P.length)continue;const each=wf*(has(s,'t_gather')?1.25:1)/P.length;
+      for(const t of P){const g=Math.min(t.pile.amt,each);t.pile.amt-=g;s.res[t.pile.r]+=g;if(t.pile.amt<=.01){toast(s,`Завал разобран: ${RES[t.pile.r].n}`,'');t.pile=null;}}}
     if(s.research){const T=TECHBY[s.research];if(s.rp>=T.rp){s.tech.push(T.id);toast(s,`Исследовано: ${T.n}`,'good');log(s,`Исследовано: ${T.n}.`,'good');s.research=null;s.rp=0;}}
   }
   // еда, вода
@@ -1113,7 +1119,7 @@ function morning(s){
     let n=s.crit[t];
     for(let i=0;i<n;i++){
       if(hbeds>0){hbeds--;if(rnd()<(has(s,'t_antibio')?.65:.5)){s.crit[t]--;s.ill[t]++;}else if(rnd()<.04){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;}}
-      else if(beds>0&&s.res.meds>=1){beds--;s.res.meds--;if(rnd()<.75){s.crit[t]--;s.ill[t]++;}}
+      else if(beds>0){beds--;if(rnd()<.6){s.crit[t]--;s.ill[t]++;}}
       else if(rnd()<.3*(has(s,'t_prosth')?.5:1)*(has(s,'cap_harsh')?1.5:1)){s.crit[t]--;s.pop[t]--;s.today.deaths++;s.deaths++;s.hope-=1.5;}
     }
   }
@@ -1128,8 +1134,8 @@ function morning(s){
   }
   rebalance(s);
   // аванпосты
-  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:2,mixed:15}[o.t]||10)*(has(s,'t_logistics')?1.5:1);
-    if(o.t==='mixed'){s.res.coal+=g;s.res.wood+=g;}else s.res[o.t]+=g;}
+  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:25,mixed:15}[o.t]||10)*(has(s,'t_logistics')?1.5:1);
+    if(o.t==='mixed'){s.res.coal+=g;s.res.wood+=g;}else s.res[o.t==='meds'?'raw':o.t]+=g;}
   if(s.gen.broken){s.gen.broken=Math.max(0,s.gen.broken-24);}
 }
 function newDay(s){
@@ -1252,7 +1258,7 @@ function checkPromise(s){
 }
 
 const EV={
-  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас костёр посреди платформы, немного запасов и тоннели во все стороны.\n\nЦель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, лекарства и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
+  intro:{t:'Последняя станция',x:s=>`Наверху третью неделю стоит ядерная зима. Город мёртв, связь молчит.\n\nНа «Театральной» собрались ${popTotal(s)} человек. У вас костёр посреди платформы, немного запасов и тоннели во все стороны.\n\nЦель одна — выжить. Держите людей в тепле, кормите, поите и лечите. Отправляйте разведчиков по веткам — там уголь, металл, еда и выжившие. Прогноз плохой: к концу месяца придёт настоящий холод.`,c:[{t:'Начать',f:()=>{}}]},
   cold_tents:{t:'Ночь в палатках',x:()=>'Люди жалуются: в палатках у края платформы ночью стынут руки. Ближе к огню теплее.\n\nСтройте жильё в кольце тепла и исследуйте бараки.',c:[{t:'Понятно',f:()=>{}}]},
   children:{t:'Дети без дела',x:()=>'Двадцать детей сидят у огня. Кто-то предлагает поставить их на лёгкую работу, кто-то — устроить для них приют.',c:[
     {t:'Подписать «Детский труд»',h:'Больше рук, но людям это не нравится',ok:s=>canSign(s,'child_labor'),f:s=>signLaw(s,'child_labor',true)},
@@ -1381,13 +1387,13 @@ function explore(s,tm,id){
     case 'steel':loot.steel=amt(30,60);if(c.amt)loot.steel=amt(c.amt[0],c.amt[1]);txt=c.txt||'Ржавые вагоны и рельсы.';break;
     case 'raw':loot.raw=c.amt?amt(c.amt[0],c.amt[1]):amt(40,80);txt=c.txt||'Консервы и мешки с сухим пайком.';break;
     case 'water':loot.water=amt(60,120);txt='Резервуары технической воды.';break;
-    case 'meds':loot.meds=c.amt?amt(c.amt[0],c.amt[1]):amt(6,14);txt=c.txt||'Медпункт станции. Аптечки на месте.';break;
+    case 'meds':loot.raw=c.amt?amt(c.amt[0]*3,c.amt[1]*3):amt(30,60);loot.steel=amt(10,20);txt=c.txt||'Медпункт станции: консервы из запасов и инструменты.';break;
     case 'cores':loot.cores=1;loot.steel=amt(15,30);txt=c.txt||'В подсобке — целый энергоблок.';break;
     case 'mixed':loot.coal=amt(20,40);loot.wood=amt(20,40);loot.raw=amt(10,30);txt='Обжитая и брошенная станция. Есть чем поживиться.';break;
     case 'seeds':s.flags.seeds=1;loot.raw=amt(20,40);txt=c.txt+'\n\nГрибные фермы теперь дают больше (как исследование «Субстрат»).';if(!s.tech.includes('t_farm2'))s.tech.push('t_farm2');break;
-    case 'bunker':loot.meds=amt(20,30);loot.raw=amt(40,60);txt=c.txt;break;
+    case 'bunker':loot.steel=amt(20,30);loot.raw=amt(60,90);txt=c.txt;break;
     case 'draisine':txt=c.txt+'\n\nОтряды двигаются быстрее.';if(!s.tech.includes('t_draisine'))s.tech.push('t_draisine');loot.steel=amt(20,30);break;
-    case 'vault':loot.raw=amt(150,220);loot.meds=amt(20,35);loot.cores=1;txt=c.txt;break;
+    case 'vault':loot.raw=amt(180,260);loot.steel=amt(20,35);loot.cores=1;txt=c.txt;break;
     case 'trade':txt=c.txt+'\n\nПока отряд на станции, можно обменять груз (карта → станция).';break;
     case 'survivors':{const n=c.people?ri(c.people[0],c.people[1]):ri(4,12);s.queue.push({id:'st_survivors',p:{txt:(c.txt||'В вестибюле живут люди. Они видели ваш свет.')+`\n\nИх ${n}.`,n,at:id,team:tm.id}});return;}
     case 'danger':{
@@ -1413,15 +1419,15 @@ function scoutIncident(s,tm,id){
   const far=distFromHub(id)>420,r=rnd();
   if(far&&rnd()<.12){const n=ri(1,3);s.robots=(s.robots||0)+n;s.queue.push({id:'st_loot',p:{txt:`${id}\n\nВ депо — законсервированные ремонтные роботы. Отряд запустил ${n}. Они работают как рабочие, круглосуточно, без еды, воды и тепла.`}});log(s,`Найдены роботы: ${n}.`,'good');return;}
   if(r<.30){const n=ri(1,2);const k=sicken(s,n);if(k){toast(s,`${id}: в перегоне ранены ${k} разведчика`,'bad');log(s,`Разведка — ${id}: ранены ${k}.`,'bad');}return;}
-  if(r<.45){const k=pick(['coal','wood','steel','raw','meds']),n=k==='meds'?ri(3,8):ri(25,60);tm.cargo[k]=(tm.cargo[k]||0)+n;toast(s,`${id}: тайник — ${RES[k].n.toLowerCase()} +${n}`,'good');return;}
+  if(r<.45){const k=pick(['coal','wood','steel','raw']),n=ri(25,60);tm.cargo[k]=(tm.cargo[k]||0)+n;toast(s,`${id}: тайник — ${RES[k].n.toLowerCase()} +${n}`,'good');return;}
   if(r<.57){const n=ri(3,7);s.waveBonus=(s.waveBonus||0)+n;toast(s,`${id}: отряд нашумел — следующая волна больше на ${n}`,'bad');log(s,`Шум в тоннелях: +${n} мутантов к следующей волне.`,'bad');return;}
   if(r<.63){const T=TECH.filter(t=>!has(s,t.id)&&(!t.req||t.req.every(q=>has(s,q)))&&s.research!==t.id);if(T.length){const t=pick(T);s.tech.push(t.id);s.queue.push({id:'st_loot',p:{txt:`${id}\n\nВ кабинете начальника станции — чертежи и записи. Технология получена без исследования: «${t.n}».`}});log(s,`Найдена технология: ${t.n}.`,'good');}return;}
   if(r<.66){s.lawCd=0;s.queue.push({id:'st_loot',p:{txt:`${id}\n\nНа стене — устав погибшей общины. Люди готовы принять новый закон прямо сейчас: ожидание между законами сброшено.`}});return;}
 }
 function sendGroup(s,at,n,sick){const p=findPath(s,at,HUB);if(!p){addPeople(s,n,sick);return;}s.groups.push({n,sick,path:p,prog:0});}
 const TRADE=[
-  {give:'coal',gn:40,get:'meds',n:5},{give:'wood',gn:40,get:'steel',n:20},{give:'steel',gn:20,get:'raw',n:50},
-  {give:'raw',gn:40,get:'coal',n:50},{give:'water',gn:50,get:'meds',n:4},{give:'meds',gn:5,get:'cores',n:1},
+  {give:'coal',gn:40,get:'raw',n:40},{give:'wood',gn:40,get:'steel',n:20},{give:'steel',gn:20,get:'raw',n:50},
+  {give:'raw',gn:40,get:'coal',n:50},{give:'water',gn:50,get:'raw',n:30},{give:'steel',gn:40,get:'cores',n:1},
 ];
 
 /* ---------------------------- ДЕЙСТВИЯ (все изменения состояния) ---------------------------- */
@@ -1733,6 +1739,12 @@ function init3D(){
   R3.ground.receiveShadow=true;sc.add(R3.ground);
   // генератор
   R3.gen=makeGenerator();sc.add(R3.gen);
+  {// склад у печи: уголь, брёвна, металл, ящики с едой — растут с запасом
+    const st=new T.Group();sc.add(st);R3.stock={};const at=(a,r)=>[Math.cos(a)*r,Math.sin(a)*r];
+    {const g=new T.Group();const m=new T.Mesh(new T.ConeGeometry(.32,.3,9),kmat('x',{color:0x141416,roughness:.75}));m.position.y=.15;m.castShadow=true;g.add(m);const [x,z]=at(2.4,1.05);g.position.set(x,0,z);st.add(g);R3.stock.coal=g;}
+    {const g=new T.Group();for(let k=0;k<6;k++){const l=new T.Mesh(new T.CylinderGeometry(.045,.045,.5,7),kmat('x',{color:k%2?0x6a4628:0x7a5232,roughness:.9}));l.rotation.z=Math.PI/2;l.position.set(0,.045+Math.floor(k/3)*.08,(k%3-1)*.095+(k>2?.045:0));l.castShadow=true;g.add(l);}const [x,z]=at(3.3,1.05);g.position.set(x,0,z);g.rotation.y=-3.3;st.add(g);R3.stock.wood=g;}
+    {const g=new T.Group();for(let k=0;k<4;k++){const p=new T.Mesh(new T.BoxGeometry(.34,.035,.2),kmat('x',{color:0x5e6870,roughness:.5,metalness:.6}));p.position.y=.02+k*.04;p.rotation.y=k*.15;p.castShadow=true;g.add(p);}const [x,z]=at(4.0,1.05);g.position.set(x,0,z);st.add(g);R3.stock.steel=g;}
+    {const g=new T.Group();for(let k=0;k<4;k++){const c=new T.Mesh(new T.BoxGeometry(.16,.13,.16),R3.mat.crate);c.position.set((k%2)*.17-.08,.065+Math.floor(k/2)*.13,0);c.castShadow=true;g.add(c);}const [x,z]=at(4.8,1.05);g.position.set(x,0,z);st.add(g);R3.stock.food=g;}}
   // кольцо тепла и подсветка пола
   R3.ring=new T.Mesh(new T.RingGeometry(.985,1,128),new T.MeshBasicMaterial({color:0xd8822e,transparent:true,opacity:.4,depthWrite:false}));
   R3.ring.rotation.x=-Math.PI/2;R3.ring.position.y=.085;sc.add(R3.ring);
@@ -2126,7 +2138,7 @@ function makeGenerator(){
   return root;
 }
 // ---------- здания ----------
-const BSTYLE={archer:'watchtower',catapult:'catapult',steamgun:'steamgun',raidhut:'raidhut',lab:'workshop',drafting:'hall',
+const BSTYLE={gather:'depot',archer:'watchtower',catapult:'catapult',steamgun:'steamgun',raidhut:'raidhut',lab:'workshop',drafting:'hall',
   tent:'tent',barracks:'barracks',house:'house',farm:'farm',hydro:'hydro',kitchen:'kitchen',condenser:'condenser',well:'well',
   sawmill:'sawmill',scrapyard:'scrapyard',coalmine:'coalmine',workshop:'workshop',medpost:'medpost',hospital:'hospital',pharmacy:'pharmacy',
   depot:'depot',heater:'heater',coreworks:'workshop',cemetery:'cemetery',arena:'arena',still:'still',nursery:'nursery',patrol:'patrol',radio:'radio',guardhouse:'guardhouse',hall:'hall',shrine:'shrine'
@@ -2366,15 +2378,25 @@ function makeRubble(r,frac){
   return g;
 }
 function makePile(r,amt,rich){
-  const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(1,Math.min(rich?9:6,Math.ceil(amt/(rich?70:35))));
+  const T=THREE,g=new T.Group(),M=R3.mat;const n=Math.max(3,Math.min(rich?16:11,Math.ceil(amt/(rich?35:18))));
   const rr=seeded(hash(r+amt));
-  for(let i=0;i<n;i++){const x=(rr()-.5)*.6,z=(rr()-.5)*.6;let m;
-    if(r==='coal'){m=new T.Mesh(new T.ConeGeometry(.16+rr()*.1,.16+rr()*.12,7),M.coal);m.position.set(x,.1,z);}
-    else if(r==='wood'){m=box(.24,.16,.18,M.crate);m.position.set(x,.08+(i>3?.16:0),z);m.rotation.y=rr()*1.5;}
-    else if(r==='stone'){m=new T.Mesh(new T.DodecahedronGeometry(.1+rr()*.06,0),kmat('stone',{color:0x9a958a}));m.position.set(x,.08,z);m.rotation.set(rr()*3,rr()*3,0);}
-    else{m=box(.34,.18,.16,M.steel);m.position.set(x,.09,z);m.rotation.y=rr()*3;m.rotation.z=(rr()-.5)*.3;}
+  // протоптанный круг и следы полозьев
+  const dirt=new T.Mesh(new T.CircleGeometry(.48,18),new T.MeshStandardMaterial({color:0x7d8794,roughness:1,transparent:true,opacity:.55,depthWrite:false}));dirt.rotation.x=-Math.PI/2;dirt.position.y=.012;g.add(dirt);
+  for(let k=0;k<3;k++){const tr=new T.Mesh(new T.PlaneGeometry(.035,.5+rr()*.5),new T.MeshBasicMaterial({color:0x5a6470,transparent:true,opacity:.45,depthWrite:false}));tr.rotation.x=-Math.PI/2;tr.rotation.z=rr()*6;tr.position.set((rr()-.5)*.6,.014,(rr()-.5)*.6);g.add(tr);}
+  const darkW=kmat('x',{color:0x2a221c,roughness:.95}),darkW2=kmat('x',{color:0x3a2c20,roughness:.9}),coalM=kmat('x',{color:0x121214,roughness:.7,metalness:.1}),rust=kmat('x',{color:0x3a3634,roughness:.6,metalness:.6}),rust2=kmat('x',{color:0x4a3a30,roughness:.7,metalness:.4});
+  for(let i=0;i<n;i++){const a=rr()*6.28,d=Math.sqrt(rr())*.42,x=Math.cos(a)*d,z=Math.sin(a)*d;let m;
+    if(r==='wood'){// обломки досок и брёвен вразброс
+      m=rr()<.5?new T.Mesh(new T.BoxGeometry(.28+rr()*.18,.04,.06),rr()<.5?darkW:darkW2):new T.Mesh(new T.CylinderGeometry(.035,.04,.26+rr()*.15,6),darkW2);
+      if(m.geometry.type==='CylinderGeometry')m.rotation.z=Math.PI/2;m.position.set(x,.03+rr()*.05,z);m.rotation.y=rr()*3;m.rotation.x+=(rr()-.5)*.6;}
+    else if(r==='coal'){m=new T.Mesh(new T.DodecahedronGeometry(.045+rr()*.06,0),coalM);m.position.set(x,.04,z);m.rotation.set(rr()*3,rr()*3,0);m.scale.y=.7;}
+    else if(r==='stone'){m=new T.Mesh(new T.DodecahedronGeometry(.07+rr()*.07,0),kmat('stone',{color:0x8a867e}));m.position.set(x,.06,z);m.rotation.set(rr()*3,rr()*3,0);}
+    else{// металлолом: листы, рельсы, бочки
+      const q=rr();m=q<.45?new T.Mesh(new T.BoxGeometry(.22+rr()*.12,.015,.14+rr()*.08),rr()<.5?rust:rust2):q<.75?new T.Mesh(new T.BoxGeometry(.4,.03,.03),rust):new T.Mesh(new T.CylinderGeometry(.06,.06,.13,8),rust2);
+      m.position.set(x,.05,z);m.rotation.set((rr()-.5)*.9,rr()*3,(rr()-.5)*.9);}
     m.castShadow=true;g.add(m);}
-  if(rich)g.scale.setScalar(1.25);
+  // сугробики вокруг
+  const sm=snowMat(0xe8eef4);for(let k=0;k<3+n/4;k++){const a=rr()*6.28,sb=new T.Mesh(new T.SphereGeometry(.09+rr()*.08,8,5,0,6.29,0,1.5),sm);sb.scale.y=.45;sb.position.set(Math.cos(a)*(.25+rr()*.25),0,Math.sin(a)*(.25+rr()*.25));g.add(sb);}
+  if(rich)g.scale.setScalar(1.2);
   g.userData={amt};return g;
 }
 // ---------- постобработка: свечение (bloom), цветокоррекция холод/тепло, виньетка ----------
@@ -2466,6 +2488,7 @@ function render3D(t){
   for(const w of R3.coreParts){if(on)w.material.color.setRGB(s.gen.over?3:2.6,s.gen.over?.8:1.2,.3);else w.material.color.setHex(0x221a14);}
   {const sk=stoveLvl(s);R3.bf.visible=!sk;R3.st.forEach((g,i)=>g.visible=sk>i);
     R3.flames.forEach((f,i)=>{f.visible=on&&!sk;const k=1+.25*Math.sin(t/(70+i*23)+i*1.7)+.12*Math.sin(t/31+i);f.scale.set(1,k,1);f.rotation.y=t/400*(i%2?1:-1);});}
+  if(R3.stock)for(const k in R3.stock){const v=s.res[k]||0,sc_=v<=0?0:clamp(.35+Math.log10(1+v)/3.2,.35,1.25);R3.stock[k].visible=v>0;R3.stock[k].scale.setScalar(sc_);}
   R3.genGlow.material.opacity=on?(.45+lvl*.12)*fl:0;R3.genGlow.scale.setScalar(2.4+lvl*.5);
   const Rr=genRadius(s)+.5;R3.ring.scale.set(Rr,Rr,1);R3.ring.visible=on;R3.ring.material.opacity=.3+.1*Math.sin(t/500);
   R3.floorGlow.scale.set(Rr*2.4,Rr*2.4,1);R3.floorGlow.material.opacity=on?.07+lvl*.035:0;
@@ -2577,7 +2600,7 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
   while(walkers.length<want)walkers.push({x:GX+(Math.random()-.5)*4,y:GY+(Math.random()-.5)*4,tx:GX,ty:GY,w:0});
   walkers.length=want;
   const working=workHour(s),asleep=sleepHour(s);
-  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&workforce(t.pile.a)>0?{x:i%GW,y:Math.floor(i/GW),r:t.pile.r}:null).filter(Boolean))
+  const targets=working?s.bld.filter(b=>B[b.type].job&&workforce(b.a)>0&&!b.build).concat(s.grid.map((t,i)=>t.pile&&(workforce(t.pile.a)>0||s.bld.some(b=>b.type==='gather'&&!b.build&&workforce(b.a)>0&&Math.hypot(i%GW-b.x,Math.floor(i/GW)-b.y)<=gatherR(s)))?{x:i%GW,y:Math.floor(i/GW),r:t.pile.r}:null).filter(Boolean))
     :s.bld.filter(b=>B[b.type].house&&!b.build);
   const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
@@ -2636,6 +2659,7 @@ function overlay3D(t){
       cx.fillStyle='#ffb4a6';cx.fillText('☠ '+l1,x,y-hh+12);cx.font='11px "PT Sans", Arial, sans-serif';cx.fillStyle='#e8dcc0';cx.fillText(l2,x,y-hh+27);if(l3){cx.fillStyle='#e8c25a';cx.fillText(l3,x,y-hh+41);}
       cx.beginPath();cx.moveTo(x-6,y);cx.lineTo(x+6,y);cx.lineTo(x,y+7);cx.fillStyle=att?'rgba(110,20,14,.9)':'rgba(40,10,8,.85)';cx.fill();}}
   {const v=new THREE.Vector3(),P=(x,y,h)=>{v.set(wx(x),h,wz(y)).project(R3.cam);return{x:(v.x+1)/2*VW,y:(1-v.y)/2*VH,ok:v.z<1};};
+    for(const b of s.bld){if(b.type!=='gather'||!(ui.sel&&ui.sel.k==='b'&&ui.sel.id===b.id))continue;const R=gatherR(s),c0=P(b.x,b.y,.05),c1=P(b.x+R,b.y,.05),c2=P(b.x,b.y+R,.05);if(!c0.ok)continue;cx.strokeStyle='rgba(127,196,138,.7)';cx.lineWidth=2;cx.setLineDash([7,5]);cx.beginPath();cx.ellipse(c0.x,c0.y,Math.hypot(c1.x-c0.x,c1.y-c0.y),Math.hypot(c2.x-c0.x,c2.y-c0.y),Math.atan2(c1.y-c0.y,c1.x-c0.x),0,7);cx.stroke();cx.setLineDash([]);}
     for(const b of s.bld){if(b.type!=='catapult'||b.build)continue;const sel=ui.sel&&ui.sel.k==='b'&&ui.sel.id===b.id,act=b.tauntCd>5;if(!sel&&!act)continue;
       const c0=P(b.x,b.y,.05),c1=P(b.x+tauntR(s,b),b.y,.05),c2=P(b.x,b.y+tauntR(s,b),.05);if(!c0.ok)continue;
       const pulse=act?.5+.5*Math.sin(performance.now()/120):.35;cx.strokeStyle=`rgba(224,100,80,${pulse})`;cx.lineWidth=act?3:1.5;cx.setLineDash(act?[]:[6,5]);
@@ -2767,8 +2791,9 @@ function dayRates(s){
     if(d.prod)for(const k in d.prod){const m=d.prod[k]*wf*eff*h*bMult(s,b,k);o[k]=m;out[k]+=m;}
     if(d.kitchen){const c=7.5*wf*eff*h*(has(s,'t_cook2')?1.5:1);o.kcap=c;kcap+=c;}
     if(d.rp){const SI=sciInfo(s);const r=SI.W.includes(b)?SI.perH*H/SI.W.length:0;o.rp=r;out.rp+=r;}}
+  for(const b of s.bld){if(b.type!=='gather'||b.build||!b.on)continue;const wf=workforce(b.a)*bEff(s,b);const P=gatherPiles(s,b);if(!wf||!P.length)continue;for(const t of P)out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)/P.length);}
   for(const t of s.grid)if(t.pile&&!(t.pile.clear>0)){const wf=workforce(t.pile.a);out[t.pile.r]+=Math.min(t.pile.amt,wf*H*(has(s,'t_gather')?1.25:1)*(has(s,'t_drills')?1.25:1));}
-  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:2}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t]+=g;}
+  for(const o of s.outposts){const g=({coal:40,wood:30,steel:15,raw:25,water:30,meds:25}[o.t]||15)*(has(s,'t_logistics')?1.5:1);if(o.t==='mixed'){out.coal+=g;out.wood+=g;}else out[o.t==='meds'?'raw':o.t]+=g;}
   const cooked=Math.min(kcap,out.raw+s.res.raw);out.food+=cooked*rationMult(s);out.rawCooked=cooked;
   const n=popTotal(s);
   const fuel=s.gen.on?[0,3,5,8,12][s.gen.lvl]*(s.gen.over?1.5:1)*D_(s).cons:0;
@@ -2782,11 +2807,14 @@ function occupancy(s){
   let left=popTotal(s);const m={};for(const h of homes){const k=Math.min(left,h.cap);m[h.b.id]=k;left-=k;}return m;
 }
 // подпись над зданием: сколько даёт и на сколько людей хватает
+function gatherR(s){return genRadius(s);}
+function gatherPiles(s,b){const R=gatherR(s),out=[];for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(!t.pile||t.pile.clear>0)continue;const x=i%GW,y=Math.floor(i/GW);if(Math.hypot(x-b.x,y-b.y)<=R)out.push(t);}return out;}
 function bLabel(s,b,R,occ){
   const d=B[b.type];if(b.build)return{t:`Стройка: ${b.build} ч`,k:'mute'};
   if(b.upT>0)return{t:`${b.upK==='ins'?'Утепление':'Улучшение'}: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`,k:'mute'};
   if(d.house)return{t:`Жильцов ${occ[b.id]||0}/${capOf(s,b)}`,k:(occ[b.id]||0)>=capOf(s,b)?'ok':'mute'};
   if(d.heat)return{t:`+${Math.round(10*lvlMul(b))}° вокруг`,k:'ok'};
+  if(d.gatherR){const n=gatherPiles(s,b).length,w=workforce(b.a);return{t:w?`Сбор: ${n} завал(ов) в радиусе · ${Math.round(w)} чел.`:'Нет рабочих',k:w&&n?'ok':'bad'};}
   if(d.beds){const o=R.per[b.id];return o&&o.idle?{t:'Нет врачей',k:'bad'}:{t:`Коек ${Math.floor(d.beds*lvlMul(b)*Math.min(1,workforce(b.a)/d.jobs))}`,k:'ok'};}
   if(d.teams)return{t:`Отрядов ${teamSlots(s)}`,k:'ok'};
   if(TOWER[b.type]){const st=towerStats(s,b);return st.dps>0?{t:`${Math.round(st.dps)} урона/ч · радиус ${st.range.toFixed(1)} · прочность ${Math.round(b.hp??st.hpMax)}/${st.hpMax}`,k:b.hp!=null&&b.hp<st.hpMax*.4?'bad':'ok'}:{t:'Нет стрелков',k:'bad'};}
@@ -2825,7 +2853,7 @@ function needsHTML(s){
   // здоровье
   const ill=s.ill.w+s.ill.e+s.ill.c,crit=s.crit.w+s.crit.e+s.crit.c,bc=bedCount(s),beds=bc.beds+bc.hbeds;
   out.push(row(ico('meds'),'Здоровье',ill+crit>beds?'bad':ill+crit?'warn':'ok',`${ill+crit} больных · ${beds} коек`,
-    ill+crit>beds?`Не хватает ${ill+crit-beds} коек${crit?`, тяжёлых ${crit} (нужны медикаменты или лазарет)`:''}.`:crit?`Тяжёлых ${crit}.`:''));
+    ill+crit>beds?`Не хватает ${ill+crit-beds} коек${crit?`, тяжёлых ${crit} (нужны койки медпункта или лазарет)`:''}.`:crit?`Тяжёлых ${crit}.`:''));
   // работники
   out.push(row(ico('steel','#cfe3f2'),'Люди',free(s,'w')+free(s,'e')>0?'warn':'ok',`${n}: рабочих ${s.pop.w}, инженеров ${s.pop.e}, детей ${s.pop.c}`,
     `Без дела: рабочих ${free(s,'w')}, инженеров ${free(s,'e')}.`));
@@ -2922,7 +2950,7 @@ function waveTarget(s,z){
   const gd=Math.hypot(GX-z.x,GY-z.y);if(!best||gd<bd)return{x:GX,y:GY};return best;
 }
 function zLoot(s,w){
-  const r=rnd(),k=r<.3?'steel':r<.5?'coal':r<.7?'stone':r<.88?'raw':r<.98?'wood':'meds';const n=k==='meds'?1:ri(1,3);
+  const r=rnd(),k=r<.3?'steel':r<.5?'coal':r<.7?'stone':r<.88?'raw':'wood';const n=ri(1,3);
   s.res[k]+=n;w.loot[k]=(w.loot[k]||0)+n;
 }
 function combatStep(s,dt){
@@ -3122,8 +3150,9 @@ function renderTop(){
   document.body.classList.toggle('noneeds',!!ui.needsHidden);
   setHTML($('warn'),warnings(s).map(([k,i,t])=>`<div class="wchip ${k}"><span class="wi">${i}</span><span>${t}</span></div>`).join(''));
   const nd=$('needs');nd.hidden=!!ui.needsHidden;
+  {const rb=$('resbox');if(rb&&innerWidth>640){const y=rb.getBoundingClientRect().bottom+8;nd.style.top=y+'px';}else nd.style.top='';}
   setHTML(nd,`<div class="needhead"><span class="title" style="font-size:13px;color:var(--amber)">Нужды станции</span><button class="btn" data-act="needs" style="padding:2px 8px">Скрыть</button></div>`+needsHTML(s));
-  setHTML($('res'),RES_ORDER.map(k=>{const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
+  setHTML($('res'),RES_ORDER.map(k=>{if(k==='sick'){const il=s.ill.w+s.ill.e+s.ill.c,cr=s.crit.w+s.crit.e+s.crit.c;return`<div class="res" title="Больные (тяжёлые: ${cr})">${ico('meds')}<span class="v" style="${il+cr?'color:#ff9a8a':''}">${il+cr}</span>${cr?`<span class="d neg">${cr} тяж.</span>`:''}</div>`;}const r=resRate[k]||0;return`<div class="res" title="${RES[k].n}">${ico(k)}<span class="v">${fmt(s.res[k])}</span>${Math.abs(r)>=1?`<span class="d ${r<0?'neg':'pos'}">${r>0?'+':''}${Math.round(r)}</span>`:''}</div>`;}).join(''));
   const a=ambient(s);const fc=[1,2,3].map(i=>{const d=s.day+i;if(d>LAST_DAY&&!s.endless)return'';return`<span>д${d}: ${WEATHER[Math.min(d,LAST_DAY)-1]+D_(s).temp}°</span>`;}).join('');
   setHTML($('temp'),`${gaugeSVG(a)}<span class="deg">${a}°</span><div><div class="title" style="font-size:11px;color:var(--frost-dim)">на станции</div></div>`);
   const hh=String(s.hour).padStart(2,'0');
@@ -3542,7 +3571,7 @@ function boot(data){
   document.documentElement.lang=LANG;
   try{init3D();}catch(e){R3.ok=false;}
   resize();
-  const bottom=$('bottom');const pl=document.createElement('div');pl.id='popline';bottom.insertBefore(pl,$('bar'));
+  const pl=document.createElement('div');pl.id='popline';{const box=document.createElement('div');box.id='resbox';box.className='panel';const rs=$('res');rs.parentNode.insertBefore(box,rs);rs.classList.remove('panel');box.append(rs,pl);}
   if(data&&data.s){try{S=JSON.parse(data.s);startGame();}catch(e){S=null;}}
   if(!S){S=null;ui.mode='menu';renderMenu();}
   requestAnimationFrame(loop);
