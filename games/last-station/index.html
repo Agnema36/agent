@@ -552,6 +552,7 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Графика','Graphics'],['Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели','Painted figures for people and mutants (2D art); turn off for 3D models'],
 ['Звук','Sound'],['Музыка','Music'],['Звуки','Effects'],
 ['Москва после ядерной зимы. Продержитесь как можно дольше.','Moscow after the nuclear winter. Hold out as long as you can.'],['Вернуться в игру','Resume'],['Сохранить','Save'],['Продолжить','Continue'],['Новая игра','New game'],['Загрузить','Load'],['Настройки','Settings'],['← Назад','← Back'],
 ['Старт: уголь','Start: coal'],['дерево','wood'],['еда','food'],['Теплее на','Warmer by'],['Мороз на','Frost'],['сильнее','harsher'],['Температура по плану','Temperature as planned'],['затишье','calm'],['мороз','frost'],
@@ -1932,6 +1933,16 @@ function init3D(){
     // тёмные пятна на месте гибели
     R3.stains=new T.InstancedMesh(new T.CircleGeometry(.28,14).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0x0c0806,transparent:true,opacity:.6,depthWrite:false}),80);R3.stains.count=0;R3.stains.renderOrder=1;sc.add(R3.stains);
     R3.corpses=[];R3.stainList=[];}
+  {// 2D-арт: плоские фигуры из загруженных листов (повёрнуты к камере, с тенью)
+    const L=new T.TextureLoader();R3.spr={};
+    const mk=(name,h,count)=>{const tex=L.load('sprites/'+name+'.png',t=>{const a=t.image.width/t.image.height;o.aspect=a;o.ready=true;});tex.encoding=T.sRGBEncoding;tex.anisotropy=4;
+      const geo=new T.PlaneGeometry(1,1);geo.translate(0,.5,0);
+      const mat=new T.MeshStandardMaterial({map:tex,alphaTest:.45,side:T.DoubleSide,roughness:.95,metalness:0,emissive:0x1a1c20});
+      const im=new T.InstancedMesh(geo,mat,count);im.castShadow=true;im.customDepthMaterial=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking,map:tex,alphaTest:.45});
+      im.instanceColor=new T.InstancedBufferAttribute(new Float32Array(count*3).fill(1),3);im.count=0;im.frustumCulled=false;sc.add(im);
+      const o={im,h,aspect:.6,ready:false,n:0};return o;};
+    for(const [k,h] of [['ghoul',.5],['shambler',.48],['dog',.32],['brute',.74],['boar',.5],['bloat',.36]])R3.spr[k]=mk(k,h,160);
+    for(const [k,h] of [['p_scout',.37],['p_engineer',.36],['p_worker',.37],['p_child',.26]])R3.spr[k]=mk(k,h,60);}
   R3.ppl=parts.map(([n,geo,mat])=>{const m=new T.InstancedMesh(geo,mat,60);m.castShadow=n==='torso'||n==='skirt';m.userData.part=n;sc.add(m);return m;});
   {// шинели разных оттенков: бурые, хаки, серые, светлые
     const pal=[0x8a6e56,0x76704f,0x7a7672,0x9c9282,0x66563f,0x84745c].map(c=>new T.Color(c)),hp=[0x4a4a48,0x5a4c3c,0x3e4044].map(c=>new T.Color(c));
@@ -2496,7 +2507,8 @@ function initPost(){
       const rt=new T.WebGLRenderTarget(4,4,{minFilter:T.LinearFilter,magFilter:T.LinearFilter,format:T.RGBAFormat,type});
       const comp=new T.EffectComposer(rd,rt);
       let base;
-      if(innerWidth>760&&T.SSAOPass&&T.SSAOShader&&T.SimplexNoise){base=new T.SSAOPass(R3.sc,R3.cam,4,4);base.kernelRadius=.32;base.minDistance=.0004;base.maxDistance=.02;base.beautyRenderTarget.texture.type=type;POST.ssao=base;}
+      if(innerWidth>760&&T.SSAOPass&&T.SSAOShader&&T.SimplexNoise){base=new T.SSAOPass(R3.sc,R3.cam,4,4);base.kernelRadius=.32;base.minDistance=.0004;base.maxDistance=.02;base.beautyRenderTarget.texture.type=type;POST.ssao=base;
+        {const orig=base.renderOverride.bind(base);base.renderOverride=function(...args){const hid=[];if(R3.spr)for(const k in R3.spr){const im=R3.spr[k].im;if(im.visible){im.visible=false;hid.push(im);}}orig(...args);for(const im of hid)im.visible=true;};}}
       else base=new T.RenderPass(R3.sc,R3.cam);
       comp.addPass(base);
       const bloom=new T.UnrealBloomPass(new T.Vector2(256,256),1.15,.55,.92);comp.addPass(bloom);POST.bloom=bloom;
@@ -2662,7 +2674,13 @@ function render3D(t){
     for(const k in R3.zparts)cnt[k]=0;
     // новые погибшие → распад и пятно
     while(DFX.length){const d=DFX.shift();R3.corpses.push({...d,t0:now});}
-    const draw=(t,z,x,y,ang,k,ph,fl,dark,sink,fall)=>{const P=R3.zparts[t]||R3.zparts.ghoul,n=cnt[t];if(n>=160)return;cnt[t]++;
+    if(R3.spr)sprBegin(ZKEYS);const camYaw2=Math.atan2(R3.cam.position.x,R3.cam.position.z);
+    const draw=(t,z,x,y,ang,k,ph,fl,dark,sink,fall)=>{
+      if(ART2D&&R3.spr){const o=R3.spr[t]||R3.spr.ghoul,jerk=t==='ghoul'?Math.sin(now/60+x)*.05:0;const flip=Math.sin(ang-camYaw2)<0;
+        const tilt=(fall?(flip?-1:1)*Math.min(1.4,fall):0)+(z.lg?(flip?.25:-.25):0)+Math.sin(ph)*.07+jerk;
+        const c=fl>0?[1+fl*5,1+fl*5,1+fl*5]:dark>0?[1-dark*.8,1-dark*.85,1-dark*.85]:null;
+        sprPut(o,x,y,(Math.abs(Math.sin(ph))*.02)-sink,flip,tilt,(k/(ZT[t]||ZT.ghoul).k)*(t==='boar'?1.15:1),c);return;}
+      const P=R3.zparts[t]||R3.zparts.ghoul,n=cnt[t];if(n>=160)return;cnt[t]++;
       base.makeRotationY(ang);if(fall){tmp.makeRotationX(fall);base.multiply(tmp);}const T_=ZT[t]||ZT.ghoul;tmp.makeScale(k*(T_.sx||1),k*(T_.sy||1),k*(T_.sz||1));base.multiply(tmp);base.setPosition(wx(x),-sink,wz(y));
       const M=[];for(let pi=0;pi<P.length;pi++){const pt=P[pi],r=pt.rot(z,ph,now);eu.set(r[0],r[1],r[2]);q.setFromEuler(eu);pv.set(pt.pivot[0],pt.pivot[1],pt.pivot[2]);tmp.compose(pv,q,one);
         const m=(pt.parent<0?base:M[pt.parent]).clone().multiply(tmp);M.push(m);pt.im.setMatrixAt(n,m);
@@ -2672,7 +2690,8 @@ function render3D(t){
     // распад: тело валится, темнеет и уходит в снег; затем остаётся пятно
     R3.corpses=R3.corpses.filter(c=>{const a=(now-c.t0)/1400;if(a>=1){R3.stainList.push({x:c.x,y:c.y,t0:now,s:(ZT[c.t]||ZT.ghoul).k});if(R3.stainList.length>80)R3.stainList.shift();return false;}
       draw(c.t,{ph:0},c.x,c.y,c.ang,(ZT[c.t]||ZT.ghoul).k*(1-a*.35),0,0,a,a*.25,Math.min(1.3,a*3));if(Math.random()<.35)spawnSteam(new T.Vector3(wx(c.x)+(Math.random()-.5)*.3,.05,wz(c.y)+(Math.random()-.5)*.3),.12,.25,true);return true;});
-    for(const k in R3.zparts)for(const pt of R3.zparts[k]){pt.im.count=cnt[k];pt.im.instanceMatrix.needsUpdate=true;if(pt.im.instanceColor)pt.im.instanceColor.needsUpdate=true;}
+    if(R3.spr)sprEnd(ZKEYS);
+    for(const k in R3.zparts)for(const pt of R3.zparts[k]){pt.im.count=ART2D?0:cnt[k];pt.im.instanceMatrix.needsUpdate=true;if(pt.im.instanceColor)pt.im.instanceColor.needsUpdate=true;}
     {const S2=R3.stains,m=new T.Matrix4();R3.stainList=R3.stainList.filter(o=>now-o.t0<90000);R3.stainList.forEach((o,i)=>{const f=1-Math.max(0,(now-o.t0-60000)/30000);m.makeScale(o.s*f,1,o.s*f);m.setPosition(wx(o.x),.015,wz(o.y));S2.setMatrixAt(i,m);});S2.count=R3.stainList.length;S2.instanceMatrix.needsUpdate=true;}}
   // иней в воздухе
   if(!STEAM_COLD)STEAM_COLD=new THREE.Color(0x8a96a6);
@@ -2724,7 +2743,17 @@ let ZERO4=null;let STEAM_COLD=null;
 const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer',coreworks:'hammer',farm:'shovel',hydro:'shovel',cemetery:'shovel',condenser:'bucket',well:'bucket',kitchen:'bucket',still:'bucket'};
 const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
-function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
+let ART2D=(()=>{try{return localStorage.getItem('ls_art2d')!=='0';}catch(e){return true;}})();
+const _bm=new THREE.Matrix4(),_bq=new THREE.Quaternion(),_bs=new THREE.Vector3(),_bp=new THREE.Vector3(),_bc=new THREE.Color(),_be=new THREE.Euler();
+function sprPut(o,x,y,yb,flip,tilt,scale,col){// x,y — клетки; yb — подъём; flip — зеркально; tilt — наклон (рад)
+  if(!o||o.n>=o.im.count+1000)return;const i=o.n++;if(i>=o.im.instanceMatrix.count)return;
+  const cq=R3.cam.quaternion;_be.set(0,0,tilt||0);_bq.setFromEuler(_be);_bq.premultiply(cq);
+  const h=o.h*(scale||1);_bs.set(h*o.aspect*(flip?-1:1),h,1);_bp.set(wx(x),yb||0,wz(y));_bm.compose(_bp,_bq,_bs);o.im.setMatrixAt(i,_bm);
+  _bc.setRGB(col?col[0]:1,col?col[1]:1,col?col[2]:1);o.im.setColorAt(i,_bc);}
+function sprBegin(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(o)o.n=0;}}
+function sprEnd(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(!o)continue;o.im.count=o.n;o.im.instanceMatrix.needsUpdate=true;o.im.instanceColor.needsUpdate=true;}}
+const PKEYS=['p_scout','p_engineer','p_worker','p_child'],ZKEYS=['ghoul','shambler','dog','brute','boar','bloat'];
+function drawWalkers3D(s){const W2=[];if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
   const humans=Math.min(60,Math.ceil(popTotal(s)/2.5)),bots=Math.min(60-humans,Math.min(12,s.robots||0)),want=humans+bots;
   if(!R3.steel)R3.steel=new THREE.Color(0x8e979e);R3.isBot=R3.isBot||[];
   for(let i=0;i<60;i++){const isb=i>=humans&&i<want;if(R3.isBot[i]!==isb){R3.isBot[i]=isb;for(const n of ['torso','skirt','armL','armR','hood']){R3.pp[n].setColorAt(i,isb?R3.steel:R3.palFor(n,i));R3.pp[n].instanceColor.needsUpdate=true;}}}
@@ -2756,7 +2785,7 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
     w.y=clamp(w.y,.7,GH-1.7);
     const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):w.tool&&w.face!=null?w.face:(w.ang||0);const busy=!moving&&w.tool&&w.tool!=='bucket'&&wkg;if(busy&&sp>0)w.sw=(w.sw||i)+sp*9;
     const sw=moving?Math.sin(w.ph)*.55:0,bob=moving?Math.abs(Math.cos(w.ph))*.008:0;
-    m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));
+    m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));W2[i]={x:w.x,y:w.y,bob,moving,busy,sw:w.sw||0,ang:w.ang,bot:R3.isBot[i],ph:w.ph||0};
     for(const n of ['torso','skirt','head','belt','bag','collar','mask','goggles'])R3.pp[n].setMatrixAt(i,m);
     {// разная одежда: каска (с фонарём у шахтёров), капюшон или ушанка; фартук, рюкзак со скаткой, шарф
       const isb=R3.isBot[i],hat=isb?0:i%3,P=R3.pp,put=(n,on)=>P[n].setMatrixAt(i,on?m:ZERO4);
@@ -2769,6 +2798,14 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
     for(const k of TOOLS){const on=w.tool===k;if(R3.pp['tw_'+k]){if(on)lim('tw_'+k,.058,.27,aR);else R3.pp['tw_'+k].setMatrixAt(i,ZERO4);}if(on)lim('tm_'+k,.058,.27,aR);else R3.pp['tm_'+k].setMatrixAt(i,ZERO4);}
   }
   for(const im of R3.ppl)im.instanceMatrix.needsUpdate=true;
+  // 2D-арт людей: по доле рабочих / инженеров / детей
+  for(const im of R3.ppl)im.visible=!ART2D;
+  if(R3.spr){sprBegin(PKEYS);if(ART2D){const P=popTotal(s)||1,fw=s.pop.w/P,fe=s.pop.e/P,n=walkers.length||1;
+    const camYaw=Math.atan2(R3.cam.position.x-0,R3.cam.position.z-0);
+    W2.forEach((o,i)=>{if(!o)return;const f=(i+.5)/n;const key=o.bot?'p_engineer':f<fw?(i%3===0?'p_scout':'p_worker'):f<fw+fe?'p_engineer':'p_child';
+      const flip=Math.sin(o.ang-camYaw)<0;const tilt=o.busy?Math.sin(o.sw)*.18:o.moving?Math.sin(o.ph)*.06:0;
+      sprPut(R3.spr[key],o.x,o.y,o.moving?Math.abs(Math.cos(o.ph))*.012:0,flip,tilt,1,o.bot?[.75,.85,.95]:null);});}
+    sprEnd(PKEYS);}
 }
 // 2D-слой поверх 3D: виньетка и иней по краям экрана, как во Frostpunk
 let frostTex=null;
@@ -3518,6 +3555,8 @@ function renderMenu(){
       <h3 style="margin-top:14px">Звук</h3>
       <label class="vol">Музыка <input type="range" id="musvol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.music:.6}"></label>
       <label class="vol">Звуки <input type="range" id="sfxvol" min="0" max="1" step="0.05" value="${window.GameAudio?GameAudio.settings.sfx:.8}"></label>
+      <h3 style="margin-top:14px">Графика</h3>
+      <label class="chk"><input type="checkbox" id="art2d" ${ART2D?'checked':''}> Рисованные фигуры людей и мутантов (2D-арт); выключите — будут 3D-модели</label>
       <h3 style="margin-top:14px">Управление</h3>
       <ul class="ctl"><li>Перетаскивание — сдвиг камеры</li><li>Правая кнопка или Q/E — поворот</li><li>Колесо или щипок — масштаб</li><li>Esc — отмена</li><li>Пробел — пауза</li><li>1–3 — скорость</li><li>F — весь экран</li><li>M — карта метро</li></ul></div>`;
   }
@@ -3746,7 +3785,7 @@ document.addEventListener('click',e=>{
 });
 ['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{if(window.GameAudio)GameAudio.init();},{passive:true}));
 addEventListener('input',e=>{if(!window.GameAudio)return;if(e.target.id==='musvol')GameAudio.setMusicVolume(e.target.value);if(e.target.id==='sfxvol')GameAudio.setSfxVolume(e.target.value);});
-addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;if(e.target.id==='onedeath')ui.oneDeath=e.target.checked;if(e.target.id==='onesave')ui.oneSave=e.target.checked;});
+addEventListener('change',e=>{if(e.target.id==='survivor')ui.survivor=e.target.checked;if(e.target.id==='onedeath')ui.oneDeath=e.target.checked;if(e.target.id==='onesave')ui.oneSave=e.target.checked;if(e.target.id==='art2d'){ART2D=e.target.checked;try{localStorage.setItem('ls_art2d',ART2D?'1':'0');}catch(_){}}});
 
 /* ---------------------------- СТАРТ ---------------------------- */
 function boot(data){
