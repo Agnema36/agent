@@ -72,6 +72,11 @@
   }
 
   /* ---------- музыка: трек через Howler или синтез ---------- */
+  // плавная смена громкости трека (свой таймер: fade() Howler в html5-режиме ненадёжен)
+  function vramp(h, id, to, ms, done) {
+    clearInterval(h._vr); const from = +h.volume(id) || 0, t0 = Date.now();
+    h._vr = setInterval(() => { const k = Math.min(1, (Date.now() - t0) / ms); h.volume(from + (to - from) * k, id); if (k >= 1) { clearInterval(h._vr); done && done(); } }, 50);
+  }
   function playState(st) {
     if (st === A.state) return;
     if (!A.ready) { A.pending = st; return; }
@@ -80,22 +85,26 @@
     if (window.Howl && A.tracks[st] !== false) {
       let h = A.tracks[st];
       if (!h) {
-        h = A.tracks[st] = new Howl({ src: ['audio/' + st + '.mp3', 'audio/' + st + '.ogg'], loop: true, volume: 0, html5: true,
-          onloaderror: () => { A.tracks[st] = false; if (A.state === st) { A.cur = null; startSynth(st); } } });
+        h = A.tracks[st] = new Howl({ src: ['audio/' + st + '.mp3', 'audio/' + st + '.ogg'], loop: true, volume: 0, html5: true, preload: true,
+          onloaderror: () => { A.tracks[st] = false; if (A.state === st && !A.synth) startSynth(st); } });
       }
-      if (h && h.state && h.state() !== 'unloaded') {
-        A.cur = h; h.play(); h.fade(0, A.settings.music, 2500);
-        if (h.state() === 'loaded') return;
-      }
-      // пока трек грузится, звучит синтез; если трек загрузится — синтез уходит
-      startSynth(st);
-      if (h) h.once('load', () => { if (A.state === st) { stopSynth(); h.play(); h.fade(0, A.settings.music, 2500); A.cur = h; } });
+      const start = () => { // ровно один экземпляр трека на состояние
+        if (A.state !== st || A.cur) return;
+        stopSynth();
+        // у трека один экземпляр: продолжаем его, а не создаём новый; лишние гасим
+        if (h._gid == null) h._gid = h.play(); else h.play(h._gid);
+        const id = h._gid; h._sounds.forEach(sn => { if (sn._id !== id && !sn._paused) h.stop(sn._id); });
+        clearTimeout(h._pt); h.volume(0, id); vramp(h, id, A.settings.music, 2500); A.cur = { h, id };
+      };
+      if (h.state() === 'loaded') start();
+      else { startSynth(st); h.once('load', start); }
       return;
     }
     startSynth(st);
   }
   function stopMusic() {
-    if (A.cur) { const h = A.cur; h.fade(h.volume(), 0, 1500); setTimeout(() => h.stop(), 1600); A.cur = null; }
+    if (A.cur) { const { h, id } = A.cur; A.cur = null;
+      vramp(h, id, 0, 1500, () => { if (!A.cur || A.cur.h !== h) h.pause(id); }); }
     stopSynth();
   }
   function stopSynth() {
@@ -151,7 +160,7 @@
     [o, o2, n, am].forEach(x => { x.start(t); x.stop(t + 1.4); });
   }
 
-  function setMusicVolume(v) { A.settings.music = clamp(+v, 0, 1); save(); if (A.music) ramp(A.music.gain, A.settings.music, 0.1); if (A.cur) A.cur.volume(A.settings.music); }
+  function setMusicVolume(v) { A.settings.music = clamp(+v, 0, 1); save(); if (A.music) ramp(A.music.gain, A.settings.music, 0.1); if (A.cur) { clearInterval(A.cur.h._vr); A.cur.h.volume(A.settings.music, A.cur.id); } }
   function setMasterVolume(v) { A.settings.master = clamp(+v, 0, 1); save(); if (A.master) ramp(A.master.gain, A.settings.master, 0.1); if (window.Howler) Howler.volume(A.settings.master); }
   function setSfxVolume(v) { A.settings.sfx = clamp(+v, 0, 1); save(); if (A.sfx) ramp(A.sfx.gain, A.settings.sfx, 0.1); }
 

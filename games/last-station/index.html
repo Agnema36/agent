@@ -935,8 +935,7 @@ const tile=(s,x,y)=>s.grid[y*GW+x];
 function place(s,type,x,y,instant){
   const t=tile(s,x,y);const d=B[type];
   const b={id:s.nid++,type,x,y,a:{w:0,e:0,c:0},on:true,lvl:0,ins:0,build:instant?0:Math.ceil(d.time*(has(s,'t_prefab')?.6:1))};
-  if(!instant)b.bw=Math.min(5,Math.max(0,free(s,'w')));
-  s.bld.push(b);t.b=b.id;return b;
+  s.bld.push(b);t.b=b.id;if(!instant){b.bw=0;takeBuilders(s,b,5);}return b;
 }
 const bById=(s,id)=>s.bld.find(b=>b.id===id);
 const has=(s,id)=>s.tech.includes(id)||s.laws.includes(id);
@@ -980,6 +979,16 @@ function computeHeat(s){
 const heatAt=(s,x,y)=>s.heat?s.heat[y*GW+x]:ambient(s);
 
 /* ---------------------------- ЛЮДИ И РАБОТА ---------------------------- */
+// строители: сначала свободные рабочие, затем снимаем с завалов и второстепенных зданий; после стройки возвращаем на место
+function takeBuilders(s,b,need){
+  let got=Math.min(need,Math.max(0,free(s,'w')));need-=got;b.bfrom=b.bfrom||[];
+  if(need>0){const J=jobsOf(s).filter(j=>j.o.a.w>0&&!(j.d&&(j.d.kitchen||j.d.beds||(j.d.prod&&j.d.prod.raw)||j.d.heat))).sort((a,c)=>(c.pile?1:0)-(a.pile?1:0));
+    for(const j of J){if(need<=0)break;const k=Math.min(need,j.o.a.w);j.o.a.w-=k;need-=k;got+=k;b.bfrom.push({key:j.pile?'p'+s.grid.findIndex(g=>g.pile===j.o):'b'+j.o.id,n:k});}}
+  b.bw=(b.bw||0)+got;return got;}
+function releaseBuilders(s,b){
+  for(const q of b.bfrom||[]){let o=null,max=0;if(q.key[0]==='b'){const x=bById(s,+q.key.slice(1));if(x){o=x.a;max=B[x.type].jobs;}}else{const t=s.grid[+q.key.slice(1)];if(t&&t.pile){o=t.pile.a;max=t.pile.max||5;}}
+    if(o){const room=max-(o.w+o.e+o.c);o.w+=Math.max(0,Math.min(q.n,room));}}
+  b.bfrom=[];b.bw=0;}
 function jobsOf(s){
   const L=[];
   for(const b of s.bld){const d=B[b.type];if(d.job&&!b.build)L.push({o:b,d,job:d.job,max:d.jobs,safe:!!d.safe});}
@@ -1060,8 +1069,8 @@ function hourTick(s){
   if(s.gen.stress<60)s.flags.stressWarn=0;
   for(const b of s.bld)if(b.type==='heater'&&!b.build&&b.on){if(s.res.coal>=1){s.res.coal-=1;b.fuelOk=true;}else b.fuelOk=false;}
   // стройка
-  for(const b of s.bld)if(b.build>0){if((b.bw||0)<5){const add=Math.min(5-(b.bw||0),Math.max(0,free(s,'w')));b.bw=(b.bw||0)+add;}if(!(b.bw>0))continue; // без строителей стройка стоит
-    b.build--;if(!b.build){b.bw=0;toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
+  for(const b of s.bld)if(b.build>0){if((b.bw||0)<5)takeBuilders(s,b,5-(b.bw||0));if(!(b.bw>0))continue; // без строителей стройка стоит
+    b.build--;if(!b.build){releaseBuilders(s,b);toast(s,`Построено: ${B[b.type].n}`,'good');onBuilt(s,b);}}
   // работа
   for(const b of s.bld)if(b.emerg>0){b.emerg--;if(!b.emerg&&rnd()<.35){if(rnd()<.4){kill(s,1,'all');toast(s,`Экстренная смена: погиб рабочий (${B[b.type].n})`,'bad');}else{sicken(s,2);toast(s,'Экстренная смена: двое слегли','bad');}}}
   const wh=workHour(s);
@@ -2753,7 +2762,12 @@ function towerFire3D(s,dtR){
     if(u.arm){u.armT=Math.max(0,(u.armT||0)-dtR);u.arm.rotation.x=u.armT>0?-.5+(1-u.armT/.35)*1.7:Math.max(-.5,u.arm.rotation.x-dtR*2);}}
 }
 function spawnSteam(p,size,vy,dark){const q=R3.steam.find(x=>!x.life);if(!q)return;q.life=1;q.dark=!!dark;q.sp.material.color.setHex(dark?0x3a3632:0xffd2a8);q.sp.material.rotation=Math.random()*6;q.vy=.006*vy+Math.random()*.004;q.vx=(Math.random()-.5)*.004;q.sp.position.copy(p);q.sp.scale.set(size,size,1);q.sp.visible=true;}
-let ZERO4=null;let STEAM_COLD=null;
+let ZERO4=null;
+function workChip(w,i){// щепки, осколки угля и искры металла при ударе
+  if(!R3.ok||!window.THREE)return;const p=new THREE.Vector3(wx(w.tx),.12,wz(w.ty-.35));const col=w.tool==='axe'?0x6a4a2a:w.tool==='pick'?0x1a1a1c:w.tool==='hammer'?0xffb060:0x7a6a5a;
+  R3.chips=R3.chips||[];for(let k=0;k<3;k++){let c=R3.chips.find(q=>!q.on);if(!c){if(R3.chips.length>60)return;const m=new THREE.Mesh(new THREE.BoxGeometry(.025,.025,.025),new THREE.MeshBasicMaterial({color:col}));R3.sc.add(m);c={m,on:0};R3.chips.push(c);}
+    c.on=1;c.m.material.color.setHex(col);c.m.position.copy(p);c.v=[(Math.random()-.5)*.9,.8+Math.random()*.7,(Math.random()-.5)*.9];c.t=0;c.m.visible=true;}}
+function chipsStep(dt){if(!R3.chips)return;for(const c of R3.chips){if(!c.on)continue;c.t+=dt;c.v[1]-=3*dt;c.m.position.x+=c.v[0]*dt;c.m.position.y+=c.v[1]*dt;c.m.position.z+=c.v[2]*dt;c.m.rotation.x+=dt*9;if(c.m.position.y<0||c.t>1.2){c.on=0;c.m.visible=false;}}}let STEAM_COLD=null;
 const TOOL_B={coalmine:'pick',sawmill:'axe',scrapyard:'hammer',workshop:'hammer',coreworks:'hammer',farm:'shovel',hydro:'shovel',cemetery:'shovel',condenser:'bucket',well:'bucket',kitchen:'bucket',still:'bucket'};
 const TOOL_R={coal:'pick',stone:'pick',wood:'axe',steel:'hammer',raw:'shovel'};
 const TOOLS=['pick','axe','hammer','shovel','bucket'];
@@ -2769,7 +2783,7 @@ function sprPut(o,x,y,yb,flip,tilt,scale,col,sx,sy){// x,y — клетки; yb 
 function sprBegin(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(o)o.n=0;}}
 function sprEnd(keys){for(const k of keys){const o=R3.spr&&R3.spr[k];if(!o)continue;o.im.count=o.n;o.im.instanceMatrix.needsUpdate=true;o.im.instanceColor.needsUpdate=true;}}
 const PKEYS=['p_scout','p_engineer','p_worker','p_child'],ZKEYS=['ghoul','shambler','dog','brute','boar','bloat'];
-function drawWalkers3D(s){const W2=[];if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
+function drawWalkers3D(s){const W2=[];const _now=performance.now(),_dt=Math.min(.1,(_now-(R3.wlt||_now))/1000);R3.wlt=_now;if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);const now=performance.now();
   const humans=Math.min(60,Math.ceil(popTotal(s)/2.5)),bots=Math.min(60-humans,Math.min(12,s.robots||0)),want=humans+bots;
   if(!R3.steel)R3.steel=new THREE.Color(0x8e979e);R3.isBot=R3.isBot||[];
   for(let i=0;i<60;i++){const isb=i>=humans&&i<want;if(R3.isBot[i]!==isb){R3.isBot[i]=isb;for(const n of ['torso','skirt','armL','armR','hood']){R3.pp[n].setColorAt(i,isb?R3.steel:R3.palFor(n,i));R3.pp[n].instanceColor.needsUpdate=true;}}}
@@ -2792,14 +2806,14 @@ function drawWalkers3D(s){const W2=[];if(!ZERO4)ZERO4=new THREE.Matrix4().makeSc
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
     const cb=i>=nEm&&i<nEm+nCb,em=i<nEm||cb,slot=!em&&working?SLOTS[i-nEm-nCb]:null,idle=!em&&working&&!slot;
-    const wkg=em||!!slot,TG=cb?CB:em?EB:slot?[slot]:idle?[{x:GX+((i*37)%5-2)*.6,y:GY+((i*53)%4-1.5)*.5}]:targets;
-    {const role=cb?'c':em?'e':slot?'s'+(slot.id!=null?slot.id:slot.key):idle?'i':'h';if(w.role!==role){w.role=role;w.w=999;}}
+    const warm=!em&&!working&&!asleep;const wkg=em||!!slot,TG=cb?CB:em?EB:slot?[slot]:(idle||warm)?[{x:GX+((i*37)%5-2)*.6,y:GY+((i*53)%4-1.5)*.5}]:targets;
+    {const role=cb?'c':em?'e':slot?'s'+(slot.id!=null?slot.id:slot.key):(idle||warm)?'i':'h';if(w.role!==role){w.role=role;w.w=999;}}
     if(w.wk!==wkg){w.wk=wkg;w.w=999;}
     if(!em&&asleep&&Math.hypot(w.tx-w.x,w.ty-w.y)<.15){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;} // спят в жилье
-    if((Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!wkg)){if(w.w>500||!w.tool||!wkg)w.w=0;const tg=TG.length?TG[Math.floor(Math.random()*TG.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=cb?'hammer':wkg?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
-    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.0018*s.speed;const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
+    if((w.role!=='i'&&Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!wkg)){if(w.w>500||!w.tool||!wkg)w.w=0;const tg=TG.length?TG[Math.floor(Math.random()*TG.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=cb?'hammer':wkg?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
+    const sp=s.paused||(s.queue.length&&!s.survivor&&!ui.evMin)?0:.45*_dt*Math.min(3,s.speed);const dx=w.tx-w.x,dy=w.ty-w.y,dd=Math.hypot(dx,dy)||1;w.x+=dx/dd*sp;w.y+=dy/dd*sp;
     w.y=clamp(w.y,.7,GH-1.7);
-    const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*40;w.ang=moving?Math.atan2(dx,dy):w.tool&&w.face!=null?w.face:(w.ang||0);const busy=!moving&&w.tool&&w.tool!=='bucket'&&wkg;if(busy&&sp>0)w.sw=(w.sw||i)+sp*9;
+    const moving=sp>0&&dd>.05;if(moving)w.ph=(w.ph||i)+sp*28;w.ang=moving?Math.atan2(dx,dy):w.tool&&w.face!=null?w.face:w.role==='i'?Math.atan2(GX-w.x,GY-w.y):(w.ang||0);const busy=!moving&&w.tool&&w.tool!=='bucket'&&wkg;if(busy&&sp>0){const prev=w.sw||i;w.sw=prev+_dt*7*Math.min(3,s.speed);if(Math.floor(w.sw/Math.PI)!==Math.floor(prev/Math.PI)&&Math.sin(w.sw)<0)workChip(w,i);}
     const sw=moving?Math.sin(w.ph)*.55:0,bob=moving?Math.abs(Math.cos(w.ph))*.008:0;
     m.makeRotationY(w.ang);m.setPosition(wx(w.x),bob,wz(w.y));W2[i]={x:w.x,y:w.y,bob,moving,busy,sw:w.sw||0,ang:w.ang,bot:R3.isBot[i],ph:w.ph||0};
     for(const n of ['torso','skirt','head','belt','bag','collar','mask','goggles'])R3.pp[n].setMatrixAt(i,m);
@@ -2814,13 +2828,14 @@ function drawWalkers3D(s){const W2=[];if(!ZERO4)ZERO4=new THREE.Matrix4().makeSc
     for(const k of TOOLS){const on=w.tool===k;if(R3.pp['tw_'+k]){if(on)lim('tw_'+k,.058,.27,aR);else R3.pp['tw_'+k].setMatrixAt(i,ZERO4);}if(on)lim('tm_'+k,.058,.27,aR);else R3.pp['tm_'+k].setMatrixAt(i,ZERO4);}
   }
   for(const im of R3.ppl)im.instanceMatrix.needsUpdate=true;
+  chipsStep(_dt);
   // 2D-арт людей: по доле рабочих / инженеров / детей
   for(const im of R3.ppl)im.visible=!ART2D;
   if(R3.spr){sprBegin(PKEYS);if(ART2D){const P=popTotal(s)||1,fw=s.pop.w/P,fe=s.pop.e/P,n=walkers.length||1;
     const camYaw=Math.atan2(R3.cam.position.x-0,R3.cam.position.z-0);
     W2.forEach((o,i)=>{if(!o)return;const f=(i+.5)/n;const key=o.bot?'p_engineer':f<fw?(i%3===0?'p_scout':'p_worker'):f<fw+fe?'p_engineer':'p_child';
-      const flip=Math.sin(o.ang-camYaw)<0;const tilt=o.busy?Math.sin(o.sw)*.18:o.moving?Math.sin(o.ph)*.06:0;
-      sprPut(R3.spr[key],o.x,o.y,o.moving?Math.abs(Math.cos(o.ph))*.012:0,flip,tilt,1,o.bot?[.75,.85,.95]:null);});}
+      const flip=Math.sin(o.ang-camYaw)<0,dir=flip?-1:1;const sw=Math.sin(o.sw);const tilt=o.busy?-dir*(.25+sw*.3):o.moving?Math.sin(o.ph)*.09:0;
+      sprPut(R3.spr[key],o.x,o.y,o.moving?Math.abs(Math.cos(o.ph))*.02:o.busy?Math.max(0,sw)*.025:0,flip,tilt,1,o.bot?[.75,.85,.95]:null,1,o.busy?1-Math.max(0,-sw)*.08:1);});}
     sprEnd(PKEYS);}
 }
 // 2D-слой поверх 3D: виньетка и иней по краям экрана, как во Frostpunk
@@ -3659,7 +3674,7 @@ function audioTick(t){// музыка по времени суток и атак
   if(!window.GameAudio)return;
   if(ui.mode!=='game'||!S){GameAudio.playState('menu');return;}
   const s=S,att=!!(s.wave||(s.zombies&&s.zombies.length)),night=s.hour>=21||s.hour<6;
-  GameAudio.playState(att?'attack':night?'night':'day');
+  GameAudio.playState(att||night?'night':'day'); // во время атаки — ночной трек
   if(t-AUD.t>150){AUD.t=t;const d=Math.hypot(cam3.tx,cam3.tz)+cam3.d*.35;const sk=stoveLvl(s);
     GameAudio.updateAmbient({distToFire:s.gen.on?d:99,distToGenerator:s.gen.on&&sk?d:99});
     for(const z of s.zombies||[]){if(!z.gr&&z.x<GW+1){z.gr=1;GameAudio.growl(Math.hypot(wx(z.x)-cam3.tx,wz(z.y)-cam3.tz)+cam3.d*.35);}}}
