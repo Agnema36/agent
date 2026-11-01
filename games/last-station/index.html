@@ -915,8 +915,8 @@ const D_=s=>DIFF[s.diff];
 const popTotal=s=>s.pop.w+s.pop.e+s.pop.c;
 const healthy=(s,t)=>s.pop[t]-s.crit[t]-(has(s,'mandatory')?0:s.ill[t])+(t==='w'?(s.robots||0):0);
 const lvlMul=b=>1+.2*(b.lvl||0);
-function insCost(s,n){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1);return{wood:Math.ceil(15*k),steel:Math.ceil(5*k)};}
-function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
+function insCost(s,n,b){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1)*(b&&B[b.type].house?2:1);return{wood:Math.ceil(15*k),steel:Math.ceil(5*k)};}
+function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(B[b.type].house?2:1)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
 function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
 const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
@@ -1508,7 +1508,7 @@ function act(s,a){
       if(a.who){const t=a.who,A=j.o.a;for(let i=0;i<Math.abs(n);i++){if(n>0){if(!canTake(s,j,t)||A.w+A.e+A.c>=j.max||free(s,t)<=0)break;A[t]++;}else{if(A[t]<=0)break;A[t]--;}}break;}
       for(let i=0;i<Math.abs(n);i++){if(n>0){if(!addWorker(s,j))break;}else remWorker(j);}break;}
     case 'upgrade':{const b=bById(s,a.id);if(!b||b.build||b.upT>0||!canUpgrade(b))return;const c=upCost(s,b,b.lvl||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='lvl';break;}
-    case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=insCost(s,b.ins||0);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
+    case 'insulate':{const b=bById(s,a.id);if(!b||b.build||b.upT>0)return;const c=insCost(s,b.ins||0,b);if(!canAfford(s,c))return;pay(s,c);b.upT=UP_T;b.upK='ins';break;}
     case 'taunt':{const b=bById(s,a.id);if(!b||b.type!=='catapult'||b.build||b.tauntCd>0)return;b.tauntCd=6;b.tauntOn=1;for(const z of s.zombies||[]){z.taunt=b.id;z.tauntT=1;z.att=null;}toast(s,`Таунт: мутанты идут на «${B[b.type].n}»`,'');break;}
     case 'emerg':{const b=bById(s,a.id);if(!b||!has(s,'emergency')||!B[b.type].job||b.emerg>0)return;b.emerg=24;s.disc+=1;break;}
     case 'toggle':{const b=bById(s,a.id);if(b)b.on=!b.on;computeHeat(s);break;}
@@ -3318,7 +3318,7 @@ function renderInfo(){
     if(!b.build){
       const cs=c=>Object.entries(c).map(([r,n])=>`${n} ${RES[r].n.toLowerCase()}`).join(', ')||'бесплатно';
       if(canUpgrade(b)){const uc=upCost(s,b,b.lvl||0);h+=`<div class="row"><span>Уровень</span><span>${b.lvl||0} (+${(b.lvl||0)*20}%)</span></div><div class="ctrl"><button class="btn primary" data-upgrade="${b.id}" ${canAfford(s,uc)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='lvl'?`Улучшение: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:'Улучшить +20%'}</button><span class="hint">${cs(uc)}</span></div>${b.upT>0?`<div class="prog" style="margin:4px 0"><i style="width:${100-b.upT/UP_T*100}%"></i></div>`:''}`;}
-      const ic=insCost(s,b.ins||0);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
+      const ic=insCost(s,b.ins||0,b);h+=`<div class="row"><span>Утепление</span><span>${b.ins||0} (+${(b.ins||0)*(has(s,'t_coldmat')?8:5)}°)</span></div><div class="ctrl"><button class="btn" data-insulate="${b.id}" ${canAfford(s,ic)&&!(b.upT>0)?'':'disabled'}>${b.upT>0&&b.upK==='ins'?`Утепление: ${Math.ceil(b.upT*5/Math.max(1,s.speed))} с`:`Утеплить +${has(s,'t_coldmat')?8:5}°`}</button><span class="hint">${cs(ic)}</span></div>`;
       if(has(s,'emergency')&&d.job)h+=`<div class="ctrl"><button class="btn danger" data-emerg="${b.id}" ${b.emerg>0?'disabled':''}>${b.emerg>0?`Экстренная смена: ${b.emerg} ч`:'Экстренная смена (24 ч)'}</button></div>`;
     }
     if(d.rp&&!b.build){const T=s.research&&TECHBY[s.research],rd=dayRates(s).out.rp;
