@@ -121,7 +121,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .btn.danger{border-color:#6a2a22;color:#f3a090}
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 .pm{width:28px;height:28px;padding:0;font-family:var(--mono);font-size:16px}
-.wrow{display:grid;grid-template-columns:78px 28px 26px 28px auto auto 1fr;gap:6px;align-items:center;margin:4px 0}
+.wrow .wn small{display:block;font-size:10px;color:var(--frost-dim);line-height:1.1}
+.wrow .btn:not(.pm){padding:3px 6px;font-size:11px}
+.wrow{display:grid;grid-template-columns:minmax(64px,1fr) 26px 24px 26px auto auto;gap:6px;align-items:center;margin:4px 0}
 .wrow .num{text-align:center}
 .wrow .wn{font-size:13px}
 .closex{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--frost-dim);font-size:18px}
@@ -2693,12 +2695,19 @@ function drawWalkers3D(s){if(!ZERO4)ZERO4=new THREE.Matrix4().makeScale(0,0,0);c
   // экстренная смена: эти люди работают сразу, в любое время суток
   const EB=working?[]:s.bld.filter(b=>b.emerg>0&&!b.build&&workforce(b.a)>0),nEm=Math.min(walkers.length,Math.ceil(EB.reduce((a,b)=>a+workforce(b.a),0)/2.5));
   const CB=s.bld.filter(b=>b.build>0&&b.bw>0),nCb=Math.min(walkers.length-nEm,CB.reduce((a,b)=>a+Math.min(2,Math.ceil(b.bw/2.5)),0));
+  // днём к каждому месту работы идёт столько фигурок, сколько там людей (фигурка ≈ 2,5 человека), остальные — у огня
+  const SLOTS=[];if(working){const per=popTotal(s)/Math.max(1,walkers.length);
+    for(const b of s.bld)if(B[b.type].job&&!b.build&&workforce(b.a)>0){const k=Math.max(1,Math.round(workforce(b.a)/per));for(let q=0;q<k;q++)SLOTS.push(b);}
+    for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile&&workforce(t.pile.a)>0){const k=Math.max(1,Math.round(workforce(t.pile.a)/per)),o={x:i%GW,y:Math.floor(i/GW),r:t.pile.r,key:'p'+i};for(let q=0;q<k;q++)SLOTS.push(o);}}
+    for(const b of s.bld)if(b.type==='gather'&&!b.build&&workforce(b.a)>0){const P=[];for(let i=0;i<s.grid.length;i++){const t=s.grid[i];if(t.pile&&Math.hypot(i%GW-b.x,Math.floor(i/GW)-b.y)<=gatherR(s))P.push({x:i%GW,y:Math.floor(i/GW),r:t.pile.r,key:'p'+i});}
+      const k=Math.max(1,Math.round(workforce(b.a)/per));for(let q=0;q<k&&P.length;q++)SLOTS.push(P[q%P.length]);}}
   const m=new THREE.Matrix4(),lm=new THREE.Matrix4(),rm=new THREE.Matrix4(),tm=new THREE.Matrix4();
   for(let i=0;i<60;i++){
     const w=walkers[i];
     if(!w){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;}
-    const cb=i>=nEm&&i<nEm+nCb,em=i<nEm||cb,wkg=working||em,TG=cb?CB:em?EB:targets;
-    {const role=cb?'c':em?'e':'n';if(w.role!==role){w.role=role;w.w=999;}}
+    const cb=i>=nEm&&i<nEm+nCb,em=i<nEm||cb,slot=!em&&working?SLOTS[i-nEm-nCb]:null,idle=!em&&working&&!slot;
+    const wkg=em||!!slot,TG=cb?CB:em?EB:slot?[slot]:idle?[{x:GX+((i*37)%5-2)*.6,y:GY+((i*53)%4-1.5)*.5}]:targets;
+    {const role=cb?'c':em?'e':slot?'s'+(slot.id!=null?slot.id:slot.key):idle?'i':'h';if(w.role!==role){w.role=role;w.w=999;}}
     if(w.wk!==wkg){w.wk=wkg;w.w=999;}
     if(!em&&asleep&&Math.hypot(w.tx-w.x,w.ty-w.y)<.15){m.makeScale(0,0,0);for(const im of R3.ppl)im.setMatrixAt(i,m);continue;} // спят в жилье
     if((Math.hypot(w.tx-w.x,w.ty-w.y)<.12&&(!w.tool||w.w++>0))||w.w>500||(w.tool&&!wkg)){if(w.w>500||!w.tool||!wkg)w.w=0;const tg=TG.length?TG[Math.floor(Math.random()*TG.length)]:{x:GX,y:GY};w.tx=tg.x+(Math.random()-.5)*.9;w.ty=tg.y+.45+(Math.random()-.5)*.3;w.w=-Math.random()*900;w.tool=cb?'hammer':wkg?(tg.r?TOOL_R[tg.r]:TOOL_B[tg.type])||null:null;w.face=Math.atan2(tg.x-w.tx,tg.y-w.ty);}
@@ -3283,7 +3292,7 @@ function renderBar(){
 function workCtrl(id,a,max,job,xy,safe){
   const s=S,tot=a.w+a.e+a.c,j={job,safe:!!safe};
   const rowW=(t,name)=>{if(!canTake(s,j,t)&&!a[t])return'';const can=canTake(s,j,t)&&tot<max&&free(s,t)>0;
-    return`<div class="wrow"><span class="wn">${name}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><button class="btn" data-work="${id}" data-who="${t}" data-n="${max}" ${xy} ${can?'':'disabled'}>Все</button><button class="btn" data-work="${id}" data-who="${t}" data-n="-${max}" ${xy} ${a[t]?'':'disabled'} title="Убрать всех: ${name}">Убрать</button><span class="hint">свободно ${Math.max(0,free(s,t))}</span></div>`;};
+    return`<div class="wrow"><span class="wn">${name}<small>свободно ${Math.max(0,free(s,t))}</small></span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="-1" ${xy} ${a[t]?'':'disabled'} aria-label="Убрать: ${name}">−</button><span class="num">${a[t]}</span><button class="btn pm" data-work="${id}" data-who="${t}" data-n="1" ${xy} ${can?'':'disabled'} aria-label="Добавить: ${name}">+</button><button class="btn" data-work="${id}" data-who="${t}" data-n="${max}" ${xy} ${can?'':'disabled'}>Все</button><button class="btn" data-work="${id}" data-who="${t}" data-n="-${max}" ${xy} ${a[t]?'':'disabled'} title="Убрать всех: ${name}">Убрать</button></div>`;};
   return`<div class="ctrl"><span class="num">Занято ${tot} / ${max}</span><button class="btn" data-work="${id}" data-n="${max}" ${xy}>Все</button><button class="btn" data-work="${id}" data-n="-${max}" ${xy}>0</button></div>
    ${rowW('w','Рабочие')}${rowW('e','Инженеры')}${rowW('c','Дети')}${job!=='e'&&!has(s,'child_labor')?'<p class="hint">Дети работают только по закону «Детский труд».</p>':''}`;
 }
