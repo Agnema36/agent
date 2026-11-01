@@ -3154,7 +3154,9 @@ function combatStep(s,dt){
     const dawn=s.hour>=6&&s.hour<22&&!(w&&w.left>0);
     if(dawn&&z.on&&!z.flee)z.flee=1; // на рассвете уцелевшие уходят в тоннель
     let tx,ty,tg=null;
-    if(z.flee){tx=GW+8;ty=GH-1;if(z.x>GW-1.2&&!z.out){z.out=1;}if(z.out){tx=GW+8;}if(z.x>GW+7){z.gone=1;continue;}}
+    if(z.flee){// уходят: сначала спускаются на пути, потом по рельсам в тоннель; застрявшие исчезают
+      z.fleeT=(z.fleeT||0)+dt;if(z.x>GW+1.5||z.fleeT>4){z.gone=1;continue;}
+      if(Math.abs(z.y-(GH-1))>.25&&z.x<GW-.6){tx=Math.min(GW-1,z.x+.4);ty=GH-1;}else{tx=GW+8;ty=GH-1;}}
     else if(z.x>GW-1.5&&!z.on){tx=GW-1.6;ty=GH-1;}
     else if(z.inside&&!(z.tauntT>0)&&!s.bld.some(b=>b.type==='catapult'&&!b.build&&Math.hypot(b.x-z.x,b.y-z.y)<=tauntR(s,b))){// бродит от дома к дому
       let rt=z.rt!=null?bById(s,z.rt):null;if(!rt||rt.build){let bd=1e9;rt=null;for(const b of s.bld){if(b.build||TOWER[b.type]||b.id===z.lastRt)continue;const d=Math.hypot(b.x-z.x,b.y-z.y);if(d<bd){bd=d;rt=b;}}z.rt=rt?rt.id:null;}
