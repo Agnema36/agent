@@ -2171,6 +2171,14 @@ function krailbase(p,W=.84){const rail=kmat('x',{color:0x3a2c24,metalness:.7,rou
   for(let i=0;i<5;i++){const sl=kbox(p,W,.035,.09,KM.beam(),0,0,-W/2+.06+i*(W-.12)/4);sl.rotation.y=(i%2?.03:-.02);}
   for(const x of [-.22,.22]){kbox(p,.035,.03,W+.04,rail,x,.035,0);kbox(p,.06,.008,W+.04,rail,x,.035,0);}
   for(let i=0;i<3;i++)ksnow(p,.16+i*.05,.09,-.3+i*.27,.035,-W/2+.06+(i*2)*(W-.12)/4,.012);}
+// детали улучшений башни: 1 — флаг, 2 — бронелисты, 3 — прожектор
+function kTowerLevels(T,body,u,top,half,M){const L1=new T.Group(),L2=new T.Group(),L3=new T.Group();body.add(L1,L2,L3);u.lvParts=[L1,L2,L3];
+  kcyl(L1,.008,.008,.42,KM.iron(),half-.04,top,-half+.04,5);const pf=new T.Mesh(new T.PlaneGeometry(.14,.08),kmat('canvas',{color:0x9a3020,side:T.DoubleSide}));pf.position.set(half+.03,top+.37,-half+.04);L1.add(pf);
+  const rp=RUST();for(const [x,z,ry] of [[0,half+.012,0],[-half-.012,0,Math.PI/2],[half+.012,0,Math.PI/2]]){const pn=kbox(L2,half*1.7,.18,.018,rp,x,top-.24,z);pn.rotation.y=ry;
+    for(const k of [-.35,0,.35]){const rv=mesh(new T.SphereGeometry(.012,5,4),KM.iron(),false);rv.position.set(x+(ry?0:k*half*2),top-.08,z+(ry?k*half*2:0));L2.add(rv);}}
+  const sl=new T.Group();sl.position.set(-half+.06,top+.05,half-.06);L3.add(sl);kcyl(sl,.012,.012,.12,KM.iron(),0,0,0,5);const hd=kcyl(sl,.045,.05,.07,KM.dark(),0,.14,.02,10);hd.rotation.x=Math.PI/2;
+  const lens=new T.Mesh(new T.CircleGeometry(.04,12),new T.MeshBasicMaterial({color:0xfff2c0,toneMapped:false}));lens.position.set(0,.175,.06);sl.add(lens);u.wins.push(lens);
+  const bm=new T.Mesh(new T.ConeGeometry(.16,1.1,12,1,true),new T.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.05,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,toneMapped:false}));bm.rotation.x=-Math.PI/2+.35;bm.position.set(0,-.05,.6);sl.add(bm);u.wins.push(bm);}
 const RUST=()=>kmat('x',{color:0x5a3a2a,metalness:.65,roughness:.62});
 function kplinth(p,w,d){return kbox(p,w+.04,.05,d+.04,KM.stone(),0,0,0);}
 
@@ -2485,18 +2493,36 @@ function makeBuilding(type){
         const beam=new T.Mesh(new T.ConeGeometry(.16,1.1,12,1,true),new T.MeshBasicMaterial({color:0xfff0c8,transparent:true,opacity:.05,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,toneMapped:false}));
         beam.rotation.x=-Math.PI/2+.35;beam.position.set(0,-.18,.52);sl.add(beam);u.wins.push(beam);}
       break;}
-    case 'catapult':{
-      const stn=kmat('stone',{color:0x8a857a});kbox(body,.62,.45,.62,stn,0,0,0);kbox(body,.54,.4,.54,stn,0,.45,0);kbox(body,.66,.05,.66,KM.stone(),0,.85,0);
-      for(let i=0;i<8;i++){const a=i/8*Math.PI*2;kbox(body,.08,.09,.08,stn,Math.cos(a)*.29,.9,Math.sin(a)*.29);}
-      kwindow(body,u,0,.6,.275,0,.07,.12);
-      // частокол от ходячих: заострённые колья наружу
-      const stake=KM.beam(),tip=kmat('x',{color:0x6a5040});
-      for(let i=0;i<18;i++){const a=i/18*Math.PI*2,rr=.47;const st=new T.Group();st.position.set(Math.cos(a)*rr,0,Math.sin(a)*rr);st.rotation.y=-a;st.rotation.z=-.25;body.add(st);
-        kcyl(st,.022,.022,.32,stake,0,0,0,6);const cn=mesh(new T.ConeGeometry(.024,.08,6),tip);cn.position.y=.36;st.add(cn);}
-      for(const y of [.1,.22]){const rg=mesh(new T.TorusGeometry(.47,.006,4,36),KM.iron(),false);rg.rotation.x=Math.PI/2;rg.position.y=y;body.add(rg);}
-      const arm=new T.Group();arm.position.set(0,1.0,0);body.add(arm);kbox(arm,.05,.05,.6,KM.beam(),0,0,-.1);arm.rotation.x=-.5;u.wheel=null;u.arm=arm;
-      const cup=mesh(new T.SphereGeometry(.06,8,6,0,Math.PI*2,0,Math.PI/2),KM.iron());cup.rotation.x=Math.PI;cup.position.set(0,.05,-.38);arm.add(cup);
-      for(const sx of [-1,1])kbox(body,.04,.25,.04,KM.beam(),sx*.12,.87,0);for(let i=0;i<5;i++){const st=mesh(new T.DodecahedronGeometry(.05,0),kmat('stone',{color:0x9a958a}));st.position.set(.18-(i%3)*.06,.92,.18+(i>2?.06:0));body.add(st);}break;}
+    case 'catapult':{// камнемёт: приземистая каменная башня, рычаг с ковшом и противовес-тележка
+      krailbase(body,.88);const bm=kmat('x',{color:0x2c241e,roughness:.92}),stn=kmat('stone',{color:0x9a958a}),rust=RUST(),pl=kmat('planks',{color:0x8a7a6a}),TOP=.66;
+      kbox(body,.78,.36,.78,stn,0,.035,0);kbox(body,.72,.26,.72,pl,0,.39,0);
+      for(const sx of [-1,1])for(const sz of [-1,1]){kbox(body,.06,.62,.06,bm,sx*.37,.035,sz*.37);}
+      for(const y of [.38,.64]){kbox(body,.8,.04,.04,bm,0,y,.37);kbox(body,.8,.04,.04,bm,0,y,-.37);kbox(body,.04,.04,.8,bm,.37,y,0);kbox(body,.04,.04,.8,bm,-.37,y,0);}
+      for(const sz of [-1,1]){kbeam(body,[-.36,.4,sz*.38],[.36,.64,sz*.38],.03,bm);}
+      kwindow(body,u,-.15,.2,.395,0,.1,.12);for(let k=-1;k<=1;k++)kbox(body,.012,.12,.012,KM.iron(),-.15+k*.03,.14,.41);
+      // навес из гофры сбоку
+      {const sh=kbox(body,.34,.02,.2,kmat('roof',{metalness:.4,roughness:.65,color:0x6a5a4c}),.18,.36,.47);sh.rotation.x=.35;R(sh.material);}
+      kbox(body,.82,.04,.82,bm,0,TOP,0);ksnow(body,.78,.78,0,TOP+.04,0,.014);
+      // борта-ящик с камнями
+      for(const [x,z,w,d] of [[0,-.39,.8,.04],[-.39,0,.04,.8],[.39,0,.04,.8]])kbox(body,w,.12,d,pl,x,TOP+.04,z);
+      for(let i=0;i<9;i++){const st=mesh(new T.DodecahedronGeometry(.045+((i*37)%5)*.006,0),stn);st.position.set(-.3+(i%3)*.055,TOP+.08+(i>5?.05:0),-.3+Math.floor(i/3)*.05);st.rotation.set(i,i*2,0);body.add(st);}
+      const lan=new T.Mesh(new T.CylinderGeometry(.025,.025,.05,6),M.win);lan.position.set(-.43,.5,.2);body.add(lan);u.wins.push(lan);kbox(body,.05,.012,.012,KM.iron(),-.41,.53,.2);
+      // поворотная рама с рычагом
+      const yaw=new T.Group();yaw.position.set(.05,TOP+.04,.05);body.add(yaw);u.aim=yaw;u.noKick=1;
+      kcyl(yaw,.2,.22,.04,rust,0,0,0,12);
+      for(const sx of [-1,1]){kbeam(yaw,[sx*.1,.04,-.15],[sx*.07,.36,0],.035,bm);kbeam(yaw,[sx*.1,.04,.15],[sx*.07,.36,0],.035,bm);}
+      kbox(yaw,.2,.03,.03,KM.iron(),0,.35,0);
+      const arm=new T.Group();arm.position.set(0,.365,0);yaw.add(arm);u.arm=arm;arm.rotation.x=-.5;
+      kbox(arm,.045,.045,.78,bm,0,-.022,-.12);for(const z of [-.3,.05,.2])kbox(arm,.055,.055,.02,rust,0,-.027,z);
+      // ковш с камнем на дальнем конце
+      const cup=mesh(new T.CylinderGeometry(.08,.06,.06,8,1,true),rust);cup.position.set(0,.03,-.52);arm.add(cup);kbox(arm,.12,.01,.12,rust,0,-.005,-.52);
+      const rock=mesh(new T.DodecahedronGeometry(.06,0),stn);rock.position.set(0,.06,-.52);arm.add(rock);u.rock=rock;
+      // противовес — тележка с рельсовыми колёсами
+      const cw=new T.Group();cw.position.set(0,-.02,.26);arm.add(cw);const box=kbox(cw,.17,.13,.15,pl,0,-.16,0);
+      for(const sx of [-1,1])for(const sz of [-1,1]){const wh=mesh(new T.CylinderGeometry(.03,.03,.02,10),KM.dark());wh.rotation.z=Math.PI/2;wh.position.set(sx*.095,-.17,sz*.05);cw.add(wh);}
+      kpipe(cw,[-.07,-.03,0],[0,.0,0],.006,KM.dark());kpipe(cw,[.07,-.03,0],[0,.0,0],.006,KM.dark());ksnow(cw,.16,.14,0,-.03,0,.012);
+      kTowerLevels(T,body,u,TOP+.04,.4,M);
+      break;}
     case 'steamgun':{
       kplinth(body,.7,.7);kcyl(body,.3,.34,.25,KM.iron(),0,.05,0,18);
       const tur=new T.Group();tur.position.y=.3;body.add(tur);u.tur=tur;kcyl(tur,.22,.24,.2,KM.iron(),0,0,0,16);
@@ -2801,8 +2827,7 @@ function towerFire3D(s,dtR){
       const tr=new T.Mesh(new T.CylinderGeometry(.002,.007,.28,6,1,true),new T.MeshBasicMaterial({color:has(s,"t_fire")?0xff6a20:0xffb060,transparent:true,opacity:.55,depthWrite:false,blending:T.AdditiveBlending,toneMapped:false}));tr.rotation.x=Math.PI/2;tr.position.z=-.17;m.add(tr);
       let a0=g.position.clone().add(new T.Vector3(0,1.36,0));if(u.aim&&u.tip){g.updateMatrixWorld(true);a0=u.tip.clone().applyMatrix4(u.aim.matrixWorld);u.kick=.06;}
       R3.sc.add(m);PROJ.push({m,a:a0,b:to,t:0,dur:.38,h:.12,kind:'arrow'});}
-    else if(k==='catapult'){const m=mesh(new T.DodecahedronGeometry(.06,0),kmat('stone',{color:0x9a958a}));R3.sc.add(m);if(u.arm)u.armT=.35;
-      PROJ.push({m,a:g.position.clone().add(new T.Vector3(0,1.25,0)),b:to,t:0,dur:.9,h:1.4,kind:'stone'});}
+    else if(k==='catapult'){if(u.arm){u.armT=.35;u.pend={to:to.clone(),t:.22};}else{const m=mesh(new T.DodecahedronGeometry(.06,0),kmat('stone',{color:0x6e6a62}));R3.sc.add(m);PROJ.push({m,a:g.position.clone().add(new T.Vector3(0,1.1,0)),b:to,t:0,dur:.9,h:1.4,kind:'stone'});}}
     else{const m=new T.Mesh(new T.SphereGeometry(.035,8,6),new T.MeshBasicMaterial({color:0xffd080,toneMapped:false}));R3.sc.add(m);
       const mz=g.position.clone().add(new T.Vector3(0,.42,0)).add(to.clone().sub(g.position).setY(0).normalize().multiplyScalar(.62));
       PROJ.push({m,a:mz,b:to,t:0,dur:.22,h:.05,kind:'shell'});u.recoil=.12;
@@ -2815,17 +2840,23 @@ function towerFire3D(s,dtR){
     else{const pos=p.a.clone().lerp(p.b,k);pos.y+=Math.sin(k*Math.PI)*p.h;
       if(p.kind==='arrow'){const nx=p.a.clone().lerp(p.b,Math.min(1,k+.05));nx.y+=Math.sin(Math.min(1,k+.05)*Math.PI)*p.h;p.m.position.copy(pos);p.m.lookAt(nx);}
       else{p.m.position.copy(pos);p.m.rotation.x+=.2;}
-      if(k>=1&&!p.hit){p.hit=1;if(p.kind==='stone')spawnSteam(p.b.clone().setY(.1),.3,.3);
+      if(k>=1&&!p.hit){p.hit=1;if(p.kind==='stone'){for(let q=0;q<4;q++)spawnSteam(p.b.clone().setY(.08+q*.05).add(new T.Vector3((Math.random()-.5)*.3,0,(Math.random()-.5)*.3)),.5+q*.08,.2+q*.1,true);debris(p.b,0x6e6a62,7);}
         if(p.kind==='shell'){const bm=new THREE.Sprite(new THREE.SpriteMaterial({map:R3.tx.glow,color:0xff7a30,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));bm.position.copy(p.b).setY(.25);R3.sc.add(bm);PROJ.push({m:bm,t:0,dur:.3,kind:'boom'});spawnSteam(p.b.clone().setY(.2),.4,.5);}}}
   }
   for(let i=PROJ.length-1;i>=0;i--){const p=PROJ[i];if(p.t>=p.dur+(p.kind==='arrow'?.05:0)){R3.sc.remove(p.m);if(p.m.material&&p.kind!=='stone')p.m.material.dispose&&p.m.material.dispose();PROJ.splice(i,1);}}
   // откат ствола и взмах рычага
   for(const g of R3.bmap.values()){const u=g.userData;
     if(u.aim&&dtR>0){u.aimT=Math.max(0,(u.aimT||0)-dtR);const want=u.aimT>0?u.aimY:Math.sin(performance.now()/2600+g.position.x)*1.1;let dy=want-u.aim.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.aim.rotation.y+=dy*Math.min(1,(u.aimT>0?12:1.5)*Math.max(dtR,.016));
-      u.kick=Math.max(0,(u.kick||0)-dtR*.4);u.aim.position.z=.02-u.kick;}
+      if(!u.noKick){u.kick=Math.max(0,(u.kick||0)-dtR*.4);u.aim.position.z=.06-u.kick;}}
     if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);u.brl.position.z=.32-u.recoil;}
+    if(u.pend&&dtR>0){u.pend.t-=dtR;if(u.pend.t<=0){g.updateMatrixWorld(true);const a0=new THREE.Vector3();u.rock.getWorldPosition(a0);const m=mesh(new THREE.DodecahedronGeometry(.06,0),u.rock.material);R3.sc.add(m);
+      PROJ.push({m,a:a0,b:u.pend.to,t:0,dur:.85,h:1.1,kind:'stone'});u.pend=null;u.rock.visible=false;u.rockT=.9;}}
+    if(u.rock&&u.rockT>0){u.rockT-=dtR;if(u.rockT<=0)u.rock.visible=true;}
     if(u.arm){u.armT=Math.max(0,(u.armT||0)-dtR);u.arm.rotation.x=u.armT>0?-.5+(1-u.armT/.35)*1.7:Math.max(-.5,u.arm.rotation.x-dtR*2);}}
 }
+// осколки при попадании
+function debris(p,col,n){if(!R3.ok)return;R3.chips=R3.chips||[];for(let k=0;k<n;k++){let c=R3.chips.find(q=>!q.on);if(!c){if(R3.chips.length>90)return;const m=new THREE.Mesh(new THREE.BoxGeometry(.03,.03,.03),new THREE.MeshBasicMaterial({color:col}));R3.sc.add(m);c={m,on:0};R3.chips.push(c);}
+  c.on=1;c.m.material.color.setHex(col);c.m.position.copy(p).setY(.08);const a=Math.random()*6.28,v=.6+Math.random()*.9;c.v=[Math.cos(a)*v,1+Math.random()*.9,Math.sin(a)*v];c.t=0;c.m.visible=true;}}
 function spawnSteam(p,size,vy,dark){const q=R3.steam.find(x=>!x.life);if(!q)return;q.life=1;q.dark=!!dark;q.sp.material.color.setHex(dark?0x3a3632:0xffd2a8);q.sp.material.rotation=Math.random()*6;q.vy=.006*vy+Math.random()*.004;q.vx=(Math.random()-.5)*.004;q.sp.position.copy(p);q.sp.scale.set(size,size,1);q.sp.visible=true;}
 let ZERO4=null;
 function workChip(w,i){// щепки, осколки угля и искры металла при ударе
