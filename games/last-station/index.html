@@ -2186,7 +2186,11 @@ function buildEscalators(sx){
   // сплошные заснеженные откосы по бокам и под ступенями (клин от пола до верхней площадки)
   const wedge=(depth,mat,z,dy)=>{const sh=new T.Shape();sh.moveTo(0,-.8);sh.lineTo(len+.2,-.8);sh.lineTo(len+.2,rise+dy);sh.lineTo(0,dy);sh.lineTo(0,-.8);
     const gg=new T.ExtrudeGeometry(sh,{depth,bevelEnabled:false});gg.translate(0,0,-depth/2);const m=mesh(gg,mat,false);m.material.side=T.DoubleSide;m.scale.x=sx;m.position.set(0,0,z);g.add(m);return m;};
-  const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(3.4,bank,3.6,.35);wedge(3.6,snowMat(0x55524c),0,-.2);
+  const bank=snowMat(0xb8b4ab);wedge(3.4,bank,-3.6,.35);wedge(2.5,bank,3.15,.35);
+  {const pz=wz(GH-1)-zc,px=sx*(len+.3),arch=kmat('stone',{color:0x55524c});
+    for(const dz of [-.75,.75]){const pil=mesh(new T.BoxGeometry(.35,1.6,.3),arch);pil.position.set(px,-.5+.8,pz+dz);g.add(pil);}
+    const top=mesh(new T.BoxGeometry(.35,.3,1.8),arch);top.position.set(px,-.5+1.75,pz);g.add(top);
+    const hole=new T.Mesh(new T.PlaneGeometry(1.2,1.5),new T.MeshBasicMaterial({color:0x020304}));hole.position.set(px+sx*.2,-.5+.75,pz);hole.rotation.y=sx<0?Math.PI/2:-Math.PI/2;g.add(hole);}wedge(3.6,snowMat(0x55524c),0,-.2);
   const landTex=ctex(256,256,(c,w,h)=>{c.fillStyle='#3a3836';c.fillRect(0,0,w,h);for(let y=0;y<h;y+=32)for(let x=0;x<w;x+=32){const v=95+Math.random()*30|0;c.fillStyle=`rgb(${v},${v-3},${v-8})`;c.fillRect(x+1,y+1,30,30);
       for(let k=0;k<6;k++){c.fillStyle=`rgba(20,18,16,${Math.random()*.4})`;c.fillRect(x+Math.random()*30,y+Math.random()*30,2,2);}}
     for(let i=0;i<24;i++){c.fillStyle=`rgba(225,232,238,${.25+Math.random()*.4})`;c.beginPath();c.ellipse(Math.random()*w,Math.random()*h,6+Math.random()*24,3+Math.random()*10,Math.random()*3,0,7);c.fill();}
@@ -2688,7 +2692,7 @@ function render3D(t){
         const tilt=(fall?dir*Math.min(1.4,fall):0)+(z.lg?-dir*.3:0)+(quad?sway*.08:sway*.14)+jerk+(mv?-dir*.06:0);
         const sy=mv?(1+(quad?Math.sin(wp*2)*.05:step*.06)):1+Math.sin(now/700+x)*.015,sx=mv?(1-(quad?Math.sin(wp*2)*.03:step*.04)):1;
         const c=fl>0?[1+fl*5,1+fl*5,1+fl*5]:dark>0?[1-dark*.8,1-dark*.85,1-dark*.85]:null;
-        const ground=y>GH-1.45||x>GW-.6?-.47:0; // на путях — уровень рельсов
+        const ground=y>GH-1.45||x>GW-.6?-.4:0; // на путях — уровень рельсов
         sprPut(o,x,y,ground+step*(quad?.025:.04)-sink,flip,tilt,(k/(ZT[t]||ZT.ghoul).k)*(t==='boar'?1.15:1),c,sx,sy);return;}
       const P=R3.zparts[t]||R3.zparts.ghoul,n=cnt[t];if(n>=160)return;cnt[t]++;
       base.makeRotationY(ang);if(fall){tmp.makeRotationX(fall);base.multiply(tmp);}const T_=ZT[t]||ZT.ghoul;tmp.makeScale(k*(T_.sx||1),k*(T_.sy||1),k*(T_.sz||1));base.multiply(tmp);base.setPosition(wx(x),-sink,wz(y));
@@ -3175,6 +3179,9 @@ function combatStep(s,dt){
     {let ux=dx/d,uy=dy/d;if(z.t==='dog'&&d>1.2){const zz=Math.sin(z.cyc*5+z.id)*.75;const px=-uy,py=ux;ux+=px*zz;uy+=py*zz;const l=Math.hypot(ux,uy);ux/=l;uy/=l;}
      z.x+=ux*Math.min(st,d);z.y+=uy*Math.min(st,d);z.ph+=st*(z.t==='brute'?4:z.t==='bloat'?8:6)+(z.t==='ghoul'&&mul<.5?0:0);z.ang=Math.atan2(ux,uy);}
   }
+  // мутанты не слипаются: держат дистанцию друг от друга
+  {const MD=.24;for(let i=0;i<Z.length;i++){const a=Z[i];if(a.dead)continue;for(let j=i+1;j<Z.length;j++){const b=Z[j];if(b.dead)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+      if(d<MD){const k=(MD-(d||.001))/2,ux=d?dx/d:Math.cos(i+j),uy=d?dy/d:Math.sin(i+j);a.x-=ux*k;a.y-=uy*k;b.x+=ux*k;b.y+=uy*k;}}}}
   // башни
   s.fx=[];
   for(const b of s.bld){if(b.build||!b.on||!TOWER[b.type])continue;const S_=towerStats(s,b);if(S_.dps<=0)continue;
