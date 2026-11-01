@@ -1843,6 +1843,9 @@ function init3D(){
   R3.hover=new T.Line(hg,new T.LineBasicMaterial({color:0xcfe3f2,transparent:true,opacity:.7}));R3.hover.position.y=.03;sc.add(R3.hover);
   R3.selRing=new T.Mesh(new T.RingGeometry(.55,.64,40),new T.MeshBasicMaterial({color:0xf2a33a,transparent:true,opacity:.9,depthWrite:false}));
   R3.selRing.rotation.x=-Math.PI/2;R3.selRing.position.y=.035;sc.add(R3.selRing);
+  // радиус атаки башни: мягкий круг на земле
+  {const tx=ctex(256,256,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w/2);g.addColorStop(0,'rgba(255,190,110,.03)');g.addColorStop(.8,'rgba(255,190,110,.07)');g.addColorStop(.95,'rgba(255,200,130,.75)');g.addColorStop(1,'rgba(255,200,130,0)');c.fillStyle=g;c.fillRect(0,0,w,h);});
+   R3.rangeC=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,toneMapped:false}));R3.rangeC.rotation.x=-Math.PI/2;R3.rangeC.position.y=.06;R3.rangeC.renderOrder=3;R3.rangeC.visible=false;sc.add(R3.rangeC);}
   // жители
   const stripes=ctex(64,64,(c,w,h)=>{for(let y=0;y<h;y+=8){c.fillStyle=(y/8)%2?'#3b3c3a':'#8e8c84';c.fillRect(0,y,w,8);}
     for(let i=0;i<120;i++){c.fillStyle=`rgba(${40+Math.random()*30|0},${30+Math.random()*20|0},20,${Math.random()*.35})`;c.fillRect(Math.random()*w,Math.random()*h,3,3);}
@@ -1988,7 +1991,7 @@ function init3D(){
     eg.setAttribute('color',new T.Float32BufferAttribute(cols,3));es.add(new T.Mesh(eg,new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide})));
     const lamp=new T.Mesh(new T.SphereGeometry(1.5,12,8),new T.MeshBasicMaterial({color:new T.Color(3,1.6,.6)}));lamp.position.set(0,-6,3);es.add(lamp);
     try{const pm=new T.PMREMGenerator(rd);sc.environment=pm.fromScene(es,.04).texture;pm.dispose();}catch(e){}}
-  R3.ok=true;initPost();resize3D();
+  R3.ok=true;initPost();resize3D();try{loadTowerModels();}catch(e){}
   return true;
 }
 function buildStation3D(){
@@ -2293,13 +2296,22 @@ const BSTYLE={gather:'depot',archer:'watchtower',catapult:'catapult',steamgun:'s
   sawmill:'sawmill',scrapyard:'scrapyard',coalmine:'coalmine',workshop:'workshop',medpost:'medpost',hospital:'hospital',pharmacy:'pharmacy',
   depot:'depot',heater:'heater',coreworks:'workshop',cemetery:'cemetery',arena:'arena',still:'still',nursery:'nursery',patrol:'patrol',radio:'radio',guardhouse:'guardhouse',hall:'hall',shrine:'shrine'
 };
+const TOWER_GLB={},GLB_FILE={archer:'tower_archer',catapult:'tower_stone',steamgun:'tower_cannon'};
+function loadTowerModels(){// модели башен из assets/models; нет файла — остаётся процедурная версия
+  const go=()=>{if(!THREE.GLTFLoader)return;const L=new THREE.GLTFLoader();
+    for(const [type,f] of Object.entries(GLB_FILE))L.load('assets/models/'+f+'.glb',gl=>{TOWER_GLB[type]=gl.scene;for(const [id,g] of R3.bmap)if(g.userData.type===type){R3.sc.remove(g);R3.bmap.delete(id);}},undefined,()=>{});};
+  if(THREE.GLTFLoader)return go();const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';sc.onload=go;sc.onerror=()=>{};document.head.appendChild(sc);}
+function glbBody(T,body,u,src){const m=src.clone(true);const bb=new T.Box3().setFromObject(m),sz=bb.getSize(new T.Vector3());const k=.86/Math.max(sz.x,sz.z,.001);m.scale.setScalar(k);
+  m.position.set(-(bb.min.x+bb.max.x)/2*k,-bb.min.y*k,-(bb.min.z+bb.max.z)/2*k);body.add(m);
+  m.traverse(o=>{if(o.isMesh){o.castShadow=o.receiveShadow=true;}const n=(o.name||'').toLowerCase();if(n==='aim'||n==='turret'){u.aim=o;u.noKick=1;}if(n==='arm'){u.arm=o;}if(n==='barrel'){u.brl=o;}if(n==='muzzle'){u.muzzle=o;}});}
 function makeBuilding(type){
   const T=THREE,M=R3.mat,g=new T.Group(),body=new T.Group();g.add(body);
   const u={roofs:[],wins:[],offs:[],body};g.userData=u;
   const st=BSTYLE[type]||'barracks';
   const W=.86,D=.86;
   const R=(mat)=>{if(!u.roofs.includes(mat))u.roofs.push(mat);return mat;};
-  switch(st){
+  switch(TOWER_GLB[type]?'glb':st){
+    case 'glb':{glbBody(T,body,u,TOWER_GLB[type]);break;}
     case 'tent':{
       const can=kmat('canvas',{roughness:1});R(can);
       const sh=new T.Shape();sh.moveTo(-.38,0);sh.lineTo(.38,0);sh.lineTo(0,.46);sh.lineTo(-.38,0);
@@ -2807,6 +2819,10 @@ function render3D(t){
   }
   let sel=null;if(ui.sel){if(ui.sel.k==='gen')sel={x:GX,y:GY};else if(ui.sel.k==='p')sel=ui.sel;else{const b=bById(s,ui.sel.id);if(b)sel=b;}}
   R3.selRing.visible=!!sel;if(sel){R3.selRing.position.set(wx(sel.x),.09,wz(sel.y));R3.selRing.scale.setScalar(ui.sel.k==='gen'?1.5:1);}
+  {let rb=null,rr=0;const ht=hv?tile(s,ui.hover.x,ui.hover.y):null,hb=ht&&ht.b?bById(s,ht.b):null;
+   if(ui.buildType&&TOWER[ui.buildType]&&hv){rb=ui.hover;rr=towerStats(s,{type:ui.buildType,crew:1}).range;}
+   else if(hb&&TOWER[hb.type]){rb=hb;rr=towerStats(s,hb,true).range;}else if(sel&&sel.type&&TOWER[sel.type]){rb=sel;rr=towerStats(s,sel,true).range;}
+   R3.rangeC.visible=!!rb;if(rb){R3.rangeC.position.set(wx(rb.x),.06,wz(rb.y));R3.rangeC.scale.set(rr*2,rr*2,1);R3.rangeC.material.opacity=.85+.15*Math.sin(t/400);}}
   // жители
   drawWalkers3D(s);
   {const Z=s.zombies||[],now=performance.now(),cnt={},base=new T.Matrix4(),tmp=new T.Matrix4(),eu=new T.Euler(),q=new T.Quaternion(),one=new T.Vector3(1,1,1),pv=new T.Vector3(),col=new T.Color();
@@ -2888,7 +2904,7 @@ function towerFire3D(s,dtR){
   for(const g of R3.bmap.values()){const u=g.userData;
     if(u.aim&&dtR>0){u.aimT=Math.max(0,(u.aimT||0)-dtR);const want=u.aimT>0?u.aimY:Math.sin(performance.now()/2600+g.position.x)*1.1;let dy=want-u.aim.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.aim.rotation.y+=dy*Math.min(1,(u.aimT>0?12:1.5)*Math.max(dtR,.016));
       if(!u.noKick){u.kick=Math.max(0,(u.kick||0)-dtR*.4);u.aim.position.z=.06-u.kick;}}
-    if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);u.brl.position.z=.32-u.recoil*(u.muzzle?1.4:1);}
+    if(u.brl){u.recoil=Math.max(0,(u.recoil||0)-dtR*.6);if(u.brl0==null)u.brl0=u.brl.position.z;u.brl.position.z=u.brl0-u.recoil*(u.muzzle?1.4:1);}
     if(u.pend&&dtR>0){u.pend.t-=dtR;if(u.pend.t<=0){g.updateMatrixWorld(true);const a0=new THREE.Vector3();u.rock.getWorldPosition(a0);const m=mesh(new THREE.DodecahedronGeometry(.06,0),u.rock.material);R3.sc.add(m);
       PROJ.push({m,a:a0,b:u.pend.to,t:0,dur:.85,h:1.1,kind:'stone'});u.pend=null;u.rock.visible=false;u.rockT=.9;}}
     if(u.rock&&u.rockT>0){u.rockT-=dtR;if(u.rockT<=0)u.rock.visible=true;}
