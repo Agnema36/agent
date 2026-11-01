@@ -45,7 +45,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 #res{display:flex;flex-wrap:wrap;gap:2px;padding:4px 6px;max-width:100%}
 .res{display:flex;align-items:center;gap:5px;padding:3px 7px;min-width:72px;border-right:1px solid rgba(255,255,255,.06)}
 .res:last-child{border-right:0}
-.res svg{width:22px;height:22px;flex:none;padding:3px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.35)}
+.res svg{width:26px;height:26px;flex:none;padding:2px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2b3239,#0e1215);box-shadow:inset 0 0 0 1px rgba(176,138,78,.35)}
 .res .v{font-family:var(--mono);font-size:13px}
 .res .d{font-family:var(--mono);font-size:11px;color:var(--frost-dim)}
 .res .d.neg{color:var(--bad)} .res .d.pos{color:var(--ok)}
@@ -251,6 +251,8 @@ body.inmenu .hud{display:none!important}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>if(!window.THREE)document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');</script>
+<script>if(!window.THREE)document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');</script>
 <script>
 'use strict';
 /* =====================================================================
@@ -285,7 +287,19 @@ const ICON={
   meds:'<rect x="2" y="2" width="12" height="12" rx="2" fill="currentColor"/><path d="M8 4.5v7M4.5 8h7" stroke="#1a2129" stroke-width="2"/>',
   cores:'<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="8" r="2.2" fill="currentColor"/>'
 };
-const ico=(k,col)=>`<svg viewBox="0 0 16 16" style="color:${col||RES[k].c}" aria-hidden="true">${ICON[k]}</svg>`;
+// цветные значки ресурсов (как в стратегиях: кусок угля, брёвна, слитки…)
+const ICON_C={
+  coal:'<path d="M2 12.5l2.2-4.6 3.1 1.2 2.4-4 3.6 2.2 1.2 5.2z" fill="#2a2a2c"/><path d="M4.2 7.9l3.1 1.2-1.5 3.4H2z" fill="#3c3c40"/><path d="M9.7 5.1l3.6 2.2-2.6 1.5z" fill="#55565c"/><path d="M7.3 9.1l2.4-4 1 3.7z" fill="#46474c"/><circle cx="11.3" cy="11" r="1" fill="#ff8a2a"/><path d="M2 12.5h12.5" stroke="#000" stroke-opacity=".4"/>',
+  wood:'<rect x="1.5" y="8" width="11" height="4" rx="2" fill="#7a4e2a"/><rect x="3.5" y="4" width="11" height="4" rx="2" fill="#94603a"/><circle cx="12.5" cy="10" r="2" fill="#d9b07a"/><circle cx="12.5" cy="10" r="1" fill="none" stroke="#9a6a3a" stroke-width=".6"/><circle cx="14.5" cy="6" r="2" fill="#e4bd86"/><circle cx="14.5" cy="6" r="1" fill="none" stroke="#a87444" stroke-width=".6"/><path d="M3.5 6.5h8M2 10.5h8" stroke="#5a361c" stroke-width=".6"/>',
+  steel:'<path d="M1.5 11.5l2-2h7l2 2v2h-11z" fill="#6c7884"/><path d="M1.5 11.5h11v2h-11z" fill="#4a5560"/><path d="M4.5 7.5l2-2h7l2 2v2h-11z" fill="#9aa8b6"/><path d="M4.5 7.5h11v2h-11z" fill="#6a7886"/><path d="M6.6 5.6h6.8" stroke="#dfe8f0" stroke-width=".8"/><path d="M3.6 9.6h6.8" stroke="#c8d2dc" stroke-width=".7"/>',
+  stone:'<path d="M1.5 13l1.5-5 4-2.5 3.5 1.5 1 6z" fill="#8a867e"/><path d="M3 8l4-2.5 1 3-4 1.5z" fill="#aba69c"/><path d="M9 13l2-5.5 3.5 1.5.5 4z" fill="#77736c"/><path d="M11 7.5l3.5 1.5-1.5 1.2z" fill="#9c978d"/>',
+  raw:'<path d="M4 6c0-1 1-2 4-2s4 1 4 2l1 7c0 1-2 1.8-5 1.8S3 14 3 13z" fill="#a88a5a"/><path d="M5 4.5c1-1.4 5-1.4 6 0" stroke="#6a5030" stroke-width="1.3" fill="none"/><path d="M4.5 8c2 .6 5 .6 7 0" stroke="#7a6038" stroke-width=".7" fill="none"/><circle cx="8" cy="3.2" r="1" fill="#6a5030"/>',
+  food:'<rect x="3" y="4" width="10" height="9.5" rx="1.2" fill="#9aa4ac"/><rect x="3" y="6.5" width="10" height="4.5" fill="#b8402e"/><ellipse cx="8" cy="4" rx="5" ry="1.4" fill="#c8d0d6"/><path d="M5 8.8h6" stroke="#f0d9a0" stroke-width="1"/><path d="M3.5 13.2h9" stroke="#5a6268"/>',
+  water:'<path d="M8 1.5C6 5 3.3 7.6 3.3 10.6a4.7 4.7 0 009.4 0C12.7 7.6 10 5 8 1.5z" fill="#3f8fd8"/><path d="M8 3.5C6.6 6 5 7.8 5 10.3" stroke="#bfe3ff" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M5.5 12.5a3.5 3.5 0 005 0" stroke="#1d5a9a" stroke-width=".8" fill="none"/>',
+  meds:'<rect x="2" y="4" width="12" height="9.5" rx="1.5" fill="#e8e4dc"/><path d="M6 4V2.8h4V4" stroke="#8a8478" stroke-width="1.2" fill="none"/><path d="M8 6v5.5M5.2 8.75h5.6" stroke="#d6362a" stroke-width="2.4"/><path d="M2 12.5h12" stroke="#a8a298" stroke-width=".8"/>',
+  cores:'<circle cx="8" cy="8" r="6" fill="#4a3e34"/><circle cx="8" cy="8" r="6" fill="none" stroke="#a07a3a" stroke-width="1.4"/><circle cx="8" cy="8" r="3.2" fill="#ffb347"/><circle cx="8" cy="8" r="1.6" fill="#fff2c0"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2" stroke="#a07a3a" stroke-width="1.2"/>'
+};
+const ico=(k,col)=>!col&&ICON_C[k]?`<svg viewBox="0 0 16 16" aria-hidden="true">${ICON_C[k]}</svg>`:`<svg viewBox="0 0 16 16" style="color:${col||RES[k].c}" aria-hidden="true">${ICON[k]}</svg>`;
 
 const DIFF={
   easy:{n:'Лёгкий',d:'Мягкий холод, щедрые запасы. Для первой партии.',start:1.5,cons:.8,temp:8,disc:.6,sick:.6,danger:.6,law:12,piles:1,deposits:1},
@@ -400,6 +414,11 @@ const LAWS=[
   {id:'recycling',cat:'adapt',n:'Сбор вторсырья',d:'Добывающие здания +10%. Недовольство растёт.',fx:{disc:2}},
   {id:'expedition',cat:'adapt',n:'Разведка любой ценой',d:'Отряды на 30% быстрее, но опасности страшнее.',fx:{}},
   {id:'barter',cat:'adapt',n:'Договор с Кольцом',d:'Обмен у торговцев даёт в 1,5 раза больше.',fx:{hope:2}},
+  {id:'norms',cat:'adapt',br:'ind',n:'Нормы выработки',d:'Все производства +10%. Недовольство понемногу растёт каждый день.',fx:{disc:3}},
+  {id:'standard',cat:'adapt',br:'ind',n:'Стандартизация',d:'Типовые чертежи: постройка зданий на 15% дешевле.',fx:{disc:1}},
+  {id:'scrapdrive',cat:'adapt',br:'ind',n:'Сбор металлолома',d:'Каждое утро общий сбор приносит 6 металла. Людям не нравится.',fx:{disc:2}},
+  {id:'techcourse',cat:'adapt',br:'ind',n:'Инженерные курсы',d:'Раз в 3 дня один рабочий становится инженером (нужна мастерская).',fx:{hope:1}},
+  {id:'restday',cat:'adapt',br:'care',n:'Выходной день',d:'Каждый 7-й день — отдых: надежда +6, недовольство −4.',fx:{hope:3}},
   {id:'o_patrol',cat:'order',n:'Патрули',d:'Пост патруля: −недовольство.',fx:{disc:-3}},
   {id:'o_radio',cat:'order',n:'Агитация',d:'Радиоточка: +надежда, −недовольство.',req:'o_patrol',fx:{}},
   {id:'o_prison',cat:'order',n:'Гауптвахта',d:'Смутьяны под замком: −недовольство.',req:'o_radio',fx:{disc:-3}},
@@ -424,7 +443,7 @@ const BR={harsh:{n:'Суровость',c:'#e06450',need:5,cap:'cap_harsh'},care
 // высший закон ветки открывается только когда приняты ВСЕ остальные законы этой ветки
 for(const k in BR)BR[k].need=LAWS.filter(L=>L.br===k&&!L.cap&&L.id!==BR[k].cap).length;
 const brCount=(s,br)=>LAWS.filter(L=>L.br===br&&!L.cap&&L.id!==BR[br].cap&&s.laws.includes(L.id)).length;
-const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.25;if(d.rp)m*=1.1;}return m;};
+const capMul=(s,b)=>{const d=B[b.type];let m=1;if(s.laws.includes('cap_harsh'))m*=1.3;if(s.laws.includes('cap_care'))m*=.9;if(s.laws.includes('cap_ind')){if(d.prod)m*=1.25;if(d.rp)m*=1.1;}if(s.laws.includes('norms')&&d.prod)m*=1.1;return m;};
 const LAWBY=Object.fromEntries(LAWS.map(l=>[l.id,l]));
 
 /* ---------------------------- КАРТА МЕТРО ---------------------------- */
@@ -500,6 +519,13 @@ const G=buildGraph();
 /* ---------------------------- ЯЗЫК: русский / English ---------------------------- */
 let LANG=(store('ls_lang')||((navigator.language||'').toLowerCase().startsWith('ru')?'ru':'en'));
 const EN=[
+['Нормы выработки','Output quotas'],['Все производства +10%. Недовольство понемногу растёт каждый день.','All production +10%. Discontent creeps up every day.'],
+['Стандартизация','Standardisation'],['Типовые чертежи: постройка зданий на 15% дешевле.','Standard blueprints: buildings cost 15% less.'],
+['Сбор металлолома','Scrap drive'],['Каждое утро общий сбор приносит 6 металла. Людям не нравится.','Every morning a common drive brings 6 metal. People dislike it.'],
+['Инженерные курсы','Engineering courses'],['Раз в 3 дня один рабочий становится инженером (нужна мастерская).','Every 3 days one worker becomes an engineer (needs a workshop).'],
+['Выходной день','Day of rest'],['Каждый 7-й день — отдых: надежда +6, недовольство −4.','Every 7th day is a rest day: hope +6, discontent −4.'],
+['Рабочий закончил инженерные курсы.','A worker finished the engineering courses.'],['Выходной день: люди отдохнули','Day of rest: people rested'],
+['Закон: Нормы выработки','Law: Output quotas'],['Закон: Сбор металлолома','Law: Scrap drive'],
 ['Здесь инженеры придумывают новое.','Here engineers invent new things.'],
 ['Инженеры ведут исследования днём. 1 мастерская — 100% скорости, 2 — 150%. Каждое улучшение (до 3-го ур.) +25%. Предел — 300%: 2 мастерские 3-го уровня.','Engineers research during the day. 1 workshop — 100% speed, 2 — 150%. Each upgrade (up to lvl 3) +25%. Cap 300%: two level-3 workshops.'],
 ['Максимум 2 мастерские — дальше улучшайте их','Maximum 2 workshops — upgrade them instead'],['Скорость науки:','Research speed:'],['из 300%','of 300%'],['из 2 мастерских работают','of 2 workshops working'],[', уровни:',', levels:'],['и','and'],
@@ -864,7 +890,7 @@ const healthy=(s,t)=>s.pop[t]-s.crit[t]-(has(s,'mandatory')?0:s.ill[t])+(t==='w'
 const lvlMul=b=>1+.2*(b.lvl||0);
 function insCost(s,n){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1);return{wood:Math.ceil(15*k),steel:Math.ceil(5*k)};}
 function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
-function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1));return c;}
+function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
 const dangerMul=s=>D_(s).danger*(has(s,'expedition')?1.5:1);
 function log(s,txt,kind){s.log.unshift({d:s.day,h:s.hour,txt,k:kind||''});if(s.log.length>60)s.log.length=60;}
@@ -1120,6 +1146,9 @@ function newDay(s){
   if(built('arena').length&&rnd()<.5)sicken(s,1);
   if(built('still').length)sicken(s,rnd()<.4?1:0);
   if(has(s,'apprentice')&&built('workshop').length&&s.pop.c-s.ill.c-s.crit.c>0){s.pop.c--;s.pop.e++;log(s,'Ученик стал инженером.','good');}
+  if(has(s,'techcourse')&&s.day%3===0&&built('workshop').length&&s.pop.w-s.ill.w-s.crit.w>0){s.pop.w--;s.pop.e++;rebalance(s);log(s,'Рабочий закончил инженерные курсы.','good');}
+  if(has(s,'scrapdrive')){s.res.steel+=6;}
+  if(has(s,'restday')&&s.day%7===0){s.hope=clamp(s.hope+6,0,100);s.disc=clamp(s.disc-4,0,100);toast(s,'Выходной день: люди отдохнули','good');}
   if(has(s,'o_new'))dd=Math.min(dd,dd*.5);
   s.disc=clamp(s.disc+dd*D.disc,0,100);
   s.hope=clamp(s.hope+dh,0,100);
@@ -1147,7 +1176,7 @@ function moodMods(s){
   if(untreated>0)add(`Больные без коек: ${untreated}`,0,untreated*.08);
   const L=(id,n,h,d)=>{if(has(s,id))add(n,h,d);};
   L('ext_shift','Закон: Удлинённая смена',0,3);L('child_labor','Закон: Детский труд',0,1.5);L('additives','Закон: Опилки в пайках',0,2);L('water_ration','Закон: Нормы воды',0,2.5);
-  L('mandatory','Закон: Трудовая повинность',0,2);L('cap_ind','Закон: Индустриальный рывок',0,2);L('quarantine','Закон: Карантин',0,1);L('communal','Закон: Общие кухни',0,1);
+  L('mandatory','Закон: Трудовая повинность',0,2);L('norms','Закон: Нормы выработки',0,.6);L('scrapdrive','Закон: Сбор металлолома',0,.4);L('cap_ind','Закон: Индустриальный рывок',0,2);L('quarantine','Закон: Карантин',0,1);L('communal','Закон: Общие кухни',0,1);
   L('private','Закон: Личные пайки',1,0);L('crowding','Закон: Уплотнение',-1,0);L('recycling','Закон: Сбор вторсырья',0,1);L('f_mutual','Закон: Взаимовыручка',1,0);L('f_wardens','Закон: Хранители',0,-2);L('o_martial','Закон: Военное положение',-1,-2);
   const built=t=>s.bld.filter(b=>b.type===t&&!b.build);
   if(built('arena').length)add('Бойцовская арена',0,-4);
@@ -2702,7 +2731,7 @@ const TECH_PIC={t_ammo:'bolt',t_heater:'flame',t_radius1:'radius',t_insul:'insul
   t_draisine:'draisine',t_teams:'team',t_outpost:'flag',t_coldmat:'snow',t_heatpipes:'pipes',t_cook2:'kettle',t_seedbank:'seed',t_drills:'bolt',t_prefab:'blocks',
   t_recycle:'recycle',t_coreworks:'core',t_antibio:'flask',t_prosth:'leg',t_logistics:'route'};
 const LAW_PIC={cap_harsh:'skullx',cap_care:'heart',cap_ind:'gear',child_labor:'child',child_shelter:'house',ext_shift:'clock',soup:'bowl',additives:'sawdust',water_ration:'dropminus',cemetery:'grave',pit:'pit',radical:'knife',
-  overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
+  overcrowd:'beds',arena:'fist',moonshine:'bottle',apprentice:'school',norms:'gear',standard:'blocks',scrapdrive:'recycle',techcourse:'school',restday:'sun',mandatory:'hammer',emergency:'alarm',communal:'pot',private:'plate',quarantine:'mask',crowding:'houses',
   recycling:'recycle',expedition:'compass',barter:'hand',o_patrol:'shield',o_radio:'radio',o_prison:'bars',o_martial:'star',o_new:'crown',
   f_hall:'candle',f_mutual:'hands',f_shrine:'church',f_wardens:'lantern',f_new:'sun'};
 const PIC_COL={flame:'#f2a33a',pipes:'#f2a33a',insul:'#f2a33a',boiler:'#f2a33a',radius:'#f2a33a',core:'#ffcf5a',snow:'#8fd0f5',
