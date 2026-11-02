@@ -1,7 +1,7 @@
 // node lawsim.js <runs> <days> [strategies]
 const {chromium}=require('/opt/node22/lib/node_modules/playwright');const fs=require('fs');
 const RUNS=+(process.argv[2]||20),DAYS=+(process.argv[3]||30),STRATS=(process.argv[4]||'none,harsh,soft,mixed,random').split(','),MODE=process.argv[5]||'A';
-(async()=>{const src=fs.readFileSync('/home/user/agent/games/last-station/index.html','utf8');
+(async()=>{const src=fs.readFileSync(process.env.SRC||'/home/user/agent/games/last-station/index.html','utf8');
 fs.writeFileSync('page50.html','<!doctype html><html><head><meta charset=utf8></head><body>'+src+'</body></html>');
 const b=await chromium.launch({args:['--use-gl=swiftshader']});const ctx=await b.newContext({viewport:{width:800,height:500}});
 await ctx.route('**/three.min.js',r=>r.abort());
@@ -11,7 +11,7 @@ const all={};
 for(const ST of STRATS){all[ST]=[];
  for(let r=0;r<RUNS;r++){
   const res=await p.evaluate(([ST,DAYS,MODE])=>{
-   const s=newGame('normal',false);S=s;ui.mode='sim';s.paused=true;const pop0=popTotal(s);let arrivals=0;
+   if(!window._sw){const o=sicken;sicken=function(s,n){const k=o(s,n);s._st=(s._st||0)+k;s._sd=s._sd||{};s._sd[s.day]=(s._sd[s.day]||0)+k;return k};window._sw=1;}const s=newGame('normal',false);S=s;ui.mode='sim';s.paused=true;const pop0=popTotal(s);let arrivals=0;
    const lawOf=c=>{const m=String(c.f).match(/signLaw\(s,'(\w+)'/);return m?m[1]:null;};
    const HARSH=LAWS.filter(L=>L.br==='harsh'||L.br==='order').map(L=>L.id);
    const SOFT=LAWS.filter(L=>L.br==='care'||L.br==='faith').map(L=>L.id);
@@ -61,9 +61,9 @@ for(const ST of STRATS){all[ST]=[];
      if(!s.gen.on&&s.res.coal>5)act(s,{t:'gen',k:'on'});
     }
    }
-   return {ideo:s.laws.filter(x=>LAWBY[x]&&LAWBY[x].cat!=='adapt').length,ideoDay:(signed.find(x=>/^[of]_/.test(x))||'').split('@')[1]||null,over:s.over,day:s.day,pop:popTotal(s),pop0,deaths:s.deaths,dc:s.dc||{},hope:Math.round(s.hope),disc:Math.round(s.disc),laws:s.laws.slice(),signed};
+   return {sickTot:s._st||0,sickByDay:s._sd||{},ideo:s.laws.filter(x=>LAWBY[x]&&LAWBY[x].cat!=='adapt').length,ideoDay:(signed.find(x=>/^[of]_/.test(x))||'').split('@')[1]||null,over:s.over,day:s.day,pop:popTotal(s),pop0,deaths:s.deaths,dc:s.dc||{},hope:Math.round(s.hope),disc:Math.round(s.disc),laws:s.laws.slice(),signed};
   },[ST,DAYS,MODE]);
   all[ST].push(res);process.stdout.write(`${ST}#${r} ${res.over||'alive'} d${res.day} deaths ${res.deaths} laws ${res.laws.length}\n`);
  }}
-fs.writeFileSync('./sim_'+MODE+'_'+DAYS+'.json',JSON.stringify(all));
+fs.writeFileSync('./sim_'+(process.env.TAG||'')+MODE+'_'+DAYS+'.json',JSON.stringify(all));
 console.log('ERR',errs.slice(0,5));await b.close();})();
