@@ -160,9 +160,30 @@
     [o, o2, n, am].forEach(x => { x.start(t); x.stop(t + 1.4); });
   }
 
+  /* ---------- смерть жителя: похоронный удар с тритоном и стоном ---------- */
+  function death(n) {
+    if (!A.ready) return;
+    const c = A.ctx, t = c.currentTime, k = clamp(0.55 + 0.12 * Math.min(4, (n || 1) - 1), 0.5, 1), dur = 2.6 + Math.min(3, (n || 1)) * 0.4;
+    const g = c.createGain(); g.gain.value = 0.0001; g.connect(A.sfx);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5 * k, t + 0.03); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    // колокол: неровные обертона + тритон (диссонанс)
+    [[98, 1], [98 * 1.414, 0.7], [98 * 2.76, 0.35], [98 * 4.1, 0.2], [92, 0.6]].forEach(([f, a]) => {
+      const o = c.createOscillator(), og = c.createGain(); o.type = 'sine'; o.frequency.value = f; og.gain.value = a; o.connect(og); og.connect(g); o.start(t); o.stop(t + dur); });
+    // глухой удар
+    const n0 = noiseSrc(), nf = c.createBiquadFilter(), ng = c.createGain(); nf.type = 'lowpass'; nf.frequency.value = 300;
+    ng.gain.setValueAtTime(0.6 * k, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.35); n0.connect(nf); nf.connect(ng); ng.connect(A.sfx); n0.start(t); n0.stop(t + 0.4);
+    // нисходящий стон
+    const o = c.createOscillator(), f = c.createBiquadFilter(), sg = c.createGain(), vib = c.createOscillator(), vg = c.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t + 0.25); o.frequency.exponentialRampToValueAtTime(110, t + 2.2);
+    vib.frequency.value = 5.5; vg.gain.value = 6; vib.connect(vg); vg.connect(o.frequency);
+    f.type = 'bandpass'; f.frequency.value = 700; f.Q.value = 3;
+    sg.gain.setValueAtTime(0.0001, t + 0.2); sg.gain.linearRampToValueAtTime(0.18 * k, t + 0.6); sg.gain.exponentialRampToValueAtTime(0.001, t + 2.4);
+    o.connect(f); f.connect(sg); sg.connect(A.sfx); [o, vib].forEach(x => { x.start(t + 0.2); x.stop(t + 2.5); });
+  }
+
   function setMusicVolume(v) { A.settings.music = clamp(+v, 0, 1); save(); if (A.music) ramp(A.music.gain, A.settings.music, 0.1); if (A.cur) { clearInterval(A.cur.h._vr); A.cur.h.volume(A.settings.music, A.cur.id); } }
   function setMasterVolume(v) { A.settings.master = clamp(+v, 0, 1); save(); if (A.master) ramp(A.master.gain, A.settings.master, 0.1); if (window.Howler) Howler.volume(A.settings.master); }
   function setSfxVolume(v) { A.settings.sfx = clamp(+v, 0, 1); save(); if (A.sfx) ramp(A.sfx.gain, A.settings.sfx, 0.1); }
 
-  window.GameAudio = { init, playState, updateAmbient, growl, setMasterVolume, setMusicVolume, setSfxVolume, settings: A.settings, _a: A };
+  window.GameAudio = { init, playState, updateAmbient, growl, death, setMasterVolume, setMusicVolume, setSfxVolume, settings: A.settings, _a: A };
 })();
