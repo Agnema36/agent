@@ -4120,7 +4120,8 @@ function audioTick(t){// музыка по времени суток и атак
   if(!window.GameAudio)return;
   if(ui.mode!=='game'||!S){GameAudio.playState('menu');return;}
   const s=S,att=!!(s.wave||(s.zombies&&s.zombies.length)),night=s.hour>=21||s.hour<6;
-  GameAudio.playState(att||night?'night':'day'); // во время атаки — ночной трек
+  const bossOn=(s.zombies||[]).some(z=>z.boss&&!z.dead);
+  GameAudio.playState(bossOn?'attack':att||night?'night':'day'); // трек атаки — только пока жив Владыка тоннелей; обычные атаки — ночной трек
   // смерть жителей — неприятный звук (не чаще раза в 1,5 с; новая или загруженная игра сбрасывает счёт)
   if(AUD.dS!==s){AUD.dS=s;AUD.dead=s.deaths||0;}else if((s.deaths||0)>AUD.dead){const n=s.deaths-AUD.dead;if(!AUD.dt||t-AUD.dt>1500){AUD.dt=t;AUD.dead=s.deaths;if(GameAudio.death)GameAudio.death(n);}}
   if(t-AUD.t>150){AUD.t=t;const d=Math.hypot(cam3.tx,cam3.tz)+cam3.d*.35;const sk=stoveLvl(s);
