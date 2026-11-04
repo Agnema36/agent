@@ -1040,7 +1040,8 @@ const BLD_MAXLV=3;
 const lvlMul=b=>1+.2*Math.min(b.lvl||0,TOWER[b.type]?99:BLD_MAXLV);
 function insCost(s,n,b){const k=Math.pow(1.5,n)*(has(s,'t_recycle')?.8:1)*(b&&B[b.type].house?2:1);return{wood:Math.ceil(15*k),steel:Math.ceil(5*k)};}
 function upCost(s,b,n){const c={},base=B[b.type].cost||{},k=.5*Math.pow(TOWER[b.type]?1.3:1.5,n)*(B[b.type].house?2:1)*(has(s,'t_recycle')?.8:1);for(const r in base)c[r]=Math.ceil(base[r]*k);return c;}
-function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
+const BUILD_K=1.4; // стоимость постройки зданий +40%
+function buildCost(s,type){const c={},base=B[type].cost;for(const r in base)c[r]=Math.ceil(base[r]*BUILD_K*(has(s,'t_prefab')?.8:1)*(has(s,'standard')?.85:1));return c;}
 const capOf=(s,b)=>Math.floor(B[b.type].house*lvlMul(b)*(has(s,'crowding')?1.5:1));
 const dangerMul=s=>D_(s).danger;
 // журнал событий: тип (death/warn/info/good), причина в тексте, место на карте
